@@ -12,46 +12,23 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 1 — Project Scaffolding ✅ Complete
+## Phase 1 — Project Scaffolding
 
-**Goal:** Establish the production repository skeleton — dependency management, directory layout, foundational utilities, CI tooling configuration, and governance scripts — so that every subsequent phase builds on a consistent, lint-clean, type-checked, and CI-enforced base rather than retrofitting infrastructure around working code.
+**Goal:** Establish the production repository structure, dependency environment (`uv`, `pyproject.toml`), code-quality tooling (`ruff`, `pyright`, `pre-commit`), CI/CD baseline (GitHub Actions), and line-ceiling enforcement (`scripts/check_file_size.py`) to serve as the foundation for the deterministic mathematical core.
 
 **Key Tasks:**
 
-- Initialize `git` repository on `main` branch; configure `.gitignore` to exclude `.env`, `__pycache__`, DVC cache, and build artifacts
-- Set up `uv` as the single dependency manager; define `pyproject.toml` with `[project]` table, `requires-python = ">=3.11"`, and initial dependencies (`pydantic>=2.0`, `fastapi`, `pyyaml`)
-- Create the full `src/` module tree with `__init__.py` and `py.typed` marker files for each package: `schemas/`, `core/`, `models/`, `graph/`, `api/`, `simulator/`, `utils/`, `config/`, `constants/`
-- Implement `src/constants/__init__.py`: single source of truth for `PROJECT_ROOT`, `CONFIG_DIR`, `PARAMS_FILE_PATH`, `DATA_DIR`, `ARTIFACTS_DIR`, `LOGS_DIR`, `REPORTS_DIR`; auto-creates missing directories on import
-- Implement `src/utils/exceptions.py`: `BasePulseException` base class with relative-path traceback formatting via `error_message_detail`; domain sub-exceptions `SolverException`, `SufficiencyGateException`, `InvalidMatchStateError`, `ModelInferenceError`, `SanitizationError`
-- Implement `src/utils/logger.py`: rotating file handler (`pulse_engine.log`, 5 MB × 5 backups) with optional `rich` console handler; `get_logger(name, headline)` factory; `log_spacer()` utility
-- Implement `src/utils/sanitization.py`: stubbed prompt-injection defense — no free-text tool input exists yet, but the routing contract is established so any future coach-feedback field is forced through this module before any prompt
-- Implement `src/config/__init__.py`: `load_params()` reads `params.yaml` via `pyyaml`; falls back to safe defaults if the file is absent (leverage threshold 0.70, sample-size gate 15, solver tolerance 1e-9)
-- Populate typed stub modules for `schemas/`, `core/`, `models/`, `graph/`, `api/`, and `simulator/` — each with Google-style docstrings, Pydantic v2 I/O contracts, and placeholder logic that makes the module importable and type-checkable without yet being functional
-- Create `tests/unit/test_markov_solver.py`, `tests/integration/test_conditional_graph.py`, and `tests/evals/test_tactical_output_groundedness.py` — structural stubs that establish the testing architecture before Phase 2 fills in the golden values
-- Implement `scripts/check_file_size.py`: CI-ready line-count ceiling script (1,000 lines per `src/` file); explicit `ALLOWLIST` with mandatory per-entry justifications; exits non-zero and lists every violation
-- Configure `params.yaml` with Phase 1 placeholder values for every threshold that downstream phases will calibrate
-- Push repository to GitHub (`SebastianGarrido2790/PULSE`); confirm `git remote -v` and an initial commit on `main`
-- Write `README.md`: project summary, architecture invariants, stack table, directory tree, getting-started commands, and reference link to `tennis_mathematical_elegance.md`
+- Instantiate production directory layout per project constitution (§4): `src/api`, `src/schemas`, `src/core`, `src/models`, `src/graph`, `src/simulator`, `src/utils`, `src/config`.
+- Configure `pyproject.toml` dependencies with `uv` package management (`pydantic>=2.0`, `langgraph`, `scikit-learn`, `scipy`, `pandera`, `dvc`, `mlflow`, `deepeval`, `fastapi`, `pytest`, `ruff`, `pyright`).
+- Setup `params.yaml` baseline with quantitative threshold parameters (`leverage_escalation_threshold`, `exploit_min_sample_size`, `latency_budget_ms`).
+- Establish `scripts/check_file_size.py` with 1,000-line hard ceiling check and `ALLOWLIST` enforcement.
+- Setup `.pre-commit-config.yaml` and `.github/workflows/ci.yml` CI pipeline (linting, type-checking, file-size enforcement, solver correctness test gate).
 
-**Deliverables:**
+**Deliverables:** Updated `technical_roadmap.md`, production directory structure specification, `pyproject.toml`, `params.yaml` base configuration.
 
-- `src/` package tree (all `__init__.py` + `py.typed` markers, all stub modules)
-- `src/constants/__init__.py`, `src/utils/exceptions.py`, `src/utils/logger.py`, `src/utils/sanitization.py`, `src/config/__init__.py`
-- `scripts/check_file_size.py`
-- `tests/unit/test_markov_solver.py`, `tests/integration/test_conditional_graph.py`, `tests/evals/test_tactical_output_groundedness.py` (structural stubs)
-- `pyproject.toml` with `[project]` table and initial dependencies
-- `params.yaml` v0.1 (placeholder thresholds)
-- `README.md` and `tennis_mathematical_elegance.md` referenced from it
-- GitHub remote `origin` tracking `main`
+**Exit Criteria:** `technical_roadmap.md` Phase 1 fully defined and validated; workspace architecture established without code implementation.
 
-**Exit Criteria:**
-
-- `python scripts/check_file_size.py` exits 0; all `src/` files are within the 1,000-line ceiling
-- `git remote -v` confirms the remote is set and the initial commit is pushed
-- Every module in `src/` is importable without error (`python -c "import src.<module>"`)
-- `params.yaml` exists and contains keyed entries for `leverage_escalation_threshold`, `sample_size_gate`, and `solver_tolerance`
-
-**Dependencies:** Phase 0 (planning documents complete).
+**Dependencies:** Phase 0 Complete.
 
 **Est. Duration:** 1 day
 
@@ -194,9 +171,8 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ## Sequential Action Plan (Immediate Next Steps)
 
-1. ~~Scaffold the repository structure and `pyproject.toml` with `uv`~~ ✅ Done (Phase 1)
-2. Define `PointRecord` schema and `pandera` validation gates (Phase 2)
-3. Implement the closed-form Markov solver and its golden-value test suite — **this must be green before any other work continues**, since every downstream component depends on it as the system's ground truth (Phase 2)
-4. Source and stage historical point-by-point match data; set up the DVC pipeline for ingestion (Phase 2)
-5. Proceed to Phase 3 only once Phase 2's exit criteria are met (solver tolerance < 1e-9; `dvc repro` runs end-to-end)
-
+1. Scaffold the repository structure and `pyproject.toml` with `uv`
+2. Define `PointRecord` schema and `pandera` gates
+3. Implement the closed-form Markov solver and its golden-value test suite, **this must be green before any other work begins**, since every downstream component depends on it as ground truth
+4. Source and stage historical point-by-point match data; set up the DVC pipeline for ingestion
+5. Proceed to Phase 2 only once Phase 1's exit criteria are met
