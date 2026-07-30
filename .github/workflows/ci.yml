@@ -1,0 +1,41 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  quality-gate:
+    name: Quality & Correctness Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv and setup Python
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          python-version: "3.11"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run Ruff Linter
+        run: uv run ruff check .
+
+      - name: Run Ruff Formatter Check
+        run: uv run ruff format --check .
+
+      - name: Run Pyright Type Checker
+        run: uv run pyright
+
+      - name: Run File Size Ceiling Enforcement
+        run: python scripts/check_file_size.py
+
+      - name: Run Pytest & Solver Gate
+        run: uv run pytest --cov=src --cov-report=term-missing

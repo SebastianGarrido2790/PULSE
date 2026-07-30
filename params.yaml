@@ -1,0 +1,19 @@
+# Configuration schema for PULSE (Point-Level Understanding & Strategic Leverage Engine)
+# All quantitative thresholds, model parameters, and latency budgets source from here (FR-8).
+
+thresholds:
+  leverage_escalation: 0.10       # Leverage threshold to trigger PressureDiagnosticNode (calibrate in Phase 3)
+  exploit_min_sample_size: 30     # Opponent minimum observation count for StrategyExploitNode (ADR-003)
+
+latency:
+  state_monitor_ms: 1000          # Per-point latency budget for StateMonitorNode (NFR: < 1s)
+  triggered_node_ms: 5000         # Latency budget for triggered diagnostic/exploit nodes (NFR: < 5s)
+
+models:
+  calibration_method: "sigmoid"   # Required: "sigmoid" for LogisticRegression v1; "isotonic" for LightGBM v2 (ADR-006)
+  point_win_classifier: "logistic_regression"
+  solver_tolerance: 1.0e-9        # CI-blocking tolerance for Markov solver vs closed-form combinatorial theory
+
+ci:
+  line_ceiling: 1000              # Maximum allowed line count for any Python source file under src/ (§5.1)
+  min_coverage_pct: 70            # Minimum required code coverage percentage for pytest

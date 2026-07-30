@@ -1,7 +1,8 @@
 """Custom exception hierarchy for the PULSE Engine.
 
-All custom exceptions inherit from BasePulseException (or PulseException) to ensure consistent error handling
-and precise traceback logging across the MLOps pipeline and deterministic Markov solver.
+All custom exceptions inherit from BasePulseException (or PulseException) to ensure
+consistent error handling and precise traceback logging across the MLOps pipeline
+and deterministic Markov solver.
 """
 
 from pathlib import Path
@@ -38,10 +39,7 @@ def error_message_detail(error: Exception | str, error_detail: ModuleType) -> st
     else:
         display_path = "unknown"
 
-    return (
-        f"Error occurred in script [{display_path}] "
-        f"line [{line_number}]: {str(error)}"
-    )
+    return f"Error occurred in script [{display_path}] line [{line_number}]: {error!s}"
 
 
 class BasePulseException(Exception):

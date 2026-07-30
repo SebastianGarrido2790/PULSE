@@ -1,0 +1,25 @@
+# Pre-commit configuration for local code quality checks before commit
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: check-file-size
+        name: File size ceiling check (max 1000 lines)
+        entry: python scripts/check_file_size.py
+        language: python
+        pass_filenames: false

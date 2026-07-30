@@ -1,0 +1,26 @@
+# DVC Pipeline Orchestrator — PULSE
+# Governs data ingestion, schema validation, model training, and solver evaluation.
+
+stages:
+  ingest:
+    cmd: echo "Stage not yet implemented — Phase 2 Data Ingestion & Validation"
+    outs:
+      - data/raw:
+          cache: false
+
+  train_classifier:
+    cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Point-Win Classifier"
+    deps:
+      - data/raw
+      - params.yaml
+
+  train_pressure:
+    cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Pressure Deviation Model"
+    deps:
+      - data/raw
+      - params.yaml
+
+  evaluate:
+    cmd: echo "Stage not yet implemented — Phase 6 Evaluation Suite & Solver Gate"
+    deps:
+      - params.yaml

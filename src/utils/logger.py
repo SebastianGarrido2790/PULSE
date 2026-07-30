@@ -9,6 +9,7 @@ Usage:
 import logging
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOG_FILE = PROJECT_ROOT / "logs" / "pulse_engine.log"
