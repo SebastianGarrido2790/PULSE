@@ -6,6 +6,20 @@ Designed for coaches, performance analysts, and broadcast teams as an advisory t
 
 ---
 
+## 🚦 Project Status
+
+| Phase | Description | Status |
+| :--- | :--- | :--- |
+| **Phase 0 — Planning** | ML Canvas, Project Charter, PRD, User Story, Technical Roadmap, System Design | ✅ Complete |
+| **Phase 1 — Project Scaffolding** | Repository structure, `uv` toolchain, `params.yaml`, CI/CD, line ceiling gate | ✅ Complete |
+| **Phase 2 — Data Layer & Core** | `PointRecord` schema, validation pipeline, closed-form Markov solver | 🟡 Next Up |
+| **Phase 3 — Tier 1 ML** | Point-win classifier & pressure deviation shrinkage model | ⬜ Scheduled |
+| **Phase 4 — Agent Orchestration** | Event-driven LangGraph (State Monitor + conditional nodes) | ⬜ Scheduled |
+| **Phase 5 — Game Theory Module** | Minimax Nash equilibrium & best-response return exploit | ⬜ Scheduled |
+| **Phase 6 — API & Simulation** | FastAPI streaming API, real-time match replay simulator, Docker & CI/CD | ⬜ Scheduled |
+
+---
+
 ## 🔑 Key Architecture & System Invariants
 
 PULSE operates on four foundational architectural principles:

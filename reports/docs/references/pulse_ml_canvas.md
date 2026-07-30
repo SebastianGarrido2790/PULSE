@@ -228,12 +228,12 @@ Models loaded once at API startup; the Markov solver and game-theory optimizer a
 | Phase | Deliverable                                                                    | Status      |
 | ----- | ------------------------------------------------------------------------------ | ----------- |
 | 0     | Planning docs (Canvas, Charter, PRD, User Story, Roadmap, ADR)                 | ✅ Complete |
-| 1     | Data schema, validation, closed-form Markov solver + ground-truth unit tests   | ⬜ Pending  |
-| 2     | Tier 1 ML models (point-win classifier, pressure deviation estimator) + MLflow | ⬜ Pending  |
-| 3     | Event-driven LangGraph orchestration (StateMonitor + conditional nodes)        | ⬜ Pending  |
-| 4     | Game-theoretic exploit module (Nash equilibrium + best-response deviation)     | ⬜ Pending  |
-| 5     | FastAPI + SSE/WebSocket streaming interface, match-replay simulator            | ⬜ Pending  |
-| 6     | Observability, Docker, CI/CD, shadow-mode acceptance run                       | ⬜ Pending  |
+| 1     | Project Scaffolding (repo structure, dependencies, CI/CD, line-ceiling gate)  | ✅ Complete |
+| 2     | Data schema, validation, closed-form Markov solver + ground-truth unit tests   | ⬜ Pending  |
+| 3     | Tier 1 ML models (point-win classifier, pressure deviation estimator) + MLflow | ⬜ Pending  |
+| 4     | Event-driven LangGraph orchestration (StateMonitor + conditional nodes)        | ⬜ Pending  |
+| 5     | Game-theoretic exploit module (Nash equilibrium + best-response deviation)     | ⬜ Pending  |
+| 6     | FastAPI + SSE/WebSocket streaming interface, match-replay simulator            | ⬜ Pending  |
 
 ### Timeline Estimate
 

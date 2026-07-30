@@ -89,7 +89,7 @@ Full stories and journey maps are in `user_story.md`. Summary:
 
 ## 7. Success Metrics
 
-Full detail in `ml_canvas.md` §7–8. Headline targets:
+Full detail in `pulse_ml_canvas.md` §7–8. Headline targets:
 
 - Solver-vs-closed-form deviation < 1e-9 (non-negotiable)
 - Alert precision ≥ 0.75 on retrospective evaluation
@@ -109,7 +109,7 @@ Full detail in `ml_canvas.md` §7–8. Headline targets:
 
 ## 9. Out of Scope
 
-Matches `ml_canvas.md` §4 exactly: live official data-feed integration, doubles matches, video/vision-based state extraction, betting-market integration, autonomous actions.
+Matches `pulse_ml_canvas.md` §4 exactly: live official data-feed integration, doubles matches, video/vision-based state extraction, betting-market integration, autonomous actions.
 
 ---
 

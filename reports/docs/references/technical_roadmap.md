@@ -8,11 +8,11 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ## Phase 0 — Planning ✅ Complete
 
-**Deliverables:** `ml_canvas.md`, `project_charter.md`, `prd.md`, `user_story.md`, `technical_roadmap.md` (this document), `system_design.md`.
+**Deliverables:** `pulse_ml_canvas.md`, `pulse_project_charter.md`, `prd.md`, `user_story.md`, `technical_roadmap.md` (this document), `system_design.md`.
 
 ---
 
-## Phase 1 — Project Scaffolding
+## Phase 1 — Project Scaffolding ✅ Complete
 
 **Goal:** Establish the production repository structure, dependency environment (`uv`, `pyproject.toml`), code-quality tooling (`ruff`, `pyright`, `pre-commit`), CI/CD baseline (GitHub Actions), and line-ceiling enforcement (`scripts/check_file_size.py`) to serve as the foundation for the deterministic mathematical core.
 
