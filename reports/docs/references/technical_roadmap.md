@@ -34,20 +34,21 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 2 — Data Layer & Deterministic Core
+## Phase 2 — Data Layer & Deterministic Core 🛠️ In Progress
 
 **Goal:** Establish the `PointRecord` schema, ingestion/validation pipeline, and the closed-form Markov solver the system's ground truth, before any model is trained against it.
 
 **Key Tasks:**
 
 - Define `PointRecord` (Pydantic v2) and `pandera` validation gates per `ml_canvas.md` §6
+- Write component specifications (`reports/docs/specs/markov_solver_spec.md` and `reports/docs/specs/game_theory_spec.md`) for the highest-novelty deterministic components
 - Implement the closed-form Markov solver (point → game → set → match)
 - Write golden-value unit tests comparing solver output to textbook combinatorial formulas (win-4-0, win-4-1, win-4-2, win-via-deuce paths)
 - Implement observation-count tracking per player/surface/serve-number stratum, needed for the Wilson-interval uncertainty layer in Phase 2 (ADR-005)
 - Set up `params.yaml` with initial threshold placeholders (leverage, sample size) values TBD pending Phase 2/3 calibration
 - DVC-track the raw and validated data stages
 
-**Deliverables:** `schemas/point_record.py`, `core/markov_solver.py`, `tests/test_markov_solver.py` (CI-blocking gate), `params.yaml` v0.1
+**Deliverables:** `schemas/point_record.py`, `core/markov_solver.py`, `tests/test_markov_solver.py` (CI-blocking gate), `specs/markov_solver_spec.md`, `specs/game_theory_spec.md`, `params.yaml` v0.1
 
 **Exit Criteria:** Solver matches closed-form theory within 1e-9 tolerance on all tested paths; `pandera` gates reject malformed records; `dvc repro` runs the ingestion stage end-to-end.
 
