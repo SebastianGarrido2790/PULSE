@@ -8,7 +8,8 @@ This document is a living record of the system's actual implemented state and th
 
 ## Current Implementation Status
 
-**Phase 0 - Planning complete. No code implemented yet.** The ADRs below represent architectural decisions made and accepted during planning; they will be validated or revised as each corresponding phase (`technical_roadmap.md`) is executed.
+**Phase 1 — Project Scaffolding Complete (2026-07-29).**  
+The repository architecture, dependency environment (`pyproject.toml`, `uv`), static type configuration (`pyrightconfig.json`), operational threshold parameters (`params.yaml`), DVC pipeline skeleton (`dvc.yaml`), file-size ceiling checker (`scripts/check_file_size.py`), local pre-commit hooks (`.pre-commit-config.yaml`), GitHub Actions CI workflow (`.github/workflows/ci.yml`), and package subdirectories (`src/api`, `src/schemas`, `src/core`, `src/models`, `src/graph`, `src/simulator`, `src/utils`, `src/config`, `tests/unit`, `tests/integration`, `tests/evals`) are fully established, verified, and pushed to `main`.
 
 ---
 
@@ -108,22 +109,48 @@ There is empirical precedent that a simple, low-parameter probability model trac
 
 ---
 
-## Component Inventory (Planned)
+### ADR-007: Phase 1 Production Scaffolding Architecture & Quality Gate Strategy
+
+**Status:** Validated (Phase 1 — 2026-07-29)
+
+**Context:** The production system requires an unshakeable foundation before implementing the deterministic mathematical core. Standardizing dependency resolution (`uv`), static type enforcement (`pyright`), code formatting (`ruff`), operational threshold contracts (`params.yaml`), modular directory structure, file-size ceilings (`scripts/check_file_size.py`), and CI pipelines (`.github/workflows/ci.yml`) is necessary to prevent technical debt and ensure strict reproducibility.
+
+**Decision:**
+1. Enforce strict `uv` package management with Python 3.11+ target.
+2. Maintain `pyrightconfig.json` in root with standard mode type enforcement across `src/` and `tests/`.
+3. Centralize all threshold parameters, latency budgets, and model configuration names in namespaced `params.yaml`.
+4. Implement `scripts/check_file_size.py` to enforce a CI-blocking 1,000-line limit per Python file under `src/` (§5.1 of project constitution).
+5. Establish a single sequential GitHub Actions CI workflow (`quality-gate`) executing ruff, pyright, line ceiling checks, and pytest.
+6. Adopt docstring-only `__init__.py` files across all package subdirectories to prevent circular imports.
+
+**Consequences:** Any code addition must pass static typing, linting, formatting, and file-size ceiling checks before merging. Ensures zero circular imports and complete environment reproducibility across machines.
+
+**Alternatives Considered:** Multi-job parallel CI workflow (rejected: higher cost and complex logs), including Pyright in pre-commit hooks (rejected: 10s delay on local commits; reserved for CI).
+
+---
+
+## Component Inventory
 
 | Component                        | Module Path                       | Introduced In                    |
 | -------------------------------- | --------------------------------- | -------------------------------- |
-| `PointRecord` schema             | `schemas/point_record.py`         | Phase 1                          |
-| Closed-form Markov solver        | `core/markov_solver.py`           | Phase 1                          |
-| Point-win classifier             | `models/point_win_classifier.py`  | Phase 2                          |
-| Pressure Deviation model         | `models/pressure_deviation.py`    | Phase 2                          |
-| Leverage uncertainty propagation | `core/leverage_uncertainty.py`    | Phase 2                          |
-| `StateMonitorNode`               | `graph/state_monitor.py`          | Phase 3                          |
-| `PressureDiagnosticNode`         | `graph/pressure_diagnostic.py`    | Phase 3                          |
-| `StrategyExploitNode`            | `graph/strategy_exploit.py`       | Phase 4 (module), Phase 3 (node) |
-| Game theory solver               | `core/game_theory.py`             | Phase 4                          |
-| `TacticalOutputNode`             | `graph/tactical_output.py`        | Phase 3                          |
-| FastAPI + streaming              | `api/main.py`, `api/streaming.py` | Phase 5                          |
-| Replay simulator                 | `simulator/replay.py`             | Phase 5                          |
+| Package Skeleton & Stubs         | `src/*/` (`__init__.py`)          | Phase 1                          |
+| Exception Hierarchy              | `utils/exceptions.py`             | Phase 1                          |
+| Centralized Logger               | `utils/logger.py`                 | Phase 1                          |
+| Configuration Contract           | `params.yaml`, `pyrightconfig.json` | Phase 1                         |
+| File Ceiling Enforcement         | `scripts/check_file_size.py`      | Phase 1                          |
+| CI Quality Gate                  | `.github/workflows/ci.yml`        | Phase 1                          |
+| `PointRecord` schema             | `schemas/point_record.py`         | Phase 2                          |
+| Closed-form Markov solver        | `core/markov_solver.py`           | Phase 2                          |
+| Point-win classifier             | `models/point_win_classifier.py`  | Phase 3                          |
+| Pressure Deviation model         | `models/pressure_deviation.py`    | Phase 3                          |
+| Leverage uncertainty propagation | `core/leverage_uncertainty.py`    | Phase 3                          |
+| `StateMonitorNode`               | `graph/state_monitor.py`          | Phase 4                          |
+| `PressureDiagnosticNode`         | `graph/pressure_diagnostic.py`    | Phase 4                          |
+| `StrategyExploitNode`            | `graph/strategy_exploit.py`       | Phase 5 (module), Phase 4 (node) |
+| Game theory solver               | `core/game_theory.py`             | Phase 5                          |
+| `TacticalOutputNode`             | `graph/tactical_output.py`        | Phase 4                          |
+| FastAPI + streaming              | `api/main.py`, `api/streaming.py` | Phase 6                          |
+| Replay simulator                 | `simulator/replay.py`             | Phase 6                          |
 
 ---
 
