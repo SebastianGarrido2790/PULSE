@@ -41,7 +41,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 **Key Tasks:**
 
 - Define `PointRecord` (Pydantic v2) and `pandera` validation gates per `ml_canvas.md` §6
-- Write component specifications (`reports/docs/specs/markov_solver_spec.md` and `reports/docs/specs/game_theory_spec.md`) for the highest-novelty deterministic components
+- Write component specifications (`reports/specs/markov_solver_spec.md` and `reports/specs/game_theory_spec.md`) for the highest-novelty deterministic components
 - Implement the closed-form Markov solver (point → game → set → match)
 - Write golden-value unit tests comparing solver output to textbook combinatorial formulas (win-4-0, win-4-1, win-4-2, win-via-deuce paths)
 - Implement observation-count tracking per player/surface/serve-number stratum, needed for the Wilson-interval uncertainty layer in Phase 2 (ADR-005)

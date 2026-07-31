@@ -16,7 +16,7 @@ Before proposing design decisions, here is the honest, file-by-file inventory of
 
 | Artifact / File Path               | Current State                                                                        | Identified Gap / Latent Issue                                                                                                                                        | Action Required for Phase 2                                                     |
 | ---------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `reports/docs/specs/`              | Directory does not exist                                                             | Missing written mathematical contracts for the two highest-novelty components (`markov_solver_spec.md` & `game_theory_spec.md`)                                      | Create directory and draft mathematical specifications                          |
+| `reports/specs/`                   | Directory does not exist                                                             | Missing written mathematical contracts for the two highest-novelty components (`markov_solver_spec.md` & `game_theory_spec.md`)                                      | Create directory and draft mathematical specifications                          |
 | `src/schemas/point_record.py`      | File does not exist (`src/schemas/` contains only `__init__.py`)                     | Missing Pydantic v2 `PointRecord` domain schema, enum definitions, and `pandera` DataFrame validation gates per `ml_canvas.md` §6                                    | Implement Pydantic schema and `pandera` validation model                        |
 | `src/core/markov_solver.py`        | File does not exist (`src/core/` contains only `__init__.py`)                        | Missing closed-form Markov solver engine computing point $\rightarrow$ game $\rightarrow$ set $\rightarrow$ match probabilities and leverage ($\Delta L$)            | Implement exact analytical Markov solver engine                                 |
 | `src/core/leverage_uncertainty.py` | File does not exist                                                                  | Missing Wilson score confidence interval propagation for point-win probability $p$ and leverage bounds $[\Delta L_{\text{low}}, \Delta L_{\text{high}}]$ per ADR-005 | Implement Wilson score & leverage interval propagation module                   |
@@ -35,40 +35,40 @@ Before proposing design decisions, here is the honest, file-by-file inventory of
 
 Each Phase 2 deliverable from `technical_roadmap.md §Phase 2` maps to one primary decision below. Where a decision involves architectural choices, comparative options and trade-offs are presented for user selection.
 
-| Decision ID | Deliverable / Component            | Decision Title                                                       | Decision Type                                     |
-| ----------- | ---------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------- |
-| **D-1**     | `reports/docs/specs/*.md`          | Specs Scope & Mathematical Rigor Standard                            | ✅ **[Approved — Single Valid Path]**              |
-| **D-2**     | `src/schemas/point_record.py`      | Data Schema Architecture & Validation Strategy                       | ✅ **[Approved — Option A, Sub-Option A1]**        |
-| **D-3**     | `src/core/markov_solver.py`        | Markov Solver Engine: Closed-Form Derivation vs. Transition Matrices | ✅ **[Approved — Option A, Sub-Option A1]**        |
-| **D-4**     | `src/core/leverage_uncertainty.py` | Wilson Score Uncertainty & Leverage Band Propagation Architecture    | ✅ **[Approved — Option A]**                       |
-| **D-5**     | `tests/unit/test_markov_solver.py` | CI-Blocking Solver Verification Suite & Combinatorial Coverage       | ✅ **[Approved — Single Valid Path]**              |
-| **D-6**     | `params.yaml`                      | Operational Parameters & Stratum Threshold Configuration             | ✅ **[Approved — Option A]**                       |
-| **D-7**     | `dvc.yaml` & `scripts/ingest.py`   | Raw Data Ingestion & DVC Pipeline Architecture                       | ✅ **[Approved — Option A]**                       |
+| Decision ID | Deliverable / Component            | Decision Title                                                       | Decision Type                               |
+| ----------- | ---------------------------------- | -------------------------------------------------------------------- | ------------------------------------------- |
+| **D-1**     | `reports/specs/*.md`               | Specs Scope & Mathematical Rigor Standard                            | ✅ **[Approved — Single Valid Path]**       |
+| **D-2**     | `src/schemas/point_record.py`      | Data Schema Architecture & Validation Strategy                       | ✅ **[Approved — Option A, Sub-Option A1]** |
+| **D-3**     | `src/core/markov_solver.py`        | Markov Solver Engine: Closed-Form Derivation vs. Transition Matrices | ✅ **[Approved — Option A, Sub-Option A1]** |
+| **D-4**     | `src/core/leverage_uncertainty.py` | Wilson Score Uncertainty & Leverage Band Propagation Architecture    | ✅ **[Approved — Option A]**                |
+| **D-5**     | `tests/unit/test_markov_solver.py` | CI-Blocking Solver Verification Suite & Combinatorial Coverage       | ✅ **[Approved — Single Valid Path]**       |
+| **D-6**     | `params.yaml`                      | Operational Parameters & Stratum Threshold Configuration             | ✅ **[Approved — Option A]**                |
+| **D-7**     | `dvc.yaml` & `scripts/ingest.py`   | Raw Data Ingestion & DVC Pipeline Architecture                       | ✅ **[Approved — Option A]**                |
 
 ---
 
-## D-1 — Specs Scope & Mathematical Rigor Standard (`reports/docs/specs/*.md`)
+## D-1 — Specs Scope & Mathematical Rigor Standard (`reports/specs/*.md`)
 
 **Status:** ✅ **Approved (Single Valid Path)**
 
-**Deliverable:** Create directory `reports/docs/specs/` and author written component specifications for the two highest-novelty components:
+**Deliverable:** Create directory `reports/specs/` and author written component specifications for the two highest-novelty components:
 
-1. `reports/docs/specs/markov_solver_spec.md`: Closed-form Markov solver specification.
-2. `reports/docs/specs/game_theory_spec.md`: Game-theoretic Nash equilibrium and best-response deviation specification.
+1. `reports/specs/markov_solver_spec.md`: Closed-form Markov solver specification.
+2. `reports/specs/game_theory_spec.md`: Game-theoretic Nash equilibrium and best-response deviation specification.
 
 **Context & Constraints:**
 
-- Project constitution §4 explicitly lists `reports/docs/specs/markov_solver_spec.md` and `reports/docs/specs/game_theory_spec.md` as required written contracts.
+- Project constitution §4 explicitly lists `reports/specs/markov_solver_spec.md` and `reports/specs/game_theory_spec.md` as required written contracts.
 - ADR-002 mandates exact mathematical derivation matching combinatorial probability theory within $1 \cdot 10^{-9}$ tolerance.
 - ADR-003 mandates exact data-sufficiency gating equations for game-theoretic exploit calculation.
 
 **Specification Plan:**
 
-- **`reports/docs/specs/markov_solver_spec.md`**:
+- **`reports/specs/markov_solver_spec.md`**:
   - Full mathematical formulation for Game win probability $g(p)$, Advantage/Deuce recurrence relations, Tiebreak probabilities (7-point and 10-point match tiebreaks), Set win probability $S(g_A, g_B)$, and Match win probability $M(S)$.
   - Leverage mathematical definition: $\Delta L(s) = P(\text{Match Win} \mid \text{Won Point}, s) - P(\text{Match Win} \mid \text{Lost Point}, s)$.
   - Floating-point precision requirements ($1 \cdot 10^{-9}$) and Pydantic/Python interface definitions.
-- **`reports/docs/specs/game_theory_spec.md`**:
+- **`reports/specs/game_theory_spec.md`**:
   - $2 \times 2$ matrix game formulation between server shot selection (e.g., Wide vs. T) and receiver positioning (e.g., Cover Wide vs. Cover T).
   - Exact minimax Nash equilibrium calculation via closed-form $2 \times 2$ solution (and `scipy.optimize.linprog` fallback for general $m \times n$).
   - Exploitation deviation metric $\delta = u(\text{actual}) - u(\text{optimal})$ and sample-size gate formula $N_{\text{opp}} \ge N_{\text{min}}$.
@@ -380,7 +380,7 @@ _Trade-offs:_ Violates DVC modular pipeline design; requires re-running expensiv
 
 All proposed architectural decisions have been formally approved by the user (2026-07-30). This establishes the authoritative technical baseline for Phase 2 implementation:
 
-1. **D-1 (Specs):** Author written mathematical contracts in `reports/docs/specs/markov_solver_spec.md` and `reports/docs/specs/game_theory_spec.md`.
+1. **D-1 (Specs):** Author written mathematical contracts in `reports/specs/markov_solver_spec.md` and `reports/specs/game_theory_spec.md`.
 2. **D-2 (Schema):** Adopt **Option A** — Co-located Pydantic v2 domain model + `pandera` DataFrame schema in `src/schemas/point_record.py` with strict tennis score coercion (**Sub-decision D-2a: A1**).
 3. **D-3 (Solver):** Adopt **Option A** — Direct hierarchical closed-form analytical formulas in `src/core/markov_solver.py` with exact alternating serve sequence in tiebreaks (**Sub-decision D-3a: A1**).
 4. **D-4 (Uncertainty):** Adopt **Option A** — Analytical Wilson score bounds + direct extreme evaluation propagation in `src/core/leverage_uncertainty.py`.
