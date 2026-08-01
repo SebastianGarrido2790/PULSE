@@ -116,6 +116,7 @@ There is empirical precedent that a simple, low-parameter probability model trac
 **Context:** The production system requires an unshakeable foundation before implementing the deterministic mathematical core. Standardizing dependency resolution (`uv`), static type enforcement (`pyright`), code formatting (`ruff`), operational threshold contracts (`params.yaml`), modular directory structure, file-size ceilings (`scripts/check_file_size.py`), and CI pipelines (`.github/workflows/ci.yml`) is necessary to prevent technical debt and ensure strict reproducibility.
 
 **Decision:**
+
 1. Enforce strict `uv` package management with Python 3.11+ target.
 2. Maintain `pyrightconfig.json` in root with standard mode type enforcement across `src/` and `tests/`.
 3. Centralize all threshold parameters, latency budgets, and model configuration names in namespaced `params.yaml`.
@@ -129,28 +130,53 @@ There is empirical precedent that a simple, low-parameter probability model trac
 
 ---
 
+### ADR-008: Correction to Tiebreak Sudden-Death Handling — Closed-Form Deuce Tail Replaces Flawed Block Shortcut
+
+**Status:** Accepted (Phase 2 — 2026-08-01)
+
+**Context:** Spec review of `markov_solver_spec.md` v1.0.0 §3.2 found the "two-serve sub-game" shortcut for tiebreak states beyond 6-6 was incorrect: it assumed a fresh alternating 2-2 serve block restarts exactly at the tie, but the true point-numbering shows the first post-6-6 point is the _second_ point of an already-half-played block, not the start of a fresh one. The v1.0.0 draft also never defined terminal states beyond the initial race to 7 (e.g. 8-6, 9-7), relying entirely on the flawed shortcut to stand in for them.
+
+The first candidate fix — extending the terminal condition to `max(i,j) >= 7 and abs(i-j) >= 2` and continuing plain point-by-point recursion past 6-6 — was mathematically valid but empirically found operationally unsound: a memoized top-down implementation raised `RecursionError` even with `sys.setrecursionlimit(100_000)`, because depth-first evaluation of near-tied oscillating paths requires resolving arbitrarily deep call chains before backtracking.
+
+**Decision:** Replace both the flawed shortcut and the "extend recursion" candidate with a correctly-derived closed form for the tail beyond any tied state N-N (N >= 6):
+
+```
+t_tail(p_A, p_B) = (p_A * p_B) / (1 - p_A - p_B + 2 * p_A * p_B)
+```
+
+This value is provably identical regardless of which player serves the next point (a genuine symmetry of the alternation structure, not an approximation), and was cross-validated against an independent bottom-up dynamic-programming implementation to 10 decimal places across multiple asymmetric `(p_A, p_B)` pairs, at both possible next-server assignments, and for both the 7-point and 10-point (match) tiebreak formats. Point-by-point recursion is retained only for the bounded region 0-0 through 6-6 (at most 12 points), where it is trivially shallow and requires no recursion-depth mitigation.
+
+**Consequences:** `markov_solver_spec.md` bumped to v1.0.1. The `next_server(n)` alternation rule, previously left as prose, is now given as an explicit formula to prevent the same class of error recurring. No other component is affected — this correction was caught during spec review, before `markov_solver.py` implementation began, so no downstream code required rework.
+
+**Alternatives Considered:**
+
+- **Extend the recursive terminal condition and rely on `sys.setrecursionlimit`** — rejected after empirical testing showed `RecursionError` persists even at a limit of 100,000, since the true worst-case depth for near-tied paths is effectively unbounded, not just large.
+- **Bottom-up DP with a large finite cap, treating the residual tail as negligible** — rejected in favor of the exact closed form; a capped DP is not a true approximation-free solution and would sit awkwardly against this project's "not a simulation, all outputs are exact" invariant (ADR-002) even though the residual error would be practically negligible.
+
+---
+
 ## Component Inventory
 
-| Component                        | Module Path                       | Introduced In                    |
-| -------------------------------- | --------------------------------- | -------------------------------- |
-| Package Skeleton & Stubs         | `src/*/` (`__init__.py`)          | Phase 1                          |
-| Exception Hierarchy              | `utils/exceptions.py`             | Phase 1                          |
-| Centralized Logger               | `utils/logger.py`                 | Phase 1                          |
-| Configuration Contract           | `params.yaml`, `pyrightconfig.json` | Phase 1                         |
-| File Ceiling Enforcement         | `scripts/check_file_size.py`      | Phase 1                          |
-| CI Quality Gate                  | `.github/workflows/ci.yml`        | Phase 1                          |
-| `PointRecord` schema             | `schemas/point_record.py`         | Phase 2                          |
-| Closed-form Markov solver        | `core/markov_solver.py`           | Phase 2                          |
-| Point-win classifier             | `models/point_win_classifier.py`  | Phase 3                          |
-| Pressure Deviation model         | `models/pressure_deviation.py`    | Phase 3                          |
-| Leverage uncertainty propagation | `core/leverage_uncertainty.py`    | Phase 3                          |
-| `StateMonitorNode`               | `graph/state_monitor.py`          | Phase 4                          |
-| `PressureDiagnosticNode`         | `graph/pressure_diagnostic.py`    | Phase 4                          |
-| `StrategyExploitNode`            | `graph/strategy_exploit.py`       | Phase 5 (module), Phase 4 (node) |
-| Game theory solver               | `core/game_theory.py`             | Phase 5                          |
-| `TacticalOutputNode`             | `graph/tactical_output.py`        | Phase 4                          |
-| FastAPI + streaming              | `api/main.py`, `api/streaming.py` | Phase 6                          |
-| Replay simulator                 | `simulator/replay.py`             | Phase 6                          |
+| Component                        | Module Path                         | Introduced In                    |
+| -------------------------------- | ----------------------------------- | -------------------------------- |
+| Package Skeleton & Stubs         | `src/*/` (`__init__.py`)            | Phase 1                          |
+| Exception Hierarchy              | `utils/exceptions.py`               | Phase 1                          |
+| Centralized Logger               | `utils/logger.py`                   | Phase 1                          |
+| Configuration Contract           | `params.yaml`, `pyrightconfig.json` | Phase 1                          |
+| File Ceiling Enforcement         | `scripts/check_file_size.py`        | Phase 1                          |
+| CI Quality Gate                  | `.github/workflows/ci.yml`          | Phase 1                          |
+| `PointRecord` schema             | `schemas/point_record.py`           | Phase 2                          |
+| Closed-form Markov solver        | `core/markov_solver.py`             | Phase 2                          |
+| Point-win classifier             | `models/point_win_classifier.py`    | Phase 3                          |
+| Pressure Deviation model         | `models/pressure_deviation.py`      | Phase 3                          |
+| Leverage uncertainty propagation | `core/leverage_uncertainty.py`      | Phase 3                          |
+| `StateMonitorNode`               | `graph/state_monitor.py`            | Phase 4                          |
+| `PressureDiagnosticNode`         | `graph/pressure_diagnostic.py`      | Phase 4                          |
+| `StrategyExploitNode`            | `graph/strategy_exploit.py`         | Phase 5 (module), Phase 4 (node) |
+| Game theory solver               | `core/game_theory.py`               | Phase 5                          |
+| `TacticalOutputNode`             | `graph/tactical_output.py`          | Phase 4                          |
+| FastAPI + streaming              | `api/main.py`, `api/streaming.py`   | Phase 6                          |
+| Replay simulator                 | `simulator/replay.py`               | Phase 6                          |
 
 ---
 

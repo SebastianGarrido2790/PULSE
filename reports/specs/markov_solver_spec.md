@@ -2,10 +2,12 @@
 
 **Component:** `src/core/markov_solver.py`  
 **Spec File:** `reports/specs/markov_solver_spec.md`  
-**Version:** 1.0.0  
-**Date:** 2026-07-31  
+**Version:** 1.0.1  
+**Date:** 2026-08-01  
 **Status:** ✅ Approved (Phase 2 — D-1)  
-**Authority:** ADR-002 (`system_design.md`), Phase 2 Decision D-3 (`phase2_implementation_plan_and_decisions.md`)
+**Authority:** ADR-002 (`system_design.md`), Phase 2 Decision D-3 (`phase2_implementation_plan_and_decisions.md`), ADR-008 (correction — `system_design.md`)
+
+> **Changelog.** v1.0.1 corrects §3.2: the v1.0.0 "two-serve sub-game" shortcut at 6-6 misaligned with the true point-numbering (see the correction note in §3.2 for the full trace) and omitted terminal states beyond the initial race to 7. Replaced with a closed-form deuce-tail formula, derived and cross-validated against an independent bottom-up DP to 10 decimal places. No other section changed.
 
 > **Purpose.** This document is the authoritative written contract for `src/core/markov_solver.py`. It defines every mathematical formula the implementation must reproduce exactly, states the floating-point precision requirement, and specifies the Python function signatures and Pydantic I/O contracts the implementation must expose. Any implementation that deviates from these formulas, for any reason, is wrong by definition; the formula is not adjusted to match the implementation.
 
@@ -117,42 +119,71 @@ At 6-6:     each player serves 2 in sequence until one leads by 2.
 
 Define `T(i, j, server)` as the probability A wins the tiebreak from state (i, j) with `server` in {A, B}:
 
-**Terminal states:**
+**Terminal states (0 <= i, j <= 6, i.e. reachable strictly before 6-6):**
 
 ```
-T(7, j, *) = 1.0   for j <= 5  (A wins 7-j, lead >= 2)
-T(i, 7, *) = 0.0   for i <= 5  (B wins 7-i, lead >= 2)
+T(7, j) = 1.0   for j <= 5  (A wins 7-j, lead >= 2)
+T(i, 7) = 0.0   for i <= 5  (B wins 7-i, lead >= 2)
 ```
 
-**Deuce at 6-6 — two-serve sub-game:**
+**Base case at 6-6 — exact closed-form deuce tail.**
+
+> **Correction (v1.0.1).** The v1.0.0 draft assumed a fresh alternating 2-2 serve block restarts exactly at 6-6 ("A serves points 13 and 14"). This is incorrect: point 13 is the _second_ point of A's already-half-played 12-13 block, not the first point of a fresh block — point 14 belongs to B's fresh 14-15 block. v1.0.0 also never defined terminal states beyond the initial race to 7 (e.g. 8-6, 9-7), relying entirely on the flawed shortcut to stand in for them. Both issues are resolved below.
+
+Once the score reaches N-N for any N >= 6, the sub-game beyond that point is self-similar under the true 1-2-2-2... alternation. Solving the fixed-point system this induces shows the probability A wins from _any_ tied state N-N (N >= 6) is **identical regardless of which player serves the next point** — call the two apparent cases "A serves the continuation point" and "B serves it"; they resolve to the same value by a symmetry in the alternation structure. The closed form:
 
 ```
-At (6, 6): A serves points (6+1) and (6+2), B serves points (6+3) and (6+4) ...
-T(6, 6, server) resolves via the infinite geometric deuce series:
-  P(A wins from deuce | A serves first) = (p_A * p_A) / (p_A*p_A + (1-p_A)*(1-p_A))
-  [where deuce alternates 2 serves at a time]
+t_tail(p_A, p_B) = (p_A * p_B) / (1 - p_A - p_B + 2 * p_A * p_B)
 ```
 
-**Recursive case:**
+Set `T(6, 6) = t_tail(p_A, p_B)`. This is exact, not an approximation, and it correctly subsumes every extended win-by-two state (8-6, 9-7, 10-8, ...) without enumerating them.
+
+**Why a closed form instead of extending the recursion past 6-6.** Extending the terminal condition to `max(i,j) >= 7 and abs(i-j) >= 2` and continuing point-by-point recursion is mathematically valid but was tested and found operationally unsound: paths where the margin oscillates near zero while i and j both grow require a depth-first evaluator to fully resolve arbitrarily deep call chains before backtracking. A direct implementation with `functools.lru_cache` raised `RecursionError` even with `sys.setrecursionlimit(100_000)`. The closed-form base case avoids this: recursion is only ever needed for 0-0 through 6-6 (at most 12 points), which is trivially shallow.
+
+**Sanity check.** When `p_A == p_B == p`, `t_tail` reduces to `p^2 / (p^2 + (1-p)^2)` — the same form as the game-level deuce formula in §3.1, as expected by symmetry. Verified: `p=0.5` gives exactly `0.5`; `p=0.65` gives `0.775229357798...`, confirmed against an independent bottom-up dynamic-programming implementation to 10 decimal places, at both possible next-server assignments and at both the 7-point and 10-point (match) tiebreak variants.
+
+**Recursive case (applies only for 0 <= i, j <= 6):**
 
 ```
-T(i, j, A) = p_A * T(i+1, j, next_server(i+j+1))
-           + (1 - p_A) * T(i, j+1, next_server(i+j+1))
-
-T(i, j, B) = p_B * T(i+1, j, next_server(i+j+1))
-           + (1 - p_B) * T(i, j+1, next_server(i+j+1))
+T(i, j) = p_A * T(i+1, j) + (1 - p_A) * T(i, j+1)   if next_server(i+j+1) == "A"
+T(i, j) = p_B * T(i+1, j) + (1 - p_B) * T(i, j+1)   if next_server(i+j+1) == "B"
 ```
 
-where `next_server(total_points_played)` follows the 1-2-2-2... alternation rule.
+Base cases: the terminal states above, and `T(6, 6) = t_tail(p_A, p_B)` as the sole base case beyond which no further recursion occurs.
 
-> **Implementation note:** The recursion is finite and must be memoised (e.g., `functools.lru_cache`). The returned value for every (i, j, server) triple must match the combinatorial expansion to within 1e-9.
+`next_server(n)` is given explicitly (the v1.0.0 error traced back to leaving this rule as prose rather than a formula):
 
-**Validation golden values:**
+```python
+def next_server(n: int) -> Literal["A", "B"]:
+    """Server of the nth point (1-indexed) in a standard tiebreak."""
+    if n == 1:
+        return "A"
+    block = (n - 2) // 2
+    return "B" if block % 2 == 0 else "A"
+```
 
-| p_A  | p_B  | t(p_A, p_B)                                            |
-| ---- | ---- | ------------------------------------------------------ |
-| 0.65 | 0.65 | 0.5 (symmetry check)                                   |
-| 0.70 | 0.60 | computed at test-write time from independent expansion |
+> **Implementation note:** Because recursion now only ever reaches states with `i, j <= 6`, it is finite and shallow (depth <= 12). Memoisation (`functools.lru_cache`) is a performance nicety here, not a correctness requirement, and no `sys.setrecursionlimit` adjustment is needed.
+
+**10-point match tiebreak.** The identical closed form applies at the corresponding tied state (9-9) for the 10-point Champions Tiebreak, with the terminal condition's win threshold changed from 7 to 10. Verified numerically against an independent DP for both formats.
+
+**Validation golden values** (full tiebreak win probability from 0-0, A serving point 1; computed via reference implementation, cross-validated against an independent bottom-up DP to 10 decimal places):
+
+| p_A  | p_B  | t(p_A, p_B)    |
+| ---- | ---- | -------------- |
+| 0.50 | 0.50 | 0.5 (symmetry) |
+| 0.65 | 0.65 | 0.8865740699   |
+| 0.70 | 0.60 | 0.8881752146   |
+| 0.55 | 0.55 | 0.6541507672   |
+| 0.80 | 0.55 | 0.9317126785   |
+
+**Deuce-tail golden values** (`T(6,6)` / `t_tail(p_A, p_B)`, independent of server mode):
+
+| p_A  | p_B  | t_tail(p_A, p_B) |
+| ---- | ---- | ---------------- |
+| 0.50 | 0.50 | 0.5 (symmetry)   |
+| 0.65 | 0.65 | 0.7752293578     |
+| 0.70 | 0.60 | 0.7777777778     |
+| 0.55 | 0.72 | 0.7586206897     |
 
 **10-point match tiebreak (Champions Tiebreak).** The same state-space recursion applies with terminal condition at 10 (margin >= 2) instead of 7. A `match_tiebreak: bool` flag in the function signature controls which terminal is used.
 
@@ -403,18 +434,22 @@ Never silently clamp, default, or substitute a value for an invalid input. A wro
 
 Tests in `tests/unit/test_markov_solver.py` (Phase 2 Step 7) that directly verify the formulas in this spec:
 
-| Test Name (target)               | Formula Section Verified                   |
-| -------------------------------- | ------------------------------------------ |
-| `test_game_prob_symmetry`        | §3.1 — g(0.5) = 0.5                        |
-| `test_game_prob_golden_values`   | §3.1 — exact value table                   |
-| `test_deuce_recurrence`          | §3.1 — d(p) = p^2 / (p^2 + (1-p)^2)        |
-| `test_tiebreak_symmetry`         | §3.2 — t(p, p) = 0.5 for equal players     |
-| `test_tiebreak_golden_values`    | §3.2 — independent combinatorial expansion |
-| `test_set_prob_boundary_states`  | §3.3 — 5-0 and 0-5 boundary values         |
-| `test_match_prob_terminal`       | §3.4 — terminal states return 1.0 / 0.0    |
-| `test_leverage_non_negative`     | §3.5 — delta_L(s) >= 0 for all states      |
-| `test_leverage_zero_at_terminal` | §3.5 — delta_L = 0 after match decided     |
-| `test_leverage_symmetry`         | §3.5 — symmetry at p_A = p_B = 0.5         |
+| Test Name (target)                  | Formula Section Verified                                          |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| `test_game_prob_symmetry`           | §3.1 — g(0.5) = 0.5                                               |
+| `test_game_prob_golden_values`      | §3.1 — exact value table                                          |
+| `test_deuce_recurrence`             | §3.1 — d(p) = p^2 / (p^2 + (1-p)^2)                               |
+| `test_tiebreak_symmetry`            | §3.2 — t(p, p) = 0.5 for equal players                            |
+| `test_tiebreak_golden_values`       | §3.2 — golden value table, both formats                           |
+| `test_deuce_tail_closed_form`       | §3.2 — t_tail golden value table                                  |
+| `test_deuce_tail_server_invariance` | §3.2 — t_tail identical under both next-server assignments        |
+| `test_next_server_sequence`         | §3.2 — next_server(n) matches the hand-traced 1..17 sequence      |
+| `test_match_tiebreak_tail`          | §3.2 — same t_tail formula applies at 9-9 for the 10-point format |
+| `test_set_prob_boundary_states`     | §3.3 — 5-0 and 0-5 boundary values                                |
+| `test_match_prob_terminal`          | §3.4 — terminal states return 1.0 / 0.0                           |
+| `test_leverage_non_negative`        | §3.5 — delta_L(s) >= 0 for all states                             |
+| `test_leverage_zero_at_terminal`    | §3.5 — delta_L = 0 after match decided                            |
+| `test_leverage_symmetry`            | §3.5 — symmetry at p_A = p_B = 0.5                                |
 
 ---
 
