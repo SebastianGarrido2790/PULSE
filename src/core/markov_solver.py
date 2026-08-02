@@ -3,7 +3,7 @@
 Ground-truth engine computing exact point-by-point win probabilities and point
 leverage (Delta L) for hierarchical tennis match structures (Point -> Game -> Set -> Match).
 
-Authority: ADR-002, markov_solver_spec.md v1.0.1
+Authority: ADR-002, markov_solver_spec.md v1.0.1, Phase 2 Decision D-3
 """
 
 from functools import cache
