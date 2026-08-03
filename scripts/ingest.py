@@ -1,18 +1,23 @@
 """PULSE — Raw Point Data Ingestion Script.
 
-Reads raw point-by-point CSV data from `data/raw/`, validates every row against
-`PointRecordSchema` (the pandera bulk-validation gate), and writes the validated
-result to `data/validated/points.parquet`. This script performs validation and
-format conversion only -- it does not transform, impute, or reinterpret raw
-values. A row that fails schema validation fails the whole ingestion run; this
-script never silently drops or coerces invalid rows.
+Reads raw point-by-point CSV data from `data/raw/` (The Match Charting Project
+format), validates every row against `PointRecordSchema`, and writes the
+validated result to `data/validated/points.parquet`.
 
-Expected raw CSV schema: one column per `PointRecordSchema` field, including
-`server_is_p1` (bool) -- source extraction is responsible for populating this
-field from unambiguous match metadata (e.g. comparing the charted server's name
-against the match's recorded player1 field), not from this script. If your raw
-export does not yet include `server_is_p1`, add that derivation at the source-data
-extraction stage before this script runs; ingest.py intentionally does not guess it.
+STATUS: partially revised against MCP's real column layout, confirmed via
+Sackmann's own quick-start guide and `data_dictionary.txt` -- but NOT yet
+against a real sample row, since GitHub blocks automated raw-file access for
+this file size. Confirmed:
+  - Serve direction is the first character of the `1st`/`2nd` column:
+    '4'=wide, '5'=body, '6'=T. See `parse_serve_direction()`.
+  - `server_is_p1` derives directly from `Svr` ('1' means Player1 is serving;
+    Player1 is a fixed per-match identity, the player who served first).
+  - `point_winner` derives directly from `isSvrWinner` (no inference needed).
+  - `rally_length` derives directly from `rallyCount`.
+Still unverified against real data: `charting-m-matches.csv`'s exact column
+names (surface, player identity fields), the exact string format of `Pts`,
+and the exact encoding of `1stIn`/`2ndIn`. Do not trust the match-metadata
+join or score-string parsing in this file until validated against real rows.
 
 Authority: Phase 2 Decision D-6 (`phase2_implementation_plan_and_decisions.md`),
 `point_record.py` (Phase 2 D-5 hardening).
@@ -30,6 +35,29 @@ from src.utils.exceptions import IngestionException
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def parse_serve_direction(notation: str) -> str | None:
+    """Extract serve direction from an MCP shot-notation string.
+
+    Per the Match Charting Project's own quick-start guide (Sackmann), the
+    first character of the `1st`/`2nd` column encodes serve direction:
+    '4' = wide, '5' = body, '6' = down the T. This reads only that first
+    character -- it does not attempt to parse the rest of the shot sequence.
+
+    Args:
+        notation: Raw value of the `1st` or `2nd` column for one point.
+
+    Returns:
+        "wide", "body", or "T" if the first character is a recognized code;
+        None if the notation is empty/missing or starts with an unrecognized
+        character (e.g. a let, or a charting convention not yet confirmed
+        against real sample data -- see module docstring verification note).
+    """
+    if not notation:
+        return None
+    code_map = {"4": "wide", "5": "body", "6": "T"}
+    return code_map.get(notation[0])
 
 
 def load_params(params_path: Path) -> dict:
