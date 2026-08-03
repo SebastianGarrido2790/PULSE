@@ -1,0 +1,59 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: uv run python scripts/ingest.py
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 194a1f08e5aed185f4069b87066a3a8b.dir
+      size: 58342137
+      nfiles: 3
+    - path: scripts/ingest.py
+      hash: md5
+      md5: bfb414c70d898ce598a4fea4a1fd6ec7
+      size: 9123
+    - path: src/schemas/point_record.py
+      hash: md5
+      md5: ebaa031a0ab5705eedfa3b7b33f4712c
+      size: 8506
+    params:
+      params.yaml:
+        ingestion.raw_data_dir: data/raw
+        ingestion.validated_data_dir: artifacts/validated_data
+        ingestion.validated_file_name: points.parquet
+    outs:
+    - path: artifacts/validated_data/points.parquet
+      hash: md5
+      md5: 552c25c3c31db6ba5a087857b54d59b5
+      size: 5181695
+  train_classifier:
+    cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Point-Win Classifier"
+    deps:
+    - path: artifacts/validated_data/points.parquet
+      hash: md5
+      md5: 552c25c3c31db6ba5a087857b54d59b5
+      size: 5181695
+    - path: params.yaml
+      hash: md5
+      md5: ff84f44e4f297324ec6a06ae742aa579
+      size: 1734
+  train_pressure:
+    cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Pressure Deviation 
+      Model"
+    deps:
+    - path: artifacts/validated_data/points.parquet
+      hash: md5
+      md5: 552c25c3c31db6ba5a087857b54d59b5
+      size: 5181695
+    - path: params.yaml
+      hash: md5
+      md5: ff84f44e4f297324ec6a06ae742aa579
+      size: 1734
+  evaluate:
+    cmd: echo "Stage not yet implemented — Phase 6 Evaluation Suite & Solver 
+      Gate"
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: ff84f44e4f297324ec6a06ae742aa579
+      size: 1734

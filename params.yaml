@@ -16,7 +16,7 @@ solver:
 
 ingestion:
   raw_data_dir: "data/raw"
-  validated_data_dir: "data/validated"
+  validated_data_dir: "artifacts/validated_data"
   validated_file_name: "points.parquet"
 
 latency:

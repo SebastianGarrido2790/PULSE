@@ -13,18 +13,18 @@ stages:
       - ingestion.validated_data_dir
       - ingestion.validated_file_name
     outs:
-      - data/validated/points.parquet
+      - artifacts/validated_data/points.parquet
 
   train_classifier:
     cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Point-Win Classifier"
     deps:
-      - data/raw
+      - artifacts/validated_data/points.parquet
       - params.yaml
 
   train_pressure:
     cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Pressure Deviation Model"
     deps:
-      - data/raw
+      - artifacts/validated_data/points.parquet
       - params.yaml
 
   evaluate:
