@@ -75,6 +75,7 @@ def compute_wilson_interval(
     confidence_level: float = 0.95,
     min_observations: int = 10,
     default_p: float = 0.62,
+    fallback_margin: float = 0.15,
 ) -> WilsonInterval:
     """Compute Wilson score confidence interval for point win probability p.
 
@@ -90,6 +91,10 @@ def compute_wilson_interval(
         confidence_level: Confidence level (e.g., 0.95 for 95% CI).
         min_observations: Minimum required N for sufficiency gate.
         default_p: Fallback point-win probability when sample_size < min_observations.
+        fallback_margin: Symmetric +/- margin applied around default_p when the
+            sufficiency gate is not met. Sourced from
+            `params.yaml: uncertainty.default_fallback_margin` (Phase 2 D-5) --
+            never hardcoded at the call site.
 
     Returns:
         WilsonInterval object with p_hat, p_low, p_high, and sufficiency status.
@@ -97,8 +102,8 @@ def compute_wilson_interval(
     if sample_size < min_observations or sample_size <= 0:
         return WilsonInterval(
             p_hat=default_p,
-            p_low=max(0.001, default_p - 0.15),
-            p_high=min(0.999, default_p + 0.15),
+            p_low=max(0.001, default_p - fallback_margin),
+            p_high=min(0.999, default_p + fallback_margin),
             sample_size=max(0, sample_size),
             wins=max(0, wins),
             confidence_level=confidence_level,
@@ -140,12 +145,15 @@ def propagate_leverage_uncertainty(
     confidence_level: float = 0.95,
     min_observations: int = 10,
     default_p: float = 0.62,
+    fallback_margin: float = 0.15,
 ) -> LeverageBandResult:
     """Propagate point-win probability Wilson bounds through Markov solver to obtain leverage band.
 
     Direct Extreme Evaluation (Spec §D-4 Option A):
         Evaluates leverage at p_hat, p_low, and p_high to compute the leverage band
-        [leverage_low, leverage_high] and band width W_L.
+        [leverage_low, leverage_high] and band width W_L. Sound because match-win
+        probability is monotonic in p_serve (verified empirically, Phase 2 review),
+        so no interior extremum can fall between p_low and p_high.
 
     Args:
         state: Current MatchState.
@@ -154,6 +162,8 @@ def propagate_leverage_uncertainty(
         confidence_level: Confidence level (e.g. 0.95).
         min_observations: Minimum required observations for sufficiency gate.
         default_p: Fallback p when sample_size < min_observations.
+        fallback_margin: Symmetric +/- margin around default_p on insufficient
+            sample. Sourced from `params.yaml: uncertainty.default_fallback_margin`.
 
     Returns:
         LeverageBandResult with leverage confidence band bounds and width.
@@ -164,6 +174,7 @@ def propagate_leverage_uncertainty(
         confidence_level=confidence_level,
         min_observations=min_observations,
         default_p=default_p,
+        fallback_margin=fallback_margin,
     )
 
     # 1. Primary evaluation at point estimate p_hat

@@ -155,6 +155,33 @@ This value is provably identical regardless of which player serves the next poin
 
 ---
 
+### ADR-009: Input-Validation Hardening — MatchState Cross-Field Check, Config-Sourced Fallback Margin, Explicit Server-Role Field
+
+**Status:** Accepted (Phase 2 — 2026-08-02)
+
+> **Note:** Referenced below as "Phase 2 Decision D-5." If D-5 is already assigned in `phase2_implementation_plan_and_decisions.md`, renumber this entry to the next available slot before merging — I don't have visibility into your full decision log, only what's been shared in this conversation.
+
+**Context:** Review of the Phase 2 implementation (`markov_solver.py`, `leverage_uncertainty.py`, `point_record.py`) ahead of Step 6 (data ingestion) surfaced three related gaps, all in the general category of "correctness that depends on an assumption the code doesn't actually enforce":
+
+1. `MatchState` validated each point-score field independently (`0 <= x <= 4`) but not their joint validity. States like `(point_score_server=4, point_score_returner=4)` — both players simultaneously at "AD," which cannot occur in real tennis — passed construction, bypassed the explicit deuce/advantage handling in `game_prob_from_state`, and fell into the general recursive fallback in a region structurally similar to the tiebreak bug fixed in ADR-008 (margin can stay near zero while `i, j` grow before the `i>=4`-gated terminal condition fires).
+2. `leverage_uncertainty.py`'s insufficient-sample fallback used a hardcoded `0.15` margin, violating the project's own "no hardcoded thresholds — source from `params.yaml`" rule.
+3. `point_record.py` determined whether `server` was "player 1" via a string-pattern heuristic (`server.endswith("1")`) rather than an explicit field — a latent data-integrity risk for the ingestion pipeline about to be built in Step 6, since a player ID that happens to end in "1" without being p1 would silently swap server/returner scores with no error raised.
+
+**Decision:**
+
+1. Added a `model_validator(mode="after")` to `MatchState` rejecting any joint point score where one side is 4 ("AD") and the other is not exactly 3 ("40"). Verified: all valid states still construct successfully; all invalid combinations (`(4,4)`, `(4,0)`, `(4,1)`, `(4,2)`, `(0,4)`, `(1,4)`, `(2,4)`) now raise `ValidationError`; `compute_leverage` unaffected on valid input. Documented in `markov_solver_spec.md` v1.0.2 (§5.1, §6).
+2. Added `uncertainty.default_fallback_margin: 0.15` to `params.yaml`. `compute_wilson_interval` and `propagate_leverage_uncertainty` now accept `fallback_margin` as an explicit parameter (default preserved for backward compatibility) instead of a hardcoded literal.
+3. Added an explicit `server_is_p1: bool` field to `PointRecord`, populated at ingestion time from unambiguous source-data match metadata, not inferred from player-ID string content. `get_server_score_int()` / `get_returner_score_int()` now read this field directly. `PointRecordSchema` (pandera) updated to match.
+
+**Consequences:** `scripts/ingest.py` (Step 6) is responsible for populating `server_is_p1` correctly at the source-data extraction boundary; it does not attempt to infer it downstream. Any raw CSV lacking this column will fail ingestion loudly (`IngestionException`) rather than falling back to a guess. This is consistent with the project's sufficiency-gate philosophy (ADR-003, ADR-005): the system does not silently proceed on an assumption it cannot verify.
+
+**Alternatives Considered:**
+
+- **For #1:** Raising `SolverException` from within `game_prob_from_state` on an unreachable `(i,j)` pair, rather than rejecting it earlier at `MatchState` construction — rejected because it pushes the check downstream of where the actual invariant is defined (the score state itself), and would need to be duplicated in every function that consumes raw point-count pairs rather than enforced once at the boundary.
+- **For #3:** A secondary heuristic combining string matching with a length or format check — rejected as still fundamentally guessing; an explicit field set from known match metadata has no failure mode the heuristic doesn't.
+
+---
+
 ## Component Inventory
 
 | Component                        | Module Path                         | Introduced In                    |

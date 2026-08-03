@@ -3,13 +3,13 @@
 Ground-truth engine computing exact point-by-point win probabilities and point
 leverage (Delta L) for hierarchical tennis match structures (Point -> Game -> Set -> Match).
 
-Authority: ADR-002, markov_solver_spec.md v1.0.1, Phase 2 Decision D-3
+Authority: ADR-002, markov_solver_spec.md v1.0.1
 """
 
 from functools import cache
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.utils.exceptions import SolverException
 
@@ -38,6 +38,37 @@ class MatchState(BaseModel):
     server_id: str = Field(default="server")
     match_format: Literal["bo3", "bo5"] = Field(default="bo3")
     deciding_set_tiebreak: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def validate_joint_point_score(self) -> "MatchState":
+        """Reject point-score combinations that cannot occur in valid tennis play.
+
+        Per-field bounds (0-4) alone permit unreachable joint states -- most
+        importantly both players simultaneously at "AD" (4), or one player at
+        "AD" while the other is not at exactly "40" (3). Only one player can
+        hold advantage at a time, and the opponent must be at 40 when they do.
+        Left unchecked, such a state would bypass the explicit deuce/advantage
+        handling in `game_prob_from_state` and fall into the general recursive
+        fallback in a region where deep, unbounded-feeling recursion is possible
+        -- the same class of risk closed for the tiebreak in spec v1.0.1.
+
+        Raises:
+            ValueError: If the joint point score is not a reachable tennis state.
+                Pydantic wraps this as a `ValidationError` at construction time,
+                per spec section 6's input-validation contract.
+        """
+        srv, ret = self.point_score_server, self.point_score_returner
+        if srv == 4 and ret != 3:
+            raise ValueError(
+                f"Invalid joint point score: server at AD (4) requires returner "
+                f"at 40 (3), got point_score_returner={ret}"
+            )
+        if ret == 4 and srv != 3:
+            raise ValueError(
+                f"Invalid joint point score: returner at AD (4) requires server "
+                f"at 40 (3), got point_score_server={srv}"
+            )
+        return self
 
 
 class SolverResult(BaseModel):

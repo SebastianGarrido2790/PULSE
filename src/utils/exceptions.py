@@ -85,3 +85,7 @@ class ModelInferenceError(BasePulseException):
 
 class SanitizationError(BasePulseException):
     """Raised when prompt input fails security sanitization checks."""
+
+
+class IngestionException(BasePulseException):
+    """Raised when raw data ingestion or schema validation fails."""

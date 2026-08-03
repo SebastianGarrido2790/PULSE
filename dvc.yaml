@@ -3,10 +3,17 @@
 
 stages:
   ingest:
-    cmd: echo "Stage not yet implemented — Phase 2 Data Ingestion & Validation"
+    cmd: uv run python scripts/ingest.py
+    deps:
+      - scripts/ingest.py
+      - src/schemas/point_record.py
+      - data/raw
+    params:
+      - ingestion.raw_data_dir
+      - ingestion.validated_data_dir
+      - ingestion.validated_file_name
     outs:
-      - data/raw:
-          cache: false
+      - data/validated/points.parquet
 
   train_classifier:
     cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Point-Win Classifier"

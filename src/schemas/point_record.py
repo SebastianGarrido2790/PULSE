@@ -95,6 +95,17 @@ class PointRecord(BaseModel):
     point_id: str = Field(..., description="Unique point identifier")
     server: str = Field(..., description="Player ID serving the point")
     returner: str = Field(..., description="Player ID returning the point")
+    server_is_p1: bool = Field(
+        ...,
+        description=(
+            "True if `server` is player 1 per this match's canonical p1/p2 identity. "
+            "Set explicitly at ingestion time from known source-data match metadata "
+            "(e.g. comparing `server` against the match's recorded player1 field) -- "
+            "never inferred from `server`'s string content (player IDs are not "
+            "guaranteed to encode role information, e.g. an ID ending in '1' is not "
+            "reliably player 1)."
+        ),
+    )
     surface: Surface = Field(..., description="Surface type")
     serve_number: int = Field(..., ge=1, le=2, description="Serve number (1 or 2)")
     serve_direction: ServeDirection | None = Field(default=None, description="Serve direction")
@@ -137,13 +148,21 @@ class PointRecord(BaseModel):
         return v
 
     def get_server_score_int(self) -> int:
-        """Return the integer representation of the server's point score."""
-        score = self.p1_score if self.server == "p1" or self.server.endswith("1") else self.p2_score
+        """Return the integer representation of the server's point score.
+
+        Uses `server_is_p1`, set explicitly at ingestion time, rather than
+        inferring role from `server`'s string content.
+        """
+        score = self.p1_score if self.server_is_p1 else self.p2_score
         return SCORE_TO_INT[score]
 
     def get_returner_score_int(self) -> int:
-        """Return the integer representation of the returner's point score."""
-        score = self.p2_score if self.server == "p1" or self.server.endswith("1") else self.p1_score
+        """Return the integer representation of the returner's point score.
+
+        Uses `server_is_p1`, set explicitly at ingestion time, rather than
+        inferring role from `server`'s string content.
+        """
+        score = self.p2_score if self.server_is_p1 else self.p1_score
         return SCORE_TO_INT[score]
 
 
@@ -154,6 +173,9 @@ class PointRecordSchema(pa.DataFrameModel):
     point_id: pa.String = pa.Field(description="Unique point identifier")
     server: pa.String = pa.Field(description="Player ID serving the point")
     returner: pa.String = pa.Field(description="Player ID returning the point")
+    server_is_p1: pa.Bool = pa.Field(
+        description="True if server is player 1, set explicitly at ingestion time"
+    )
     surface: pa.String = pa.Field(isin=["HARD", "CLAY", "GRASS"], description="Surface type")
     serve_number: pa.Int = pa.Field(isin=[1, 2], description="Serve number")
     serve_direction: pa.String = pa.Field(

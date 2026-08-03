@@ -22,6 +22,7 @@ def test_point_record_valid_instantiation() -> None:
         point_id="m1_p1",
         server="p1",
         returner="p2",
+        server_is_p1=True,
         surface=Surface.HARD,
         serve_number=1,
         serve_direction=ServeDirection.WIDE,
@@ -51,6 +52,7 @@ def test_point_record_string_coercion() -> None:
             "point_id": "m1_p2",
             "server": "p2",
             "returner": "p1",
+            "server_is_p1": False,
             "surface": "clay",  # lowercase coerced to CLAY
             "serve_number": 2,
             "serve_direction": "T",
@@ -76,6 +78,7 @@ def test_point_record_invalid_score_rejection() -> None:
                 "point_id": "m1_p3",
                 "server": "p1",
                 "returner": "p2",
+                "server_is_p1": True,
                 "surface": "HARD",
                 "serve_number": 1,
                 "p1_score": "150",  # invalid tennis score
@@ -94,6 +97,7 @@ def test_pandera_schema_validation_success() -> None:
                 "point_id": "m1_p1",
                 "server": "p1",
                 "returner": "p2",
+                "server_is_p1": True,
                 "surface": "HARD",
                 "serve_number": 1,
                 "serve_direction": "wide",

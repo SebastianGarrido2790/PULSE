@@ -2,12 +2,12 @@
 
 **Component:** `src/core/markov_solver.py`  
 **Spec File:** `reports/specs/markov_solver_spec.md`  
-**Version:** 1.0.1  
-**Date:** 2026-08-01  
+**Version:** 1.0.2  
+**Date:** 2026-08-02  
 **Status:** ✅ Approved (Phase 2 — D-1)  
-**Authority:** ADR-002 (`system_design.md`), Phase 2 Decision D-3 (`phase2_implementation_plan_and_decisions.md`), ADR-008 (correction — `system_design.md`)
+**Authority:** ADR-002 (`system_design.md`), Phase 2 Decision D-3 (`phase2_implementation_plan_and_decisions.md`), ADR-008 (correction — `system_design.md`), Phase 2 Decision D-5 (hardening — `system_design.md`)
 
-> **Changelog.** v1.0.1 corrects §3.2: the v1.0.0 "two-serve sub-game" shortcut at 6-6 misaligned with the true point-numbering (see the correction note in §3.2 for the full trace) and omitted terminal states beyond the initial race to 7. Replaced with a closed-form deuce-tail formula, derived and cross-validated against an independent bottom-up DP to 10 decimal places. No other section changed.
+> **Changelog.** v1.0.1 corrected §3.2: the v1.0.0 "two-serve sub-game" shortcut at 6-6 misaligned with the true point-numbering and omitted terminal states beyond the initial race to 7. Replaced with a closed-form deuce-tail formula, cross-validated against an independent bottom-up DP to 10 decimal places. v1.0.2 closes a related input-validation gap in §5.1: `MatchState` now rejects joint point-score combinations that cannot occur in valid tennis play (e.g. both players simultaneously at "AD"), which previously bypassed explicit deuce/advantage handling and risked the same class of deep-recursion behavior as the v1.0.0 tiebreak bug. No formula changed in v1.0.2.
 
 > **Purpose.** This document is the authoritative written contract for `src/core/markov_solver.py`. It defines every mathematical formula the implementation must reproduce exactly, states the floating-point precision requirement, and specifies the Python function signatures and Pydantic I/O contracts the implementation must expose. Any implementation that deviates from these formulas, for any reason, is wrong by definition; the formula is not adjusted to match the implementation.
 
@@ -349,6 +349,8 @@ class MatchState(BaseModel):
     deciding_set_tiebreak: bool = False
 ```
 
+**Cross-field validation (v1.0.2).** Per-field bounds alone are insufficient: `(point_score_server=4, point_score_returner=4)` and similar combinations are not reachable tennis states (only one player can hold "AD" at a time, and only when the other is at exactly "40"). A `model_validator(mode="after")` on `MatchState` rejects any joint point-score combination where one side is 4 and the other is not exactly 3. This must raise before construction succeeds — never silently coerced or clamped.
+
 ### 5.2 Output Model (`SolverResult`)
 
 ```python
@@ -403,12 +405,13 @@ def compute_leverage(state: MatchState, p_serve: float) -> SolverResult:
 
 ## 6. Error & Edge-Case Contracts
 
-| Input Condition                                              | Required Behaviour                                                            |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| `p_serve == 0.0` or `p_serve == 1.0`                         | Raise `SolverException` (degenerate denominator in game formula)              |
-| `p_serve < 0.0` or `p_serve > 1.0`                           | Raise `SolverException`                                                       |
-| Match already decided (e.g., `set_score_server == 2` in BO3) | Raise `SolverException` — caller must not pass terminal states                |
-| Invalid score state (e.g., `point_score_server > 4`)         | Pydantic `ValidationError` raised by `MatchState` before the solver is called |
+| Input Condition                                                                                      | Required Behaviour                                                                                             |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `p_serve == 0.0` or `p_serve == 1.0`                                                                 | Raise `SolverException` (degenerate denominator in game formula)                                               |
+| `p_serve < 0.0` or `p_serve > 1.0`                                                                   | Raise `SolverException`                                                                                        |
+| Match already decided (e.g., `set_score_server == 2` in BO3)                                         | Raise `SolverException` — caller must not pass terminal states                                                 |
+| Invalid score state (e.g., `point_score_server > 4`)                                                 | Pydantic `ValidationError` raised by `MatchState` before the solver is called                                  |
+| Invalid joint point score (e.g., both players at "AD", or one at "AD" while the other isn't at "40") | Pydantic `ValidationError` raised by `MatchState`'s cross-field validator (v1.0.2) before the solver is called |
 
 Never silently clamp, default, or substitute a value for an invalid input. A wrong leverage value is worse than a visible error (project constitution §6).
 
