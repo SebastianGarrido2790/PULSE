@@ -1,6 +1,6 @@
 # System Design & Architectural Decision Record, PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.1.0 | **Date:** 2026-07-20
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.2.0 | **Date:** 2026-08-03
 
 This document is a living record of the system's actual implemented state and the decisions that shaped it. During Phase 0, it reflects _planned_ state, the decisions made before any code exists. From Phase 1 onward, each phase's completion should update this document to reflect what was actually built, and any deviation from a prior ADR must be logged as an amendment, not silently changed.
 
@@ -8,8 +8,8 @@ This document is a living record of the system's actual implemented state and th
 
 ## Current Implementation Status
 
-**Phase 1 — Project Scaffolding Complete (2026-07-29).**  
-The repository architecture, dependency environment (`pyproject.toml`, `uv`), static type configuration (`pyrightconfig.json`), operational threshold parameters (`params.yaml`), DVC pipeline skeleton (`dvc.yaml`), file-size ceiling checker (`scripts/check_file_size.py`), local pre-commit hooks (`.pre-commit-config.yaml`), GitHub Actions CI workflow (`.github/workflows/ci.yml`), and package subdirectories (`src/api`, `src/schemas`, `src/core`, `src/models`, `src/graph`, `src/simulator`, `src/utils`, `src/config`, `tests/unit`, `tests/integration`, `tests/evals`) are fully established, verified, and pushed to `main`.
+**Phase 2 — Data Layer & Deterministic Core Complete (2026-08-03).**  
+The closed-form Markov solver (`src/core/markov_solver.py`), Wilson confidence interval propagation (`src/core/leverage_uncertainty.py`), Pydantic v2 domain model and Pandera bulk validation gate (`src/schemas/point_record.py`), parameters configuration (`params.yaml`), DVC raw data ingestion pipeline stage (`scripts/ingest.py` & `dvc.yaml`), and CI-blocking verification suite (`tests/unit/test_markov_solver.py` with `@pytest.mark.solver` $<10^{-9}$ tolerance) are fully implemented, verified, and pushed to `main`. 547,478 Match Charting Project (MCP) point records were ingested and validated into `artifacts/validated_data/points.parquet`.
 
 ---
 

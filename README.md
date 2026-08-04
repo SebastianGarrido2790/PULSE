@@ -8,15 +8,15 @@ Designed for coaches, performance analysts, and broadcast teams as an advisory t
 
 ## 🚦 Project Status
 
-| Phase | Description | Status |
-| :--- | :--- | :--- |
-| **Phase 0 — Planning** | ML Canvas, Project Charter, PRD, User Story, Technical Roadmap, System Design | ✅ Complete |
-| **Phase 1 — Project Scaffolding** | Repository structure, `uv` toolchain, `params.yaml`, CI/CD, line ceiling gate | ✅ Complete |
-| **Phase 2 — Data Layer & Core** | `PointRecord` schema, validation pipeline, closed-form Markov solver | 🟡 Next Up |
-| **Phase 3 — Tier 1 ML** | Point-win classifier & pressure deviation shrinkage model | ⬜ Scheduled |
-| **Phase 4 — Agent Orchestration** | Event-driven LangGraph (State Monitor + conditional nodes) | ⬜ Scheduled |
-| **Phase 5 — Game Theory Module** | Minimax Nash equilibrium & best-response return exploit | ⬜ Scheduled |
-| **Phase 6 — API & Simulation** | FastAPI streaming API, real-time match replay simulator, Docker & CI/CD | ⬜ Scheduled |
+| Phase                             | Description                                                                   | Status       |
+| :-------------------------------- | :---------------------------------------------------------------------------- | :----------- |
+| **Phase 0 — Planning**            | ML Canvas, Project Charter, PRD, User Story, Technical Roadmap, System Design | ✅ Complete  |
+| **Phase 1 — Project Scaffolding** | Repository structure, `uv` toolchain, `params.yaml`, CI/CD, line ceiling gate | ✅ Complete  |
+| **Phase 2 — Data Layer & Core**   | `PointRecord` schema, validation pipeline, closed-form Markov solver          | ✅ Complete  |
+| **Phase 3 — Tier 1 ML**           | Point-win classifier & pressure deviation shrinkage model                     | 🟡 Next Up   |
+| **Phase 4 — Agent Orchestration** | Event-driven LangGraph (State Monitor + conditional nodes)                    | ⬜ Scheduled |
+| **Phase 5 — Game Theory Module**  | Minimax Nash equilibrium & best-response return exploit                       | ⬜ Scheduled |
+| **Phase 6 — API & Simulation**    | FastAPI streaming API, real-time match replay simulator, Docker & CI/CD       | ⬜ Scheduled |
 
 ---
 
@@ -95,15 +95,16 @@ uv sync
 
 ### Running Commands
 
-| Action | Command |
-| :--- | :--- |
+| Action                   | Command                             |
+| :----------------------- | :---------------------------------- |
 | **Run Line Count Check** | `python scripts/check_file_size.py` |
-| **Run Test Suite** | `pytest` |
-| **Lint & Type Check** | `ruff check .` |
-| **Start Streaming API** | `fastapi dev src/api/main.py` |
+| **Run Test Suite**       | `pytest`                            |
+| **Lint & Type Check**    | `ruff check .`                      |
+| **Start Streaming API**  | `fastapi dev src/api/main.py`       |
 
 ---
 
-## 📜 License
+## 📜 License & Data Attribution
 
-Licensed under the MIT License — see the [LICENSE.txt](file:///c:/Users/sebas/Desktop/PULSE/LICENSE.txt) file for details.
+- **Software License:** Licensed under the MIT License — see the [LICENSE.txt](LICENSE.txt) file for details.
+- **Data Attribution:** Raw tennis match charting data sourced from [The Match Charting Project](https://github.com/JeffSackmann/tennis_MatchChartingProject) by Jeff Sackmann, licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Used for non-commercial research and analytics demonstration.

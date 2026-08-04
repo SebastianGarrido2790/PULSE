@@ -1,9 +1,9 @@
 # PULSE — Test Suite Report
 
-> **Version:** v0.1.0 — *Living Document*  
-> **Phase:** 1 — Project Scaffolding  
-> **Status:** 🟢 1 / 1 Tests Passing  
-> **Coverage:** 100% (Global Scaffolding Package Baseline)  
+> **Version:** v0.2.0 — *Living Document*  
+> **Phase:** 2 — Data Layer & Deterministic Core  
+> **Status:** 🟢 19 / 19 Tests Passing  
+> **Coverage:** 100% Core Math & Schema Coverage  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
 > **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase1_scaffolding_decisions.md](../decisions/phase1_scaffolding_decisions.md), [system_design.md](../architecture/system_design.md)  
 
@@ -109,17 +109,18 @@ PULSE/
 As implementation progresses through subsequent technical phases, the test suite will expand according to the following roadmap:
 
 ```
-Phase 1: Project Scaffolding Baseline (Current — 1 Pass)
+Phase 1: Project Scaffolding Baseline (Complete — 1 Pass)
   ├── Pytest Baseline Setup
   ├── File Ceiling Enforcement
   └── CI Workflow Quality Gate
        │
-Phase 2: Data Layer & Deterministic Core (Scheduled Next)
+Phase 2: Data Layer & Deterministic Core (Complete — 19 Passes)
   ├── Pydantic v2 PointRecord Contract Validation
   ├── Pandera Row-Level & Score-Progression Gates
-  └── Markov Solver Golden-Value Tests vs Combinatorial Theory (< 1e-9 tolerance)
+  ├── Markov Solver Golden-Value Tests vs Combinatorial Theory (< 1e-9 tolerance)
+  └── Wilson Confidence Interval & Leverage Uncertainty Band Tests
        │
-Phase 3: Tier 1 ML Models
+Phase 3: Tier 1 ML Models (Scheduled Next)
   ├── Point-Win Classifier Calibration & AUC Checks
   └── Pressure Deviation Empirical-Bayes Shrinkage Tests
        │

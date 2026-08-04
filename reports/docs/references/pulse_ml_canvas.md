@@ -1,6 +1,6 @@
 # Machine Learning Canvas — PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.1.0 | **Date:** 2026-07-20 | **Status:** Phase 0 — Complete
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.2.0 | **Date:** 2026-08-03 | **Status:** Phase 2 — Complete (Data Layer & Deterministic Core)
 
 ---
 

@@ -34,7 +34,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 2 — Data Layer & Deterministic Core 🛠️ In Progress
+## Phase 2 — Data Layer & Deterministic Core ✅ Complete
 
 **Goal:** Establish the `PointRecord` schema, ingestion/validation pipeline, and the closed-form Markov solver the system's ground truth, before any model is trained against it.
 
@@ -58,7 +58,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 3 — Tier 1 ML Layer
+## Phase 3 — Tier 1 ML Layer 🛠️ Next Phase
 
 **Goal:** Build the calibrated point-win probability model and the pressure-deviation estimator, both with explicit uncertainty handling per ADR-005 and ADR-006.
 
