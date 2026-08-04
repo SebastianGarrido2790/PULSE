@@ -325,7 +325,7 @@ def compute_match_win_probability_from_state(state: MatchState, p_serve: float) 
         raise SolverException(f"Match decided: returner set score is {state.set_score_returner}")
 
     p_A = p_serve
-    p_B = 1.0 - p_serve
+    p_B = p_serve
 
     cur_set_win_prob_A = set_prob_from_state(
         p_A=p_A,
