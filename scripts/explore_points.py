@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """PULSE — Point Data Exploration Script.
 
 Explores `artifacts/validated_data/points.parquet` to provide empirical insights
@@ -87,18 +88,33 @@ def explore_points_dataset(parquet_path: Path) -> None:
     n_under_30 = len(strata[strata["points"] < 30])
     n_over_100 = len(strata[strata["points"] >= 100])
 
-    console.print(f"Total Unique Strata (Player × Surface × Serve Number): [bold]{total_strata:,}[/]")
-    console.print(f"Strata with < 10 points (Fallback gate): [bold yellow]{n_under_10:,}[/] ({n_under_10/total_strata*100:.1f}%)")
-    console.print(f"Strata with < 30 points (Low sample): [bold yellow]{n_under_30:,}[/] ({n_under_30/total_strata*100:.1f}%)")
-    console.print(f"Strata with >= 100 points (High confidence): [bold green]{n_over_100:,}[/] ({n_over_100/total_strata*100:.1f}%)")
+    pct_10 = (n_under_10 / total_strata) * 100
+    pct_30 = (n_under_30 / total_strata) * 100
+    pct_100 = (n_over_100 / total_strata) * 100
+
+    console.print(
+        f"Total Unique Strata (Player x Surface x Serve Number): [bold]{total_strata:,}[/]"
+    )
+    console.print(
+        f"Strata with < 10 points (Fallback gate): [bold yellow]{n_under_10:,}[/] ({pct_10:.1f}%)"
+    )
+    console.print(
+        f"Strata with < 30 points (Low sample): [bold yellow]{n_under_30:,}[/] ({pct_30:.1f}%)"
+    )
+    console.print(
+        f"Strata with >= 100 points (High confidence): "
+        f"[bold green]{n_over_100:,}[/] ({pct_100:.1f}%)"
+    )
     console.print()
 
     # 4. Top 10 Most Charted Players
     console.print("[bold cyan]4. Top 10 Most Charted Players (Server Role)[/]")
+    player_grp = df.groupby("server").agg(
+        total_points=("is_server_win", "count"), win_rate=("is_server_win", "mean")
+    )
     top_players = (
-        df.groupby("server")
-        .agg(total_points=("is_server_win", "count"), win_rate=("is_server_win", "mean"))
-        .sort_values(by="total_points", ascending=False)
+        pd.DataFrame(player_grp)
+        .sort_values("total_points", ascending=False)
         .head(10)
         .reset_index()
     )

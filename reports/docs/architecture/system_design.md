@@ -93,6 +93,25 @@ There is empirical precedent that a simple, low-parameter probability model trac
 - **Full hierarchical Bayesian / Beta-Binomial pooled model** (partial pooling across player × surface × serve-number strata), architecturally more consistent, since the Pressure Deviation model already uses shrinkage, and would replace the point-estimate-plus-bolted-on-interval approach with a single coherent posterior. Deferred to v2 as a documented candidate: higher implementation and inference complexity, not justified before v1 validates the simpler approach end-to-end.
 - **No uncertainty handling at all**, rejected as inconsistent with ADR-003 and with the amplification argument above.
 
+#### ADR-005 Amendment 1: Model-Class Correction & Direct-Extreme Band Propagation (Phase 3 — 2026-08-05)
+
+**Status:** Accepted (Amended in Phase 3 — 2026-08-05)
+
+**Context & Rationale:**
+Review of ADR-005 prior to Phase 3 model training identified two structural adjustments required for mathematical and architectural consistency:
+1. **Uncertainty Band Propagation (D-0):** ADR-005 §3 originally specified propagating Wilson confidence intervals through a "Tier 2 Monte Carlo relaxation." In Phase 2 D-4, empirical review verified that the closed-form match-win probability function $M(p)$ is strictly monotonic in $p_{\text{serve}}$. Consequently, evaluating the Markov solver directly at $p_{\text{low}}$ and $p_{\text{high}}$ (direct-extreme evaluation) yields the exact analytical lower and upper leverage bounds without Monte Carlo sampling error or stochastic variance.
+2. **Model Class & Stratum Estimator Correction (D-3):** ADR-005 §1 specified `LogisticRegression` + `CalibratedClassifierCV` for v1 point-win probability estimation. In practice, a logistic regression with full interaction terms ($\text{player} \times \text{surface} \times \text{serve\_number}$) behaves as a saturated categorical estimator where L2 regularization acts as an implicit, uniform prior. Replacing `LogisticRegression` with a direct **Hierarchical Empirical Stratum Estimator** is a deliberate correction, not a scope reduction:
+   - It directly exposes the sample size $N$ for Wilson interval sizing per ADR-005 §2.
+   - It eliminates the risk of feature leakage from score-context fields (`break_point`, `set_point`) that represent in-game states already conditioned on by the Markov solver.
+   - It delegates cross-stratum smoothing to the Empirical-Bayes shrinkage estimator in the Pressure Deviation model (D-5), which performs principled Bayesian shrinkage rather than arbitrary linear blending.
+
+**Amended Decision:**
+1. **Model Class:** Replace `LogisticRegression` with a **Hierarchical Empirical Stratum Estimator**. For any point query, point-win probability $p_{\text{hat}}$ and sample size $N$ are resolved through a 4-tier fallback hierarchy:
+   $$\text{Stratum } (P, S, N_{\text{serve}}) \longrightarrow \text{Player Overall } (P, N_{\text{serve}}) \longrightarrow \text{Population Surface } (S, N_{\text{serve}}) \longrightarrow \text{Global Default } p_{\text{default}}$$
+2. **Band Propagation:** Reaffirm Phase 2 D-4: leverage confidence bands $[\Delta L_{\text{low}}, \Delta L_{\text{high}}]$ are computed via direct-extreme evaluation at $p_{\text{low}}$ and $p_{\text{high}}$ through `propagate_leverage_uncertainty()`. Monte Carlo sampling is formally retired for the in-process solver.
+
+**Consequences:** Zero stochastic variance in leverage band computation; fully transparent, leakage-free prior generation for `StateMonitorNode`; explicit tier tracking (`fallback_tier`) on every inference payload.
+
 ---
 
 ### ADR-006: Calibration Method - Platt (v1) vs. Isotonic (v2 if LightGBM Is Adopted)
