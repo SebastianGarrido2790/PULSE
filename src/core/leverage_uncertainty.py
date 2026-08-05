@@ -4,7 +4,13 @@ Computes Wilson score confidence intervals for point-win probability p based on 
 sample sizes N (player x surface x serve-number), and propagates interval bounds through
 the closed-form Markov solver to produce leverage confidence bands per ADR-005.
 
-Authority: ADR-005, Phase 2 Decision D-4
+Note on Monte Carlo Propagation (Phase 3 D-0 / ADR-005 Amendment 1):
+    Monte Carlo sampling was evaluated and formally retired per ADR-005 Amendment 1.
+    Because match-win probability M(p) is strictly monotonic in p_serve (empirically verified),
+    direct extreme evaluation at p_low and p_high calculates exact analytical leverage bounds
+    without Monte Carlo sampling error or stochastic variance.
+
+Authority: ADR-005 Amendment 1 (Phase 3 D-0), Phase 2 Decision D-4
 """
 
 import math
