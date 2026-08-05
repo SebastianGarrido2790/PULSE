@@ -89,3 +89,8 @@ class SanitizationError(BasePulseException):
 
 class IngestionException(BasePulseException):
     """Raised when raw data ingestion or schema validation fails."""
+
+
+class ConfigException(BasePulseException):
+    """Raised when params.yaml loading or schema validation fails."""
+
