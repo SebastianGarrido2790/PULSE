@@ -124,16 +124,85 @@ def run_training_pipeline() -> None:
         )
     console.print(table_tiers)
 
-    # 4. Generate Calibration Curve Plot
-    prob_true, prob_pred = calibration_curve(y_true, y_pred, n_bins=10, strategy="uniform")
-    plt.figure(figsize=(8, 6))
-    plt.plot(prob_pred, prob_true, marker="o", linewidth=2, label="Hierarchical Stratum Estimator")
-    plt.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Perfect Calibration")
+    # 4. Generate Calibration Curve Plots & Diagnostic Analysis
+    # A. Uniform Binning Strategy
+    prob_true_uni, prob_pred_uni = calibration_curve(
+        y_true, y_pred, n_bins=10, strategy="uniform"
+    )
+
+    # B. Quantile Binning Strategy (Equal Sample Size per Bin)
+    prob_true_q, prob_pred_q = calibration_curve(
+        y_true, y_pred, n_bins=10, strategy="quantile"
+    )
+
+    # Calculate exact point count per quantile bin
+    df_eval = pd.DataFrame({"y_true": y_true, "y_pred": y_pred})
+    df_eval["quantile_bin"] = pd.qcut(df_eval["y_pred"], q=10, duplicates="drop")
+
+    q_bin_summary = (
+        df_eval.groupby("quantile_bin", observed=False)
+        .agg(
+            sample_size=("y_true", "count"),
+            mean_pred=("y_pred", "mean"),
+            mean_true=("y_true", "mean"),
+        )
+        .reset_index()
+    )
+
+    table_bins = Table(title="Quantile Binning Calibration Diagnostic (10 Bins)")
+    table_bins.add_column("Bin Range", style="cyan")
+    table_bins.add_column("Point Count (N)", justify="right")
+    table_bins.add_column("Mean Pred (p_hat)", justify="right")
+    table_bins.add_column("Observed Win Rate", justify="right")
+    table_bins.add_column("Absolute Error", justify="right", style="yellow")
+
+    bin_records = q_bin_summary.to_dict(orient="records")
+    quantile_diagnostics = []
+    for r in bin_records:
+        bin_str = str(r["quantile_bin"])
+        n_count = int(r["sample_size"])
+        m_pred = float(r["mean_pred"]) if pd.notna(r["mean_pred"]) else 0.0
+        m_true = float(r["mean_true"]) if pd.notna(r["mean_true"]) else 0.0
+        abs_err = abs(m_pred - m_true)
+
+        table_bins.add_row(
+            bin_str,
+            f"{n_count:,}",
+            f"{m_pred:.4f}",
+            f"{m_true:.4f}",
+            f"{abs_err:.4f}",
+        )
+        quantile_diagnostics.append({
+            "bin_range": bin_str,
+            "count": n_count,
+            "mean_pred": round(m_pred, 4),
+            "mean_true": round(m_true, 4),
+            "abs_error": round(abs_err, 4),
+        })
+
+    console.print(table_bins)
+
+    # Plot both calibration strategies
+    plt.figure(figsize=(10, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.plot(prob_pred_uni, prob_true_uni, marker="o", linewidth=2, color="crimson")
+    plt.plot([0, 1], [0, 1], linestyle="--", color="gray")
     plt.xlabel("Mean Predicted Probability (p_hat)")
-    plt.ylabel("Fraction of Positives (Observed Serve Wins)")
-    plt.title(f"Point-Win Classifier Calibration Curve (Holdout AUC = {auc_score:.4f})")
-    plt.legend(loc="upper left")
+    plt.ylabel("Observed Win Rate")
+    plt.title("Uniform Strategy (10 Bins)")
     plt.grid(True, alpha=0.3)
+
+    plt.subplot(1, 2, 2)
+    plt.plot(prob_pred_q, prob_true_q, marker="s", linewidth=2, color="teal")
+    plt.plot([0, 1], [0, 1], linestyle="--", color="gray")
+    plt.xlabel("Mean Predicted Probability (p_hat)")
+    plt.ylabel("Observed Win Rate")
+    plt.title("Quantile Strategy (10 Equal-N Bins)")
+    plt.grid(True, alpha=0.3)
+
+    plt.suptitle(f"Point-Win Classifier Calibration Diagnostic (Holdout AUC = {auc_score:.4f})")
+    plt.tight_layout()
 
     artifact_model_dir = PROJECT_ROOT / "artifacts" / "models" / "point_win_classifier"
     artifact_model_dir.mkdir(parents=True, exist_ok=True)
@@ -153,6 +222,7 @@ def run_training_pipeline() -> None:
         "holdout_sample_size": len(test_df),
         "train_sample_size": len(train_df),
         "tier_counts": {tier_names[t]: count for t, count in tier_counts.items()},
+        "quantile_diagnostics": quantile_diagnostics,
         "exit_criterion_met": auc_score >= 0.65,
     }
     metrics_json_path.write_text(json.dumps(metrics_payload, indent=2), encoding="utf-8")
