@@ -222,7 +222,6 @@ def run_training_pipeline() -> None:
         "holdout_sample_size": len(test_df),
         "train_sample_size": len(train_df),
         "tier_counts": {tier_names[t]: count for t, count in tier_counts.items()},
-        "quantile_diagnostics": quantile_diagnostics,
         "exit_criterion_met": auc_score >= 0.65,
     }
     metrics_json_path.write_text(json.dumps(metrics_payload, indent=2), encoding="utf-8")
