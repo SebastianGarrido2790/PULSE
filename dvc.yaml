@@ -16,16 +16,48 @@ stages:
       - artifacts/validated_data/points.parquet
 
   train_classifier:
-    cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Point-Win Classifier"
+    cmd: uv run python scripts/train_classifier.py
     deps:
+      - scripts/train_classifier.py
+      - src/models/point_win_classifier.py
+      - src/config/loader.py
       - artifacts/validated_data/points.parquet
       - params.yaml
+    params:
+      - models.train_test_split
+      - models.random_state
+      - models.calibration_method
+      - models.mlflow_experiment_classifier
+      - uncertainty.min_stratum_observations
+      - uncertainty.confidence_level
+      - solver.default_p_serve
+    outs:
+      - artifacts/models/point_win_classifier/
+    metrics:
+      - artifacts/metrics/classifier_metrics.json:
+          cache: false
 
   train_pressure:
-    cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Pressure Deviation Model"
+    cmd: uv run python scripts/train_pressure.py
     deps:
+      - scripts/train_pressure.py
+      - src/models/pressure_deviation.py
+      - src/config/loader.py
       - artifacts/validated_data/points.parquet
+      - artifacts/models/point_win_classifier/
       - params.yaml
+    params:
+      - models.pressure_prior_alpha
+      - models.pressure_prior_beta
+      - models.pressure_prior_min_players_per_bucket
+      - models.pressure_leverage_buckets
+      - models.mlflow_experiment_pressure
+      - models.random_state
+    outs:
+      - artifacts/models/pressure_deviation/
+    metrics:
+      - artifacts/metrics/pressure_metrics.json:
+          cache: false
 
   evaluate:
     cmd: echo "Stage not yet implemented — Phase 6 Evaluation Suite & Solver Gate"

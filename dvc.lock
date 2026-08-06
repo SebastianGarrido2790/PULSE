@@ -27,7 +27,7 @@ stages:
       md5: 552c25c3c31db6ba5a087857b54d59b5
       size: 5181695
   train_classifier:
-    cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Point-Win Classifier"
+    cmd: uv run python scripts/train_classifier.py
     deps:
     - path: artifacts/validated_data/points.parquet
       hash: md5
@@ -35,25 +35,92 @@ stages:
       size: 5181695
     - path: params.yaml
       hash: md5
-      md5: ff84f44e4f297324ec6a06ae742aa579
-      size: 1734
+      md5: 079a0df2b670cfde058a6671b6f9b75a
+      size: 2836
+    - path: scripts/train_classifier.py
+      hash: md5
+      md5: b7d16ee6fd49fda4cbbd189bf707107c
+      size: 7827
+    - path: src/config/loader.py
+      hash: md5
+      md5: 53db95b9233cc4f63d9a652ef28b8bfb
+      size: 3992
+    - path: src/models/point_win_classifier.py
+      hash: md5
+      md5: 692f16e12f222d34061f077da4a259ad
+      size: 12786
+    params:
+      params.yaml:
+        models.calibration_method: sigmoid
+        models.mlflow_experiment_classifier: pulse_point_win_classifier_v1
+        models.random_state: 42
+        models.train_test_split: 0.2
+        solver.default_p_serve: 0.62
+        uncertainty.confidence_level: 0.95
+        uncertainty.min_stratum_observations: 10
+    outs:
+    - path: artifacts/metrics/classifier_metrics.json
+      hash: md5
+      md5: 47f6469ff8a08eb9cc1733c87fcc8671
+      size: 300
+    - path: artifacts/models/point_win_classifier/
+      hash: md5
+      md5: e5cc395fd41e6999a3323c98745932ae.dir
+      size: 472674
+      nfiles: 2
   train_pressure:
-    cmd: echo "Stage not yet implemented — Phase 2 Tier 1 Pressure Deviation 
-      Model"
+    cmd: uv run python scripts/train_pressure.py
     deps:
+    - path: artifacts/models/point_win_classifier/
+      hash: md5
+      md5: e5cc395fd41e6999a3323c98745932ae.dir
+      size: 472674
+      nfiles: 2
     - path: artifacts/validated_data/points.parquet
       hash: md5
       md5: 552c25c3c31db6ba5a087857b54d59b5
       size: 5181695
     - path: params.yaml
       hash: md5
-      md5: ff84f44e4f297324ec6a06ae742aa579
-      size: 1734
+      md5: 079a0df2b670cfde058a6671b6f9b75a
+      size: 2836
+    - path: scripts/train_pressure.py
+      hash: md5
+      md5: c24b2170b581172f46736a3d0d384398
+      size: 9709
+    - path: src/config/loader.py
+      hash: md5
+      md5: 53db95b9233cc4f63d9a652ef28b8bfb
+      size: 3992
+    - path: src/models/pressure_deviation.py
+      hash: md5
+      md5: d1d0670d3bf5f7655f3e340e536069fc
+      size: 12878
+    params:
+      params.yaml:
+        models.mlflow_experiment_pressure: pulse_pressure_deviation_v1
+        models.pressure_leverage_buckets:
+        - 0.1
+        - 0.25
+        models.pressure_prior_alpha: 2.0
+        models.pressure_prior_beta: 2.0
+        models.pressure_prior_min_players_per_bucket: 15
+        models.random_state: 42
+    outs:
+    - path: artifacts/metrics/pressure_metrics.json
+      hash: md5
+      md5: cf75885fc1d1baa466b37e850e9ab567
+      size: 580
+    - path: artifacts/models/pressure_deviation/
+      hash: md5
+      md5: 1f4da5a80ac6e843c9c388e53b0b589d.dir
+      size: 636233
+      nfiles: 1
   evaluate:
     cmd: echo "Stage not yet implemented — Phase 6 Evaluation Suite & Solver 
       Gate"
     deps:
     - path: params.yaml
       hash: md5
-      md5: ff84f44e4f297324ec6a06ae742aa579
-      size: 1734
+      md5: 079a0df2b670cfde058a6671b6f9b75a
+      size: 2836
