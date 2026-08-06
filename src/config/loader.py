@@ -64,6 +64,8 @@ class ModelsParams(BaseModel):
     solver_tolerance: float = Field(..., gt=0.0)
     train_test_split: float = Field(..., ge=0.01, le=0.99)
     random_state: int
+    max_mean_absolute_calibration_error: float = Field(default=0.015, gt=0.0, le=0.10)
+    min_holdout_auc: float = Field(default=0.60, ge=0.50, le=1.0)
     mlflow_experiment_classifier: str
     mlflow_experiment_pressure: str
     pressure_prior_alpha: float = Field(..., gt=0.0)

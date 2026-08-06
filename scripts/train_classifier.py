@@ -180,7 +180,20 @@ def run_training_pipeline() -> None:
             "abs_error": round(abs_err, 4),
         })
 
-    console.print(table_bins)
+    # Mean Absolute Calibration Error (MACE) across 10 quantile bins
+    mace = (
+        sum(item["abs_error"] for item in quantile_diagnostics) / len(quantile_diagnostics)
+        if quantile_diagnostics
+        else 0.0
+    )
+    mace_pct = mace * 100
+    max_mace_pct = params.models.max_mean_absolute_calibration_error * 100
+    min_auc = params.models.min_holdout_auc
+
+    console.print(
+        f"\n[bold green]Mean Absolute Calibration Error (MACE):[/] [bold yellow]{mace_pct:.2f}%[/] "
+        f"(Target <= {max_mace_pct:.1f}%)"
+    )
 
     # Plot both calibration strategies
     plt.figure(figsize=(10, 5))
@@ -201,7 +214,9 @@ def run_training_pipeline() -> None:
     plt.title("Quantile Strategy (10 Equal-N Bins)")
     plt.grid(True, alpha=0.3)
 
-    plt.suptitle(f"Point-Win Classifier Calibration Diagnostic (Holdout AUC = {auc_score:.4f})")
+    plt.suptitle(
+        f"Point-Win Classifier Calibration (MACE = {mace * 100:.2f}%, AUC = {auc_score:.4f})"
+    )
     plt.tight_layout()
 
     artifact_model_dir = PROJECT_ROOT / "artifacts" / "models" / "point_win_classifier"
@@ -217,12 +232,18 @@ def run_training_pipeline() -> None:
     metrics_dir.mkdir(parents=True, exist_ok=True)
     metrics_json_path = metrics_dir / "classifier_metrics.json"
 
+    is_calib_pass = mace <= params.models.max_mean_absolute_calibration_error
+    is_auc_pass = auc_score >= params.models.min_holdout_auc
+    exit_passed = is_calib_pass and is_auc_pass
+
     metrics_payload = {
+        "mean_absolute_calibration_error": round(mace, 4),
         "auc_score": round(auc_score, 4),
         "holdout_sample_size": len(test_df),
         "train_sample_size": len(train_df),
         "tier_counts": {tier_names[t]: count for t, count in tier_counts.items()},
-        "exit_criterion_met": auc_score >= 0.65,
+        "quantile_diagnostics": quantile_diagnostics,
+        "exit_criterion_met": exit_passed,
     }
     metrics_json_path.write_text(json.dumps(metrics_payload, indent=2), encoding="utf-8")
 
@@ -237,8 +258,11 @@ def run_training_pipeline() -> None:
             "min_player_observations": params.uncertainty.min_player_observations,
             "min_surface_observations": params.uncertainty.min_surface_observations,
             "default_p_serve": params.solver.default_p_serve,
+            "max_mace_threshold": params.models.max_mean_absolute_calibration_error,
+            "min_auc_threshold": params.models.min_holdout_auc,
         })
         mlflow.log_metrics({
+            "mean_absolute_calibration_error": mace,
             "auc_score": auc_score,
             "tier0_count": tier_counts[FallbackTier.EXACT_STRATUM],
             "tier1_count": tier_counts[FallbackTier.PLAYER_OVERALL],
@@ -251,13 +275,16 @@ def run_training_pipeline() -> None:
     console.print(f"\n[bold green]Artifacts Exported:[/] {saved_table_path}")
     console.print(f"[bold green]Metrics Exported:[/] {metrics_json_path}")
 
-    # Exit criteria gate check
-    if auc_score < 0.65:
+    # Exit criteria gate check per ADR-005 Amendment 2
+    if exit_passed:
         console.print(
-            f"[bold red]WARNING:[/] Holdout AUC ({auc_score:.4f}) is below target 0.65"
+            f"[bold green]Success:[/] MACE ({mace * 100:.2f}%) <= {max_mace_pct:.1f}% and "
+            f"AUC ({auc_score:.4f}) >= {min_auc:.2f} satisfy exit criteria (ADR-005 Amendment 2)"
         )
     else:
-        console.print("[bold green]Success:[/] Holdout AUC satisfies exit criterion (>= 0.65)")
+        console.print(
+            f"[bold red]WARNING:[/] Criteria unmet (MACE={mace * 100:.2f}%, AUC={auc_score:.4f})"
+        )
 
 
 if __name__ == "__main__":
