@@ -8,8 +8,8 @@ This document is a living record of the system's actual implemented state and th
 
 ## Current Implementation Status
 
-**Phase 2 — Data Layer & Deterministic Core Complete (2026-08-03).**  
-The closed-form Markov solver (`src/core/markov_solver.py`), Wilson confidence interval propagation (`src/core/leverage_uncertainty.py`), Pydantic v2 domain model and Pandera bulk validation gate (`src/schemas/point_record.py`), parameters configuration (`params.yaml`), DVC raw data ingestion pipeline stage (`scripts/ingest.py` & `dvc.yaml`), and CI-blocking verification suite (`tests/unit/test_markov_solver.py` with `@pytest.mark.solver` $<10^{-9}$ tolerance) are fully implemented, verified, and pushed to `main`. 547,478 Match Charting Project (MCP) point records were ingested and validated into `artifacts/validated_data/points.parquet`.
+**Phase 3 — Tier 1 ML Layer Complete (2026-08-06).**  
+The Hierarchical Empirical Stratum Estimator (`src/models/point_win_classifier.py`), Empirical-Bayes Pressure Deviation Shrinkage Estimator (`src/models/pressure_deviation.py`), analytical leverage propagation docstring update (`src/core/leverage_uncertainty.py`), executable training scripts (`scripts/train_classifier.py` & `scripts/train_pressure.py`), DVC pipeline stage promotion (`dvc.yaml` & `dvc.lock`), MLflow experiment tracking (`pulse_point_win_classifier_v1` & `pulse_pressure_deviation_v1`), unit and integration test suite (`tests/unit/test_point_win_classifier.py`, `tests/unit/test_pressure_deviation.py`, `tests/integration/test_classifier_uncertainty_integration.py`), and full quality gate suite (41/41 passing tests, 0 pyright/ruff errors, <1,000-line ceiling) are fully implemented, verified, and reproducible via `uv run dvc repro`. Stratum lookup achieved 99.97% Tier 0 exact resolution on holdout points, and Pressure Deviation posterior credible intervals achieved 93.75% empirical coverage across high-leverage player strata ($N_{\text{pressure}} \ge 10$).
 
 ---
 
@@ -95,7 +95,7 @@ There is empirical precedent that a simple, low-parameter probability model trac
 
 #### ADR-005 Amendment 1: Model-Class Correction & Direct-Extreme Band Propagation (Phase 3 — 2026-08-05)
 
-**Status:** Accepted (Amended in Phase 3 — 2026-08-05)
+**Status:** Validated (Phase 3 — 2026-08-06)
 
 **Context & Rationale:**
 Review of ADR-005 prior to Phase 3 model training identified two structural adjustments required for mathematical and architectural consistency:
