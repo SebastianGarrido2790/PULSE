@@ -13,8 +13,8 @@ Designed for coaches, performance analysts, and broadcast teams as an advisory t
 | **Phase 0 — Planning**            | ML Canvas, Project Charter, PRD, User Story, Technical Roadmap, System Design | ✅ Complete  |
 | **Phase 1 — Project Scaffolding** | Repository structure, `uv` toolchain, `params.yaml`, CI/CD, line ceiling gate | ✅ Complete  |
 | **Phase 2 — Data Layer & Core**   | `PointRecord` schema, validation pipeline, closed-form Markov solver          | ✅ Complete  |
-| **Phase 3 — Tier 1 ML**           | Point-win classifier & pressure deviation shrinkage model                     | 🟡 Next Up   |
-| **Phase 4 — Agent Orchestration** | Event-driven LangGraph (State Monitor + conditional nodes)                    | ⬜ Scheduled |
+| **Phase 3 — Tier 1 ML**           | Point-win classifier & pressure deviation shrinkage model                     | ✅ Complete  |
+| **Phase 4 — Agent Orchestration** | Event-driven LangGraph (State Monitor + conditional nodes)                    | 🟡 Next Up   |
 | **Phase 5 — Game Theory Module**  | Minimax Nash equilibrium & best-response return exploit                       | ⬜ Scheduled |
 | **Phase 6 — API & Simulation**    | FastAPI streaming API, real-time match replay simulator, Docker & CI/CD       | ⬜ Scheduled |
 

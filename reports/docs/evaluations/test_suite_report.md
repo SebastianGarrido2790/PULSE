@@ -1,11 +1,11 @@
 # PULSE — Test Suite Report
 
-> **Version:** v0.2.0 — *Living Document*  
-> **Phase:** 2 — Data Layer & Deterministic Core  
-> **Status:** 🟢 19 / 19 Tests Passing  
-> **Coverage:** 100% Core Math & Schema Coverage  
+> **Version:** v0.3.0 — *Living Document*  
+> **Phase:** 3 — Tier 1 ML Layer  
+> **Status:** 🟢 41 / 41 Tests Passing  
+> **Coverage:** 100% Core Math, ML Models, & Schema Coverage  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
-> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase1_scaffolding_decisions.md](../decisions/phase1_scaffolding_decisions.md), [system_design.md](../architecture/system_design.md)  
+> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase3_implementation_plan_and_decisions.md](../decisions/phase3_implementation_plan_and_decisions.md), [system_design.md](../architecture/system_design.md)  
 
 ---
 
@@ -104,6 +104,37 @@ PULSE/
 
 ---
 
+### 3.7 Point-Win Classifier (`tests/unit/test_point_win_classifier.py`)
+
+| Module | Verification Target | What Is Verified | Status |
+| :--- | :--- | :--- | :--- |
+| `src/models/point_win_classifier.py` | `build_stratum_table` | Compiles exact stratum observation counts ($N$) and mean win rates from training split across Tier 0, Tier 1, and Tier 2. | 🟢 PASS |
+| `src/models/point_win_classifier.py` | `resolve_point_win_probability` | Evaluates 4-tier fallback hierarchy ($\text{Tier 0 Exact} \to \text{Tier 1 Player} \to \text{Tier 2 Surface} \to \text{Tier 3 Default}$). | 🟢 PASS |
+| `src/models/point_win_classifier.py` | Quantile Calibration ($\text{MCE}$) | Verifies Mean Absolute Calibration Error $\le 1.5\%$ ($\text{MCE} = 0.65\%$) across 10 equal-N quantile bins. | 🟢 PASS |
+| `src/models/point_win_classifier.py` | `save_stratum_table` / `load_stratum_table` | Validates JSON serialization and deserialization roundtrip for DVC artifact persistence. | 🟢 PASS |
+
+---
+
+### 3.8 Pressure Deviation Estimator (`tests/unit/test_pressure_deviation.py`)
+
+| Module | Verification Target | What Is Verified | Status |
+| :--- | :--- | :--- | :--- |
+| `src/models/pressure_deviation.py` | Empirical-Bayes MoM Fitting | Fits closed-form Beta prior parameters $(\alpha_0, \beta_0)$ per leverage bucket via Method of Moments. | 🟢 PASS |
+| `src/models/pressure_deviation.py` | Sparse-Bucket Fallback Gate | Forces fallback to fixed prior $\text{Beta}(2.0, 2.0)$ with `is_prior_estimated=False` when player count $M < 15$. | 🟢 PASS |
+| `src/models/pressure_deviation.py` | Posterior Shrinkage Bounds | Asserts shrunk rate satisfies ordering invariant $\min(r, \mu_0) \le \text{shrunk\_rate} \le \max(r, \mu_0)$. | 🟢 PASS |
+| `src/models/pressure_deviation.py` | 90% Credible Coverage Gate | Evaluates posterior credible interval coverage ($\text{Coverage} = 93.75\% \ge 90\%$) across high-leverage player strata ($N \ge 10$). | 🟢 PASS |
+
+---
+
+### 3.9 Model-Solver Integration (`tests/integration/test_classifier_uncertainty_integration.py`)
+
+| Module | Verification Target | What Is Verified | Status |
+| :--- | :--- | :--- | :--- |
+| Integration | Classifier $\to$ Wilson CI $\to$ Markov Solver | Feeds classifier $p_{\text{hat}}$ and sample size $N$ into Wilson interval generator and propagates through `propagate_leverage_uncertainty()`. | 🟢 PASS |
+| Integration | Direct-Extreme Monotonicity | Confirms leverage confidence bands $[\Delta L_{\text{low}}, \Delta L_{\text{high}}]$ match analytical direct-eval bounds without Monte Carlo variance. | 🟢 PASS |
+
+---
+
 ## 4. Upcoming Test Suite Roadmap
 
 As implementation progresses through subsequent technical phases, the test suite will expand according to the following roadmap:
@@ -120,11 +151,13 @@ Phase 2: Data Layer & Deterministic Core (Complete — 19 Passes)
   ├── Markov Solver Golden-Value Tests vs Combinatorial Theory (< 1e-9 tolerance)
   └── Wilson Confidence Interval & Leverage Uncertainty Band Tests
        │
-Phase 3: Tier 1 ML Models (Scheduled Next)
-  ├── Point-Win Classifier Calibration & AUC Checks
-  └── Pressure Deviation Empirical-Bayes Shrinkage Tests
+Phase 3: Tier 1 ML Models (Complete — 41 Passes)
+  ├── Point-Win Classifier Quantile Calibration (MACE = 0.65% <= 1.5%) & Sanity AUC Checks
+  ├── Stratum Table Tier Resolution & Serialization Persistence Tests
+  ├── Pressure Deviation Empirical-Bayes Shrinkage Tests (Coverage = 93.75% >= 90%)
+  └── Classifier-Uncertainty-Solver Integration Smoke Tests
        │
-Phase 4: Agent Orchestration Layer
+Phase 4: Agent Orchestration Layer (Scheduled Next)
   ├── LangGraph Conditional Edge Execution Tests (StateMonitor -> Diagnostic/Exploit)
   └── Sufficiency Gate Fallback Integration Tests (Data-sparse fallback to leverage-only)
        │

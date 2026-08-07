@@ -58,7 +58,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 3 — Tier 1 ML Layer 🛠️ Next Phase
+## Phase 3 — Tier 1 ML Layer ✅ Complete
 
 **Goal:** Build the calibrated point-win probability model and the pressure-deviation estimator, both with explicit uncertainty handling per ADR-005 and ADR-006.
 
@@ -81,7 +81,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 4 — Event-Driven Orchestration (LangGraph)
+## Phase 4 — Event-Driven Orchestration (LangGraph) 🛠️ In Progress
 
 **Goal:** Implement the conditional graph: `StateMonitorNode` always-on, `PressureDiagnosticNode` and `StrategyExploitNode` triggered, `TacticalOutputNode` assembling whichever fired.
 

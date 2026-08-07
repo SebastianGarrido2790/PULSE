@@ -225,15 +225,15 @@ Models loaded once at API startup; the Markov solver and game-theory optimizer a
 
 ### Deliverables by Phase
 
-| Phase | Deliverable                                                                    | Status      |
-| ----- | ------------------------------------------------------------------------------ | ----------- |
-| 0     | Planning docs (Canvas, Charter, PRD, User Story, Roadmap, ADR)                 | ✅ Complete |
-| 1     | Project Scaffolding (repo structure, dependencies, CI/CD, line-ceiling gate)  | ✅ Complete |
-| 2     | Data schema, validation, closed-form Markov solver + ground-truth unit tests   | ⬜ Pending  |
-| 3     | Tier 1 ML models (point-win classifier, pressure deviation estimator) + MLflow | ⬜ Pending  |
-| 4     | Event-driven LangGraph orchestration (StateMonitor + conditional nodes)        | ⬜ Pending  |
-| 5     | Game-theoretic exploit module (Nash equilibrium + best-response deviation)     | ⬜ Pending  |
-| 6     | FastAPI + SSE/WebSocket streaming interface, match-replay simulator            | ⬜ Pending  |
+| Phase | Deliverable                                                                    | Status         |
+| ----- | ------------------------------------------------------------------------------ | -------------- |
+| 0     | Planning docs (Canvas, Charter, PRD, User Story, Roadmap, ADR)                 | ✅ Complete    |
+| 1     | Project Scaffolding (repo structure, dependencies, CI/CD, line-ceiling gate)   | ✅ Complete    |
+| 2     | Data schema, validation, closed-form Markov solver + ground-truth unit tests   | ✅ Complete    |
+| 3     | Tier 1 ML models (point-win classifier, pressure deviation estimator) + MLflow | ✅ Complete    |
+| 4     | Event-driven LangGraph orchestration (StateMonitor + conditional nodes)        | 🛠️ In Progress |
+| 5     | Game-theoretic exploit module (Nash equilibrium + best-response deviation)     | ⬜ Pending     |
+| 6     | FastAPI + SSE/WebSocket streaming interface, match-replay simulator            | ⬜ Pending     |
 
 ### Timeline Estimate
 
