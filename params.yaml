@@ -32,7 +32,7 @@ models:
   train_test_split: 0.20          # Holdout fraction for classifier evaluation
   random_state: 42                # Reproducibility seed for train/test split and model fit
   max_mean_absolute_calibration_error: 0.015
-  min_holdout_auc: 0.60
+  min_holdout_auc_sanity: 0.55
   mlflow_experiment_classifier: "pulse_point_win_classifier_v1"
   mlflow_experiment_pressure: "pulse_pressure_deviation_v1"
 

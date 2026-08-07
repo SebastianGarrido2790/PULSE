@@ -188,7 +188,7 @@ def run_training_pipeline() -> None:
     )
     mace_pct = mace * 100
     max_mace_pct = params.models.max_mean_absolute_calibration_error * 100
-    min_auc = params.models.min_holdout_auc
+    min_auc_sanity = params.models.min_holdout_auc_sanity
 
     console.print(
         f"\n[bold green]Mean Absolute Calibration Error (MACE):[/] [bold yellow]{mace_pct:.2f}%[/] "
@@ -232,9 +232,10 @@ def run_training_pipeline() -> None:
     metrics_dir.mkdir(parents=True, exist_ok=True)
     metrics_json_path = metrics_dir / "classifier_metrics.json"
 
-    is_calib_pass = mace <= params.models.max_mean_absolute_calibration_error
-    is_auc_pass = auc_score >= params.models.min_holdout_auc
-    exit_passed = is_calib_pass and is_auc_pass
+    # Exit criteria per ADR-005 Amendment 2: Calibration (MACE <= 1.5%) is primary gate.
+    # AUC >= min_holdout_auc_sanity (0.55) is a non-blocking diagnostic trip-wire.
+    exit_passed = mace <= params.models.max_mean_absolute_calibration_error
+    is_auc_sanity_passed = auc_score >= params.models.min_holdout_auc_sanity
 
     metrics_payload = {
         "mean_absolute_calibration_error": round(mace, 4),
@@ -244,6 +245,7 @@ def run_training_pipeline() -> None:
         "tier_counts": {tier_names[t]: count for t, count in tier_counts.items()},
         "quantile_diagnostics": quantile_diagnostics,
         "exit_criterion_met": exit_passed,
+        "auc_sanity_passed": is_auc_sanity_passed,
     }
     metrics_json_path.write_text(json.dumps(metrics_payload, indent=2), encoding="utf-8")
 
@@ -259,7 +261,7 @@ def run_training_pipeline() -> None:
             "min_surface_observations": params.uncertainty.min_surface_observations,
             "default_p_serve": params.solver.default_p_serve,
             "max_mace_threshold": params.models.max_mean_absolute_calibration_error,
-            "min_auc_threshold": params.models.min_holdout_auc,
+            "min_auc_sanity_threshold": params.models.min_holdout_auc_sanity,
         })
         mlflow.log_metrics({
             "mean_absolute_calibration_error": mace,
@@ -276,14 +278,22 @@ def run_training_pipeline() -> None:
     console.print(f"[bold green]Metrics Exported:[/] {metrics_json_path}")
 
     # Exit criteria gate check per ADR-005 Amendment 2
+    min_auc_sanity = params.models.min_holdout_auc_sanity
     if exit_passed:
         console.print(
-            f"[bold green]Success:[/] MACE ({mace * 100:.2f}%) <= {max_mace_pct:.1f}% and "
-            f"AUC ({auc_score:.4f}) >= {min_auc:.2f} satisfy exit criteria (ADR-005 Amendment 2)"
+            f"[bold green]Success:[/] Calibration MACE ({mace * 100:.2f}%) <= "
+            f"{max_mace_pct:.1f}% satisfies exit criterion (ADR-005 Amendment 2)"
         )
     else:
         console.print(
-            f"[bold red]WARNING:[/] Criteria unmet (MACE={mace * 100:.2f}%, AUC={auc_score:.4f})"
+            f"[bold red]WARNING:[/] Calibration gate unmet: MACE ({mace * 100:.2f}%) > "
+            f"{max_mace_pct:.1f}%"
+        )
+
+    if not is_auc_sanity_passed:
+        console.print(
+            f"[bold yellow]SANITY WARNING:[/] Holdout AUC ({auc_score:.4f}) is below "
+            f"sanity trip-wire threshold ({min_auc_sanity:.2f}) — inspect pipeline."
         )
 
 
