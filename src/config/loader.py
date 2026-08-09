@@ -56,6 +56,16 @@ class LatencyParams(BaseModel):
     triggered_node_ms: int = Field(..., gt=0)
 
 
+class LLMParams(BaseModel):
+    """LLM provider and narrative generation parameters."""
+
+    provider: str
+    model_name: str
+    max_tokens: int = Field(..., gt=0)
+    temperature: float = Field(..., ge=0.0, le=1.0)
+    request_timeout_s: float = Field(..., gt=0.0)
+
+
 class ModelsParams(BaseModel):
     """Tier 1 ML model training and experiment tracking parameters."""
 
@@ -89,6 +99,7 @@ class Params(BaseModel):
     solver: SolverParams
     ingestion: IngestionParams
     latency: LatencyParams
+    llm: LLMParams
     models: ModelsParams
     ci: CIParams
 

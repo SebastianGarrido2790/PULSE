@@ -3,7 +3,7 @@
 **Event-Driven Orchestration (LangGraph) — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 4 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-08
-**Status:** 🟢 Stage 0 Complete — Gate 0 Passed (Ready for Stage 1)
+**Status:** 🟢 Stage 1 Complete — Gate 1 Passed (Ready for Stage 2)
 **Authority:** `reports/docs/decisions/phase4_implementation_plan_and_decisions.md` (v1.0.0, Approved) — every step below traces to a specific approved decision ID
 **Scope of this document:** sequencing only. It translates D-1 through D-11 into an ordered task list with explicit dependencies and verification gates. No implementation begins from this document alone — it's the map, not the code.
 
@@ -29,7 +29,7 @@ _Resolves the two VERIFY items the approved plan explicitly gates on. Nothing el
 
 ---
 
-## Stage 1 — Shared Graph State Schema & Configuration
+## Stage 1 — Shared Graph State Schema & Configuration ✅
 
 _Nothing downstream can be built without this — every node reads and writes this shape._
 
