@@ -3,7 +3,7 @@
 **Event-Driven Orchestration (LangGraph) — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 4 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-08
-**Status:** 🟢 Stage 1 Complete — Gate 1 Passed (Ready for Stage 2)
+**Status:** 🟢 Stage 2 Complete — Gate 2 Passed (Ready for Stage 3)
 **Authority:** `reports/docs/decisions/phase4_implementation_plan_and_decisions.md` (v1.0.0, Approved) — every step below traces to a specific approved decision ID
 **Scope of this document:** sequencing only. It translates D-1 through D-11 into an ordered task list with explicit dependencies and verification gates. No implementation begins from this document alone — it's the map, not the code.
 
@@ -43,7 +43,7 @@ _Nothing downstream can be built without this — every node reads and writes th
 
 ---
 
-## Stage 2 — Artifact Loading Utility
+## Stage 2 — Artifact Loading Utility ✅
 
 _Defines how the once-only load from D-9 actually happens, before any node needs it._
 
