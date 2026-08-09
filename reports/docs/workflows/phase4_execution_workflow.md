@@ -1,8 +1,9 @@
 # Phase 4 — Execution Workflow
+
 **Event-Driven Orchestration (LangGraph) — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 4 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-08
-**Status:** 🟡 Ready to execute — no code written yet
+**Status:** 🟢 Stage 0 Complete — Gate 0 Passed (Ready for Stage 1)
 **Authority:** `reports/docs/decisions/phase4_implementation_plan_and_decisions.md` (v1.0.0, Approved) — every step below traces to a specific approved decision ID
 **Scope of this document:** sequencing only. It translates D-1 through D-11 into an ordered task list with explicit dependencies and verification gates. No implementation begins from this document alone — it's the map, not the code.
 
@@ -14,13 +15,14 @@
 
 ---
 
-## Stage 0 — Pre-Implementation Verification
-*Resolves the two VERIFY items the approved plan explicitly gates on. Nothing else starts until this stage closes.*
+## Stage 0 — Pre-Implementation Verification ✅
+
+_Resolves the two VERIFY items the approved plan explicitly gates on. Nothing else starts until this stage closes._
 
 1. Inspect `src/models/pressure_deviation.py` — confirm whether `assign_leverage_bucket()` is already defined there. **[D-6, VERIFY]**
 2. If not found there, inspect `scripts/train_pressure.py` and confirm it's currently defined only inside the training script. **[D-6, VERIFY]**
 3. If script-only: relocate `assign_leverage_bucket()` into `src/models/pressure_deviation.py`; update `scripts/train_pressure.py` to import it from there instead of defining it locally. Re-run `uv run pytest tests/unit/test_pressure_deviation.py` to confirm zero regressions from the move. **[D-6]**
-4. Create the `src/graph/` package (`__init__.py`) if it doesn't already exist, per the project structure in `PULSE.md`. **[scope]**
+4. Create the `src/graph/` package (`__init__.py`) if it doesn't already exist, per the project structure.
 5. Confirm the Phase 3 artifacts (`stratum_table.json`, the pressure-deviation artifact) referenced by `dvc.lock` are present and loadable — Stage 2's artifact loader depends on this. **[D-9]**
 
 **Gate 0:** `assign_leverage_bucket()` confirmed importable from `src/models/pressure_deviation.py`; `src/graph/` exists; both Phase 3 artifacts load cleanly.
@@ -28,7 +30,8 @@
 ---
 
 ## Stage 1 — Shared Graph State Schema & Configuration
-*Nothing downstream can be built without this — every node reads and writes this shape.*
+
+_Nothing downstream can be built without this — every node reads and writes this shape._
 
 6. Create `src/graph/state.py`. Define the `PulseGraphState` Pydantic `BaseModel` exactly per the approved field table: `point_context`, `leverage_result` (always populated), `pressure_result: Optional`, `exploit_result: Optional`, `tactical_output`, `decision_log`. **[D-2, D-2a]**
 7. In the same file, define the nested sub-models it references: a leverage-result model (`ΔL`, `ΔL_low`, `ΔL_high`, `p_hat`, `sample_size`, `fallback_tier`) and a decision-log-entry model (`node`, `fired: bool`, `reason: str`). **[D-2]**
@@ -41,7 +44,8 @@
 ---
 
 ## Stage 2 — Artifact Loading Utility
-*Defines how the once-only load from D-9 actually happens, before any node needs it.*
+
+_Defines how the once-only load from D-9 actually happens, before any node needs it._
 
 11. In `src/graph/pulse_graph.py`, implement a graph-construction entry point (e.g. `build_pulse_graph(params)`) whose first responsibility, before any node is registered, is to load `StratumTable` (via `load_stratum_table()`) and the `PressureModelArtifact` (via `load_pressure_artifact()`) exactly once. **[D-9]**
 12. Decide and document the injection mechanism nodes will use to reach these loaded artifacts: factory functions that close over the artifacts and return the actual per-node callable (per D-10's function-based style), rather than reloading or passing raw artifacts through graph state. **[D-9, D-10]**
@@ -51,7 +55,8 @@
 ---
 
 ## Stage 3 — `StateMonitorNode`
-*Always-on node (FR-3). Built and unit-tested in isolation before anything conditional touches it.*
+
+_Always-on node (FR-3). Built and unit-tested in isolation before anything conditional touches it._
 
 13. Create `src/graph/state_monitor.py`. Implement `make_state_monitor_node(stratum_table, params)`, a factory returning an `async` node callable — async from the outset, per D-7a, even though this particular node makes no network call, to keep every node in the graph on one consistent calling convention. **[D-9, D-10, D-7a]**
 14. Inside the node: call `resolve_point_win_probability()` against the loaded stratum table → `p_hat`, `sample_size`, `fallback_tier`. **[upstream contract, unchanged]**
@@ -65,7 +70,8 @@
 ---
 
 ## Stage 4 — `PressureDiagnosticNode`
-*Triggered node #1. Depends on Stage 0's relocation and a new accessor this stage adds.*
+
+_Triggered node #1. Depends on Stage 0's relocation and a new accessor this stage adds._
 
 19. In `src/models/pressure_deviation.py`, add `get_pressure_deviation(artifact, server_id, bucket) -> PressureDeviationResult | None` — the serving-time lookup that was missing from the audit, built next to `load_pressure_artifact()` per the approved D-6 ownership decision. The `"server_id|bucket_idx"` key-construction logic lives here once, reused by both training and serving. **[D-6]**
 20. Confirm `assign_leverage_bucket()` (relocated or confirmed in Stage 0) is importable alongside it in the same module. **[D-6]**
@@ -78,7 +84,8 @@
 ---
 
 ## Stage 5 — `StrategyExploitNode` (Stub)
-*Triggered node #2. Resolves Finding A concretely — the sufficiency gate is real, the recommendation payload is a flagged placeholder.*
+
+_Triggered node #2. Resolves Finding A concretely — the sufficiency gate is real, the recommendation payload is a flagged placeholder._
 
 24. Before writing the node: confirm what data is actually available in Phase 2/3 artifacts to feed an honest sample-size sufficiency check, since the full opponent return-positioning dataset is Phase 5 scope (`core/game_theory.py`). If no opponent-specific observation count is currently exposed, add a small, narrowly-scoped `count_opponent_observations(server_id)` helper here — strictly a count, not the return-positioning model itself, which stays in Phase 5. Flag explicitly in code comments that this counter is Phase-4-scoped and will likely be superseded by Phase 5's real data pipeline. **[D-1]**
 25. Create `src/graph/strategy_exploit.py`. Implement `make_strategy_exploit_node(params)`, async factory-built node. **[D-9, D-10, D-7a]**
@@ -90,7 +97,8 @@
 ---
 
 ## Stage 6 — Conditional Edges: Diagnostic Branch
-*Wires Stages 3–5 together. This is where D-3, D-4, D-4a, and D-5 all become real code paths for the first time.*
+
+_Wires Stages 3–5 together. This is where D-3, D-4, D-4a, and D-5 all become real code paths for the first time._
 
 28. In `pulse_graph.py`, implement one shared escalation-gate function, e.g. `should_escalate(leverage_result, threshold) -> bool`, using the approved D-4 rule: `ΔL_low ≥ threshold` — the lower confidence bound, not the point estimate. Both routing functions below call this same function; no duplicated threshold logic. **[D-4, D-4a]**
 29. Implement the routing function after `StateMonitorNode`: decide whether to visit `PressureDiagnosticNode` using `should_escalate()`; append a `DecisionLogEntry` to `state.decision_log` recording fire-or-suppress and the reason — logged here, in the routing function, because a suppressed node is never invoked and cannot log itself (D-3's consequence). **[D-3, D-5]**
@@ -104,7 +112,8 @@
 ---
 
 ## Stage 7 — `TacticalOutputNode` and Graph Finalization
-*The terminal node. Once this exists, `pulse_graph.py` can be compiled end to end.*
+
+_The terminal node. Once this exists, `pulse_graph.py` can be compiled end to end._
 
 34. Create `src/graph/llm_client.py`. Implement a thin wrapper, e.g. `call_narrative_llm(payload, params) -> str | None`, around the Anthropic SDK call (Haiku-class model, per D-7). On any exception — timeout, network, rate limit — it returns `None` rather than raising, which is the deterministic-passthrough fallback the harness requires, not an error state. **[D-7]**
 35. Create `src/graph/tactical_output.py`. Implement `make_tactical_output_node(params)`, async factory-built node. **[D-9, D-10, D-7a]**
@@ -119,7 +128,8 @@
 ---
 
 ## Stage 8 — DeepEval Groundedness Test
-*Closes Finding B, scoped exactly as approved — one check, not a general eval suite.*
+
+_Closes Finding B, scoped exactly as approved — one check, not a general eval suite._
 
 41. Confirm `deepeval` is already present in `pyproject.toml` (it's listed among Phase 1's baseline dependencies) — add only if genuinely missing. **[D-8]**
 42. Create `tests/evals/test_tactical_output_groundedness.py`. Scope: does `tactical_output.narrative` introduce any number, confidence claim, or exploit recommendation not present in the structured payload it was built from — nothing broader. **[D-8]**
@@ -131,7 +141,8 @@
 ---
 
 ## Stage 9 — Integration Test Suite
-*Proves the whole graph, not just its parts — this is Phase 4's literal exit criteria.*
+
+_Proves the whole graph, not just its parts — this is Phase 4's literal exit criteria._
 
 45. Create `tests/integration/test_conditional_graph.py`. **[D-11]**
 46. Fixture 1 — **Routine point**: leverage estimate and lower bound both well below `leverage_escalation`. Assert: only `StateMonitorNode` fires; `pressure_result` and `exploit_result` are `None`; `decision_log` shows two suppressions with correct reasons; `tactical_output.narrative` is `None` and no LLM call was made.
@@ -144,7 +155,8 @@
 ---
 
 ## Stage 10 — Full Phase 4 Verification
-*The same CI gate every prior phase was held to — nothing new invented for this phase.*
+
+_The same CI gate every prior phase was held to — nothing new invented for this phase._
 
 50. `uv run ruff check .` and `uv run ruff format --check .` — 0 errors.
 51. `uv run pyright` — 0 errors.
