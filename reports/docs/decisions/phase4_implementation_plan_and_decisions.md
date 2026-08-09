@@ -2,10 +2,10 @@
 
 **Event-Driven Orchestration (LangGraph)**
 
-**Product:** PULSE | **Phase:** 4 of 7 | **Version:** 0.1.0 (Draft — Pending Approval) | **Date:** 2026-08-07
-**Status:** 🟡 Planning — no code written
+**Product:** PULSE | **Phase:** 4 of 7 | **Version:** 1.0.0 (Approved) | **Date:** 2026-08-08
+**Status:** 🟢 Approved — Ready for Implementation
 **Authority:** `technical_roadmap.md` (Phase 4), `system_design.md` (ADR-001, ADR-003, ADR-005, ADR-005 Amendment 1), Non-Negotiable Invariants, workflow rules, `prd.md`
-**Approval required from:** Sebastian, before any implementation begins — per project workflow rules: _"Plan before non-trivial work. Propose a plan, present comparative options where a real design choice exists, and wait for explicit approval before implementing."_
+**Approval Status:** Approved by Sebastian — all decision points resolved.
 
 ---
 
@@ -16,7 +16,7 @@ Structured like `system_design.md`'s ADR log, scoped to one phase and kept separ
 - **Section 1** is the mandatory current-state audit. It drives Section 2.
 - **Section 2** holds one entry per decision, each tagged:
   - 🔴 **Decision required** — a real fork exists; your input is needed.
-  - 🟢 **No input required** — recorded for completeness and traceability, but the project's own constraints (a latency NFR, a Non-Negotiable Invariant, or an already-accepted ADR) leave exactly one defensible option.
+  - 🟢 **No input required / Approved** — recorded for completeness and traceability, or finalized via user approval.
 - Sub-decisions are nested under the primary decision they branch from.
 
 **Audit scope caveat, stated up front:** this conversation has PULSE's planning and architecture documentation, not the actual Phase 2/3 source files under `src/`. The audit below is therefore **spec-level** — audited against documented contracts, not a live `src/` tree. Findings that depend on something only visible in real source are marked **VERIFY**, and should be the literal first thing checked when implementation starts.
@@ -58,7 +58,7 @@ All ✅ Complete per `phase3_ml_layer_architecture.md`: `core/markov_solver.py::
 
 ## 2. Decisions
 
-### D-1 🔴 `StrategyExploitNode` Scope for Phase 4
+### D-1 🟢 `StrategyExploitNode` Scope for Phase 4 — Option A Selected
 
 **Context:** Finding A. The graph's conditional-edge structure (ADR-001) and Phase 4's own exit criteria require a fixture that reaches a working `StrategyExploitNode`, but the game-theory math it needs (`core/game_theory.py`) is Phase 5 scope.
 
@@ -68,11 +68,11 @@ All ✅ Complete per `phase3_ml_layer_architecture.md`: `core/markov_solver.py::
 | **B — Defer entirely to Phase 5**    | Conditional edges only ever route to `PressureDiagnosticNode` this phase.                                                                                                                                                                                                                                      | Nothing gets thrown away, but Phase 4's own stated exit criteria can't be literally met — would need a formal, dated roadmap amendment, not a silent cut.             |
 | **C — Pull Phase 5 forward in full** | Build the actual minimax solver now.                                                                                                                                                                                                                                                                           | Violates the roadmap's own dependency order and mixes an unrelated, higher-novelty component into this phase's review. Not a serious option; listed for completeness. |
 
-**Proposal: Option A.** Only option that satisfies the stated exit criteria, keeps ADR-003's actually load-bearing sufficiency-gate logic real and tested now, and confines Phase 5 to a contained swap. Recommend logging this resolution back into `system_design.md` against the Component Inventory so Finding A doesn't resurface as a live ambiguity when Phase 5 starts.
+**Decision: Option A (Approved).** Only option that satisfies the stated exit criteria, keeps ADR-003's actually load-bearing sufficiency-gate logic real and tested now, and confines Phase 5 to a contained swap. Note: log this resolution back into `system_design.md` against the Component Inventory so Finding A doesn't resurface as a live ambiguity when Phase 5 starts.
 
 ---
 
-### D-2 🔴 Graph State Schema & Node I/O Contract
+### D-2 🟢 Graph State Schema & Node I/O Contract — Pydantic & Optional Fields Approved
 
 **Context:** No document defines the object flowing through `pulse_graph.py`. Proposed shape (fields, not code — a Pydantic model at implementation time):
 
@@ -87,16 +87,16 @@ tactical_output : narrative text + assembled signal payload                 (Tac
 decision_log    : list of {node, fired: bool, reason}                       (appended by routing — see D-5)
 ```
 
-**D-2a 🔴 — Pydantic `BaseModel` vs. LangGraph-idiomatic `TypedDict`.**
+**D-2a 🟢 — Pydantic `BaseModel` vs. LangGraph-idiomatic `TypedDict`.**
 
 | Option                          | Trade-off                                                                                                                                                                                                                                                                                       |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `TypedDict` (LangGraph default) | Idiomatic, frictionless with built-in reducers/checkpointing. Violates coding conventions: _"Every module boundary MUST validate input/output via Pydantic `BaseModel`. No raw `dict` parameters."_ — no validation at exactly the boundary where a malformed upstream payload is costliest to miss. |
 | Pydantic `BaseModel`            | Consistent with every other module boundary in the project (`PointRecord`, `MatchState`, `StratumTable`, `PressureModelArtifact`). LangGraph supports it, but partial-update/reducer semantics need explicit handling.                                                                          |
 
-**Proposal:** Pydantic — this is an already-stated project convention, not a fresh style preference. The reducer friction is a one-time, contained cost.
+**Decision (D-2a): Pydantic BaseModel (Approved).** This is an already-stated project convention, not a fresh style preference. The reducer friction is a one-time, contained cost.
 
-**D-2b 🔴 — representing "did this node fire."** `Optional` fields, defaulting to `None`, populated only on actual execution — never a placeholder "empty" object. Makes "did it fire" a presence check, which both `TacticalOutputNode`'s assembly (FR-7) and the groundedness check (D-8) need: nothing invented when a field is `None`.
+**D-2b 🟢 — representing "did this node fire."** `Optional` fields, defaulting to `None`, populated only on actual execution — never a placeholder "empty" object. Makes "did it fire" a presence check, which both `TacticalOutputNode`'s assembly (FR-7) and the groundedness check (D-8) need: nothing invented when a field is `None`. **(Approved)**
 
 ---
 
@@ -106,7 +106,7 @@ Non-Negotiable Invariants already settle this: _"Do not restructure this into a 
 
 ---
 
-### D-4 🔴 Confidence-Band-Aware Escalation Threshold
+### D-4 🟢 Confidence-Band-Aware Escalation Threshold — Option B Selected
 
 **Context:** `prd.md` requirements (still open): _"provisionally: wide bands should raise the effective threshold, not just wide sample-size gates."_ This phase is where the roadmap requires finalizing it.
 
@@ -116,9 +116,9 @@ Non-Negotiable Invariants already settle this: _"Do not restructure this into a 
 | **B — Gate on the lower bound**                       | Escalate only if `ΔL_low ≥ leverage_escalation`.                                                   | No new parameter. A wide band pulls `ΔL_low` down, mechanically raising the bar — the PRD's rule falls out for free from infrastructure ADR-005 Amendment 1 already built. Directly operationalizes the Sufficiency Gate's own language for a one-sided decision. Marginally more conservative — acceptable given the PRD names false-escalation rate (<0.15) as a tracked metric. |
 | **C — Point estimate only, band as display metadata** | Escalate on `ΔL` alone.                                                                            | Simplest, but doesn't close the open question at all.                                                                                                                                                                                                                                                                                                                              |
 
-**Proposal: Option B.** Closes the question with zero new tunable parameters, reuses already-validated infrastructure, and is the more structural reading of the Sufficiency Gate rather than an approximation of it.
+**Decision (D-4): Option B (Approved).** Closes the question with zero new tunable parameters, reuses already-validated infrastructure, and is the more structural reading of the Sufficiency Gate rather than an approximation of it.
 
-**D-4a 🔴 — apply uniformly to `PressureDiagnosticNode` and `StrategyExploitNode`'s leverage gate, or only one?** FR-4 and FR-5 both key off the same `thresholds.leverage_escalation`. **Proposal:** apply the same rule to both — two escalation semantics for one conceptual trigger, reused by two consumers, is a harder-to-audit inconsistency than any real design need justifies.
+**D-4a 🟢 — apply uniformly to `PressureDiagnosticNode` and `StrategyExploitNode`'s leverage gate, or only one?** FR-4 and FR-5 both key off the same `thresholds.leverage_escalation`. **Decision (D-4a): Apply the same rule to both (Approved).** Two escalation semantics for one conceptual trigger, reused by two consumers, is a harder-to-audit inconsistency than any real design need justifies.
 
 ---
 
@@ -128,20 +128,20 @@ FR-10 requires every escalation decision, fire _or_ suppress, logged with its tr
 
 ---
 
-### D-6 🔴 `PressureDiagnosticNode` Runtime Lookup — Module Ownership
+### D-6 🟢 `PressureDiagnosticNode` Runtime Lookup — Module Ownership — Option A Selected
 
 | Option                                                       | Description                                                                                                                                                                               | Trade-off                                                                                                                                                                                      |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **A — Extend `src/models/pressure_deviation.py`**            | Add `get_pressure_deviation(artifact, server_id, bucket) -> PressureDeviationResult \| None` next to `load_pressure_artifact()`, mirroring `resolve_point_win_probability()`'s precedent. | Matches an already-accepted pattern; key-construction logic (`"server_id\|bucket_idx"`) lives once, reused by both training and serving.                                                       |
 | **B — Inline dict lookup in `graph/pressure_diagnostic.py`** | Node reaches into `artifact.results` directly.                                                                                                                                            | Duplicates the key-format string in two files — exactly the drift training-serving parity rules exist to prevent (stated for the classifier, but the same logic applies here). |
 
-**Proposal: Option A.**
+**Decision: Option A (Approved).** Extend `src/models/pressure_deviation.py`.
 
 **Coupled VERIFY:** `assign_leverage_bucket()` is documented only as a step inside `scripts/train_pressure.py`'s pipeline — never confirmed as living in `src/`. If script-only today, `pressure_diagnostic.py` can't cleanly import it without a `src/` → `scripts/` dependency, which runs backward relative to the project's own layering. First action of implementation: confirm its location; if script-only, relocate it into `src/models/pressure_deviation.py` alongside the new accessor, and have `scripts/train_pressure.py` import it from there. 🟢 Not really a decision — only one direction respects the existing boundary — but gated on a VERIFY, so recorded here rather than in the unequivocal list.
 
 ---
 
-### D-7 🔴 `TacticalOutputNode` LLM Provider & Invocation Pattern
+### D-7 🟢 `TacticalOutputNode` LLM Provider & Invocation Pattern — Option A Selected
 
 **Context:** System architectural guidelines mandate "a single small/cheap model," no second-vendor fallback, deterministic raw-payload passthrough on failure — but never names a provider. No LLM keys exist in `params.yaml` yet.
 
@@ -151,13 +151,13 @@ FR-10 requires every escalation decision, fire _or_ suppress, logged with its tr
 | **B — OpenAI (GPT-4o-mini class)**       | Comparable cost/latency. No particular alignment with the rest of the toolchain.                                                                                                                                                                               |
 | **C — Local/open-weight model (Ollama)** | Zero marginal inference cost, no external dependency. Solves a cost problem `project_charter.md` notes doesn't exist yet ("cents per escalation... negligible") at the price of new operational infrastructure.                                              |
 
-**Proposal: Option A**, mainly for toolchain consistency and because the job here is deliberately thin — _"the LLM's role is thin enough that a deterministic passthrough is a complete, honest fallback"_ — a large model isn't needed, a cheap, reliable, instruction-following one is. This is a genuine judgment call, flagged 🔴, not a conclusion dressed up as inevitable.
+**Decision: Option A (Approved)**, mainly for toolchain consistency and because the job here is deliberately thin (§2: "the LLM's role is thin enough that a deterministic passthrough is a complete, honest fallback") — a large model isn't needed, a cheap, reliable, instruction-following one is.
 
 **D-7a 🟢 — sync vs. async node functions, project-wide.** Not just a `tactical_output.py` question — whatever's decided sets the calling convention for all four Phase 4 nodes. Phase 6 wires this graph into FastAPI's async-native SSE/WebSocket streaming, and `TacticalOutputNode` makes the one real network call inside a <5s triggered-node budget, where blocking the event loop is a real cost. Building sync now and retrofitting in Phase 6 is avoidable rework against an already-fixed target. **Proposal:** all four nodes as `async def` from the start. Recorded for completeness — there's no real case for sync given the fixed downstream target.
 
 ---
 
-### D-8 🔴 DeepEval Groundedness Test — Scheduling
+### D-8 🟢 DeepEval Groundedness Test — Scheduling — Option A Selected
 
 **Context:** Finding B.
 
@@ -166,7 +166,7 @@ FR-10 requires every escalation decision, fire _or_ suppress, logged with its tr
 | **A — Minimal version now, in Phase 4**                              | Matches the pattern already set twice: Phase 2 shipped the solver with its test alongside it; Phase 3 shipped both models with theirs. `tactical_output.py` is the only Phase 4 file calling an external LLM — shipping it with zero eval coverage leaves the phase's highest-risk file the least governed. |
 | **B — Defer to Phase 6, as `test_suite_report.md` literally states** | No extra work this phase, but leaves the node ungoverned by its designated safety check for two full phases — longer exposure than the project's "fail loud, don't defer safety checks" posture elsewhere (e.g., ADR-002's zero-tolerance solver gate) suggests is comfortable.                             |
 
-**Proposal: Option A**, scoped exactly as evaluation guidelines already scope it — one check: does the narrative introduce any number, confidence claim, or exploit recommendation absent from its input payload. Closes Finding B by amendment, not by silently picking whichever conflicting document is convenient.
+**Decision: Option A (Approved)**, scoped exactly as evaluation guidelines already scope it — one check: does the narrative introduce any number, confidence claim, or exploit recommendation absent from its input payload. Closes Finding B by amendment, not by silently picking whichever conflicting document is convenient.
 
 ---
 
@@ -176,14 +176,14 @@ FR-10 requires every escalation decision, fire _or_ suppress, logged with its tr
 
 ---
 
-### D-10 🔴 Node Implementation Style — Functions + Closures, or Callable Classes
+### D-10 🟢 Node Implementation Style — Functions + Closures, or Callable Classes — Option A Selected
 
 | Option                                                                        | Trade-off                                                                                                                                                                                                                                                                                                    |
 | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **A — Plain functions + closures / `functools.partial`**                      | Matches the codebase's established style — `point_win_classifier.py` and `pressure_deviation.py` are function-based throughout (`build_stratum_table`, `resolve_point_win_probability`, `fit_bucket_prior`), no class-based wrappers anywhere in Phase 2/3. Direct fit with LangGraph's native registration. |
 | **B — Callable classes** (`__init__` takes artifacts, `__call__` takes state) | More conventionally mockable in isolated unit tests. Introduces the first class-based pattern in an otherwise function-based codebase — a style inconsistency, not a technical blocker.                                                                                                                      |
 
-**Proposal: Option A**, for consistency with established convention. Not unequivocal — B is a legitimate alternative on testability grounds — so this stays 🔴 rather than folding into D-9.
+**Decision: Option A (Approved)**, for consistency with established convention.
 
 ---
 
@@ -197,18 +197,18 @@ FR-10 requires every escalation decision, fire _or_ suppress, logged with its tr
 
 | ID                | Title                                                      | Status                                                    |
 | ----------------- | ---------------------------------------------------------- | --------------------------------------------------------- |
-| D-1               | `StrategyExploitNode` scope — stub in Phase 4              | 🔴 Pending                                                |
-| D-2 / D-2a / D-2b | Graph state schema — Pydantic, `Optional` fields           | 🔴 Pending                                                |
+| D-1               | `StrategyExploitNode` scope — stub in Phase 4              | 🟢 Approved (Option A)                                    |
+| D-2 / D-2a / D-2b | Graph state schema — Pydantic, `Optional` fields           | 🟢 Approved (Pydantic BaseModel)                          |
 | D-3               | Conditional edges skip, don't no-op                        | 🟢 Recorded                                               |
-| D-4 / D-4a        | Escalation gate on lower band bound, applied uniformly     | 🔴 Pending                                                |
+| D-4 / D-4a        | Escalation gate on lower band bound, applied uniformly     | 🟢 Approved (Option B / Uniform)                          |
 | D-5               | Fire/suppress logging in routing functions                 | 🟢 Recorded                                               |
-| D-6               | Pressure lookup accessor in `models/pressure_deviation.py` | 🔴 Pending (+ VERIFY `assign_leverage_bucket()` location) |
-| D-7 / D-7a        | LLM provider (proposing Anthropic) + async nodes           | 🔴 Pending                                                |
-| D-8               | Minimal DeepEval groundedness test, built in Phase 4       | 🔴 Pending                                                |
+| D-6               | Pressure lookup accessor in `models/pressure_deviation.py` | 🟢 Approved (Option A + VERIFY bucket function location)  |
+| D-7 / D-7a        | LLM provider (Anthropic Haiku) + async nodes               | 🟢 Approved (Option A / Async)                            |
+| D-8               | Minimal DeepEval groundedness test, built in Phase 4       | 🟢 Approved (Option A)                                    |
 | D-9               | Load artifacts once, at graph construction                 | 🟢 Recorded                                               |
-| D-10              | Functions + closures over callable classes                 | 🔴 Pending                                                |
+| D-10              | Functions + closures over callable classes                 | 🟢 Approved (Option A)                                    |
 | D-11              | Static fixtures, not replayed                              | 🟢 Recorded                                               |
 
-**Proposed build order once resolved:** (1) confirm both VERIFY items against the actual `src/` tree, (2) `pulse_graph.py` state schema + artifact loading, (3) `state_monitor.py`, (4) `pressure_diagnostic.py` + its new accessor, (5) `strategy_exploit.py` stub, (6) conditional edges + routing-level logging, (7) `tactical_output.py` + minimal groundedness eval, (8) the three-fixture integration suite.
+**Build order now authorized for execution:** (1) confirm both VERIFY items against the actual `src/` tree, (2) `pulse_graph.py` state schema + artifact loading, (3) `state_monitor.py`, (4) `pressure_diagnostic.py` + its new accessor, (5) `strategy_exploit.py` stub, (6) conditional edges + routing-level logging, (7) `tactical_output.py` + minimal groundedness eval, (8) the three-fixture integration suite.
 
-No implementation begins until the 🔴 items above are resolved.
+All decision points resolved and approved. Implementation phase authorized to begin.

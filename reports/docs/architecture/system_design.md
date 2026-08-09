@@ -239,7 +239,7 @@ This value is provably identical regardless of which player serves the next poin
 | Leverage uncertainty propagation | `core/leverage_uncertainty.py`      | Phase 3                          |
 | `StateMonitorNode`               | `graph/state_monitor.py`            | Phase 4                          |
 | `PressureDiagnosticNode`         | `graph/pressure_diagnostic.py`      | Phase 4                          |
-| `StrategyExploitNode`            | `graph/strategy_exploit.py`         | Phase 5 (module), Phase 4 (node) |
+| `StrategyExploitNode`            | `graph/strategy_exploit.py`         | Phase 4 (node & sufficiency gate stub), Phase 5 (minimax module integration) |
 | Game theory solver               | `core/game_theory.py`               | Phase 5                          |
 | `TacticalOutputNode`             | `graph/tactical_output.py`          | Phase 4                          |
 | FastAPI + streaming              | `api/main.py`, `api/streaming.py`   | Phase 6                          |
