@@ -359,3 +359,24 @@ def load_pressure_artifact(artifact_dir: Path) -> PressureModelArtifact:
         raise ModelInferenceError(
             f"Failed to load PressureModelArtifact from [{target}]: {e}"
         ) from e
+
+
+def get_pressure_deviation(
+    artifact: PressureModelArtifact, server_id: str, leverage_bucket: int
+) -> PressureDeviationResult | None:
+    """Retrieve serving-time pressure deviation result for a player in a leverage bucket.
+
+    Key format: "server_id|leverage_bucket".
+    Returns None if player has no entry in the specified leverage bucket (sparse-player miss).
+
+    Args:
+        artifact: Loaded PressureModelArtifact container.
+        server_id: Player identifier string.
+        leverage_bucket: Discrete leverage bucket index (0, 1, or 2).
+
+    Returns:
+        PressureDeviationResult if found, or None on sparse-player miss.
+    """
+    key = f"{server_id}|{leverage_bucket}"
+    return artifact.results.get(key)
+
