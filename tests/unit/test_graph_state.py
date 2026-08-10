@@ -44,6 +44,7 @@ def test_pulse_graph_state_construction() -> None:
     )
 
     assert state.point_context.match_id == "match_001"
+    assert state.leverage_result is not None
     assert state.leverage_result.delta_leverage == 0.18
     assert state.pressure_result is None
     assert state.exploit_result is None

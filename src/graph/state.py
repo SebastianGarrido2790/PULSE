@@ -6,10 +6,11 @@ the event-driven orchestration nodes in pulse_graph.py.
 Authority: Phase 4 Decisions D-2, D-2a, D-2b.
 """
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from src.core.markov_solver import MatchState
 from src.models.pressure_deviation import PressureDeviationResult
 
 
@@ -22,6 +23,28 @@ class PointContext(BaseModel):
     returner_id: str = Field(..., description="Player ID returning the point")
     surface: str = Field(..., description="Court surface (HARD, CLAY, GRASS)")
     serve_number: int = Field(..., ge=1, le=2, description="Serve attempt number (1 or 2)")
+    point_score_server: int = Field(default=0, ge=0, le=4, description="Server point score (0-4)")
+    point_score_returner: int = Field(
+        default=0, ge=0, le=4, description="Returner point score (0-4)"
+    )
+    game_score_server: int = Field(default=0, ge=0, le=7, description="Server game count")
+    game_score_returner: int = Field(default=0, ge=0, le=7, description="Returner game count")
+    set_score_server: int = Field(default=0, ge=0, le=3, description="Server set count")
+    set_score_returner: int = Field(default=0, ge=0, le=3, description="Returner set count")
+    match_format: Literal["bo3", "bo5"] = Field(default="bo3", description="Match format")
+
+    def to_match_state(self) -> MatchState:
+        """Convert PointContext score attributes into a valid MatchState for Markov solver."""
+        return MatchState(
+            point_score_server=self.point_score_server,
+            point_score_returner=self.point_score_returner,
+            game_score_server=self.game_score_server,
+            game_score_returner=self.game_score_returner,
+            set_score_server=self.set_score_server,
+            set_score_returner=self.set_score_returner,
+            server_id=self.server_id,
+            match_format=self.match_format,
+        )
 
 
 class LeverageResult(BaseModel):
@@ -85,7 +108,9 @@ class PulseGraphState(BaseModel):
     """
 
     point_context: PointContext
-    leverage_result: LeverageResult
+    leverage_result: LeverageResult | None = Field(
+        default=None, description="Populated by StateMonitorNode (always present after first node)"
+    )
     pressure_result: PressureDeviationResult | None = Field(
         default=None, description="Populated only if PressureDiagnosticNode fires"
     )
