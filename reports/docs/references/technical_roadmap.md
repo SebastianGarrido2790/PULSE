@@ -81,7 +81,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 4 — Event-Driven Orchestration (LangGraph) 🛠️ In Progress
+## Phase 4 — Event-Driven Orchestration (LangGraph) ✅ Complete
 
 **Goal:** Implement the conditional graph: `StateMonitorNode` always-on, `PressureDiagnosticNode` and `StrategyExploitNode` triggered, `TacticalOutputNode` assembling whichever fired.
 
@@ -94,7 +94,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 - Structured logging of every fire/suppress decision with its triggering condition (FR-10)
 - Integration tests verifying the graph produces different node sets for different match-state fixtures
 
-**Deliverables:** `graph/state_monitor.py`, `graph/pressure_diagnostic.py`, `graph/tactical_output.py`, `graph/pulse_graph.py`, integration test suite
+**Deliverables:** `graph/state_monitor.py`, `graph/pressure_diagnostic.py`, `graph/strategy_exploit.py`, `graph/tactical_output.py`, `graph/pulse_graph.py`, integration test suite
 
 **Exit Criteria:** Graph correctly varies its execution path across a set of fixture match states (routine point, high-leverage/low-data point, high-leverage/high-data point); all decisions logged.
 
@@ -118,9 +118,9 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 **Deliverables:** `core/game_theory.py`, `tests/test_game_theory.py`
 
-**Exit Criteria:** Solver passes unit tests; sample-size gate verified via integration test (FR-6); `StrategyExploitNode` from Phase 3 wired to this module.
+**Exit Criteria:** Solver passes unit tests; sample-size gate verified via integration test (FR-6); `StrategyExploitNode` from Phase 4 wired to this module.
 
-**Dependencies:** Phase 1 (historical data), Phase 3 (node to wire into).
+**Dependencies:** Phase 1 (historical data), Phase 4 (node to wire into).
 
 **Est. Duration:** 2 days
 

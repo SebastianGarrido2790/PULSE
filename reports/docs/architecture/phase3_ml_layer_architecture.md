@@ -28,10 +28,10 @@ This document explains **what Phase 3 built, how each component works, and why t
 
 **What Phase 3 does not cover:**
 
-- LangGraph graph orchestration (Phase 4/5)
-- `TacticalOutputNode` LLM narrative synthesis (Phase 5)
+- LangGraph graph orchestration (Phase 4)
+- `TacticalOutputNode` LLM narrative synthesis (Phase 4)
 - Live data feed integration (explicitly out of scope — see `project_charter.md §6`)
-- DeepEval groundedness check (Phase 4/5 scope)
+- DeepEval groundedness check (Phase 4 scope)
 
 ---
 
