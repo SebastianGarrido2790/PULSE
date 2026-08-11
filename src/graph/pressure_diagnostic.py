@@ -88,14 +88,10 @@ def make_pressure_diagnostic_node(
 
         if escalate:
             reason = f"Leverage lower bound {lev_low:.4f} >= threshold {thresh:.4f}"
-            log_entries = [
-                DecisionLogEntry(node="strategy_exploit", fired=True, reason=reason)
-            ]
+            log_entries = [DecisionLogEntry(node="strategy_exploit", fired=True, reason=reason)]
         else:
             reason = f"Leverage lower bound {lev_low:.4f} < threshold {thresh:.4f} (suppressed)"
-            log_entries = [
-                DecisionLogEntry(node="strategy_exploit", fired=False, reason=reason)
-            ]
+            log_entries = [DecisionLogEntry(node="strategy_exploit", fired=False, reason=reason)]
 
         return {"pressure_result": pressure_res, "decision_log": log_entries}
 

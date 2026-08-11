@@ -102,6 +102,7 @@ class Surface(str, Enum):
     CLAY = "CLAY"
     GRASS = "GRASS"
 
+
 # Pydantic v2 model for runtime / streaming point records
 class PointRecord(BaseModel):
     match_id: str
@@ -115,6 +116,7 @@ class PointRecord(BaseModel):
     p2_score: str
     point_winner: str
     # ... additional domain fields
+
 
 # Pandera DataFrame Schema for DVC bulk ingestion pipeline validation
 class PointRecordSchema(pa.DataFrameModel):

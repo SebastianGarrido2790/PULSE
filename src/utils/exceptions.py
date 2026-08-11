@@ -93,4 +93,3 @@ class IngestionException(BasePulseException):
 
 class ConfigException(BasePulseException):
     """Raised when params.yaml loading or schema validation fails."""
-

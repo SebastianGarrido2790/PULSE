@@ -112,18 +112,30 @@ class PressureDeviationResult(BaseModel):
     """Posterior pressure deviation output payload for a single player in a leverage bucket."""
 
     server_id: str
-    leverage_bucket: int = Field(..., ge=0, le=2, description="Bucket index (0=Routine, 1=Elevated, 2=Critical)")
+    leverage_bucket: int = Field(
+        ..., ge=0, le=2, description="Bucket index (0=Routine, 1=Elevated, 2=Critical)"
+    )
     k_pressure: int = Field(..., ge=0, description="High-leverage point wins")
     n_pressure: int = Field(..., ge=0, description="High-leverage point attempts")
     baseline_p: float = Field(..., ge=0.0, le=1.0, description="Player overall baseline serve rate")
-    shrunk_rate: float = Field(..., ge=0.0, le=1.0, description="Empirical-Bayes posterior mean rate")
+    shrunk_rate: float = Field(
+        ..., ge=0.0, le=1.0, description="Empirical-Bayes posterior mean rate"
+    )
     pressure_deviation: float = Field(..., ge=-1.0, le=1.0, description="shrunk_rate - baseline_p")
-    deviation_low_90: float = Field(..., ge=-1.0, le=1.0, description="Lower 90% credible bound for deviation")
-    deviation_high_90: float = Field(..., ge=-1.0, le=1.0, description="Upper 90% credible bound for deviation")
+    deviation_low_90: float = Field(
+        ..., ge=-1.0, le=1.0, description="Lower 90% credible bound for deviation"
+    )
+    deviation_high_90: float = Field(
+        ..., ge=-1.0, le=1.0, description="Upper 90% credible bound for deviation"
+    )
     alpha_prior: float = Field(..., gt=0.0)
     beta_prior: float = Field(..., gt=0.0)
-    is_prior_estimated: bool = Field(..., description="True if prior was estimated via MoM; False if fallback")
-    is_sufficient_sample: bool = Field(..., description="True if n_pressure >= params.uncertainty.min_stratum_observations")
+    is_prior_estimated: bool = Field(
+        ..., description="True if prior was estimated via MoM; False if fallback"
+    )
+    is_sufficient_sample: bool = Field(
+        ..., description="True if n_pressure >= params.uncertainty.min_stratum_observations"
+    )
 ```
 
 ---

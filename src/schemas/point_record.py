@@ -192,9 +192,7 @@ class PointRecordSchema(pa.DataFrameModel):
     p1_sets: pa.Int = pa.Field(ge=0, description="Player 1 sets count")
     p2_sets: pa.Int = pa.Field(ge=0, description="Player 2 sets count")
     rally_length: pa.Int = pa.Field(ge=0, description="Rally length count")
-    point_winner: pa.String = pa.Field(
-        isin=["server", "returner"], description="Point winner role"
-    )
+    point_winner: pa.String = pa.Field(isin=["server", "returner"], description="Point winner role")
     break_point: pa.Bool = pa.Field(description="Is break point flag")
     set_point: pa.Bool = pa.Field(description="Is set point flag")
     match_point: pa.Bool = pa.Field(description="Is match point flag")

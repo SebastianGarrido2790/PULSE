@@ -108,13 +108,15 @@ def test_fit_pressure_model_end_to_end() -> None:
     records = []
     # 30 points for player_1 across Routine (0.05), Elevated (0.15), and Critical (0.35)
     for i in range(30):
-        records.append({
-            "server": "player_1",
-            "surface": "HARD",
-            "serve_number": 1,
-            "point_winner": "server" if i % 2 == 0 else "returner",
-            "leverage": 0.05 if i < 10 else (0.15 if i < 20 else 0.35),
-        })
+        records.append(
+            {
+                "server": "player_1",
+                "surface": "HARD",
+                "serve_number": 1,
+                "point_winner": "server" if i % 2 == 0 else "returner",
+                "leverage": 0.05 if i < 10 else (0.15 if i < 20 else 0.35),
+            }
+        )
 
     df = pd.DataFrame(records)
     stratum_table = build_stratum_table(df)
@@ -130,13 +132,15 @@ def test_fit_pressure_model_end_to_end() -> None:
 
 def test_save_and_load_pressure_artifact(tmp_path: Path) -> None:
     """Verify saving and loading PressureModelArtifact JSON."""
-    records = [{
-        "server": "player_1",
-        "surface": "HARD",
-        "serve_number": 1,
-        "point_winner": "server",
-        "leverage": 0.15,
-    }]
+    records = [
+        {
+            "server": "player_1",
+            "surface": "HARD",
+            "serve_number": 1,
+            "point_winner": "server",
+            "leverage": 0.15,
+        }
+    ]
     df = pd.DataFrame(records)
     stratum_table = build_stratum_table(df)
     artifact = fit_pressure_model(df, stratum_table)

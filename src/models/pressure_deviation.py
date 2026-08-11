@@ -28,15 +28,11 @@ class PressureDeviationResult(BaseModel):
     )
     k_pressure: int = Field(..., ge=0, description="High-leverage point wins")
     n_pressure: int = Field(..., ge=0, description="High-leverage point attempts")
-    baseline_p: float = Field(
-        ..., ge=0.0, le=1.0, description="Player overall baseline serve rate"
-    )
+    baseline_p: float = Field(..., ge=0.0, le=1.0, description="Player overall baseline serve rate")
     shrunk_rate: float = Field(
         ..., ge=0.0, le=1.0, description="Empirical-Bayes posterior mean rate"
     )
-    pressure_deviation: float = Field(
-        ..., ge=-1.0, le=1.0, description="shrunk_rate - baseline_p"
-    )
+    pressure_deviation: float = Field(..., ge=-1.0, le=1.0, description="shrunk_rate - baseline_p")
     deviation_low_90: float = Field(
         ..., ge=-1.0, le=1.0, description="Lower 90% credible bound for deviation"
     )
@@ -74,9 +70,7 @@ class PressureModelArtifact(BaseModel):
     )
 
 
-def assign_leverage_bucket(
-    leverage: float, boundaries: list[float] | None = None
-) -> int:
+def assign_leverage_bucket(leverage: float, boundaries: list[float] | None = None) -> int:
     """Assign point leverage delta_L to a discrete leverage bucket index.
 
     Default boundaries [0.10, 0.25]:
@@ -318,9 +312,7 @@ def fit_pressure_model(
     return PressureModelArtifact(priors=priors, results=results)
 
 
-def save_pressure_artifact(
-    artifact: PressureModelArtifact, artifact_dir: Path
-) -> Path:
+def save_pressure_artifact(artifact: PressureModelArtifact, artifact_dir: Path) -> Path:
     """Save PressureModelArtifact to JSON file.
 
     Args:
@@ -379,4 +371,3 @@ def get_pressure_deviation(
     """
     key = f"{server_id}|{leverage_bucket}"
     return artifact.results.get(key)
-

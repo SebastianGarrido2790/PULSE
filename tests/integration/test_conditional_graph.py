@@ -26,9 +26,7 @@ def compiled_graph():
 @pytest.mark.integration
 @pytest.mark.asyncio
 @patch("src.graph.tactical_output.call_narrative_llm", new_callable=AsyncMock)
-async def test_routine_point_no_escalation(
-    mock_llm: AsyncMock, compiled_graph
-) -> None:
+async def test_routine_point_no_escalation(mock_llm: AsyncMock, compiled_graph) -> None:
     """Fixture 1 — Routine Point: low leverage (0-0, 0-0, 0-0), zero escalation, zero LLM calls."""
     context = PointContext(
         match_id="match_integ_001",
@@ -73,9 +71,7 @@ async def test_routine_point_no_escalation(
 @pytest.mark.integration
 @pytest.mark.asyncio
 @patch("src.graph.tactical_output.call_narrative_llm", new_callable=AsyncMock)
-async def test_high_leverage_sparse_data(
-    mock_llm: AsyncMock, compiled_graph
-) -> None:
+async def test_high_leverage_sparse_data(mock_llm: AsyncMock, compiled_graph) -> None:
     """Fixture 2 — High Leverage, Sparse Opponent: pressure diagnostic runs, exploit degrades."""
     mock_llm.return_value = "Carlos Alcaraz serve win rate drops under elevated leverage."
 
@@ -125,9 +121,7 @@ async def test_high_leverage_sparse_data(
 @pytest.mark.integration
 @pytest.mark.asyncio
 @patch("src.graph.tactical_output.call_narrative_llm", new_callable=AsyncMock)
-async def test_high_leverage_sufficient_data(
-    mock_llm: AsyncMock, compiled_graph
-) -> None:
+async def test_high_leverage_sufficient_data(mock_llm: AsyncMock, compiled_graph) -> None:
     """Fixture 3 — High Leverage, Sufficient Opponent: pressure diagnostic & exploit stub run."""
     mock_llm.return_value = (
         "Carlos Alcaraz under pressure: -6.5% serve win rate. Exploit module pending."

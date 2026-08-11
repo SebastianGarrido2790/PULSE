@@ -55,7 +55,7 @@ During Phase 3 holdout evaluation of the Hierarchical Empirical Stratum Estimato
 ```python
 # Sourced from src/config/loader.py & params.yaml
 max_mace = params.models.max_mean_absolute_calibration_error  # 0.015 (1.5%)
-min_auc_sanity = params.models.min_holdout_auc_sanity         # 0.55
+min_auc_sanity = params.models.min_holdout_auc_sanity  # 0.55
 
 exit_passed = mace <= max_mace
 auc_sanity_passed = auc_score >= min_auc_sanity
@@ -178,7 +178,9 @@ Lack of explicit artifact dependency declarations in pipeline definitions can le
    ```python
    classifier_artifact_dir = PROJECT_ROOT / "artifacts" / "models" / "point_win_classifier"
    if not (classifier_artifact_dir / "stratum_table.json").exists():
-       console.print("[bold red]Error:[/] StratumTable artifact not found. Run scripts/train_classifier.py first!")
+       console.print(
+           "[bold red]Error:[/] StratumTable artifact not found. Run scripts/train_classifier.py first!"
+       )
        sys.exit(1)
    ```
 

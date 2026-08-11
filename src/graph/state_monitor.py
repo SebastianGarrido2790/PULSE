@@ -91,9 +91,7 @@ def make_state_monitor_node(
 
         if escalate:
             reason = f"Leverage lower bound {lev_low:.4f} >= threshold {thresh:.4f}"
-            log_entries = [
-                DecisionLogEntry(node="pressure_diagnostic", fired=True, reason=reason)
-            ]
+            log_entries = [DecisionLogEntry(node="pressure_diagnostic", fired=True, reason=reason)]
         else:
             reason = f"Leverage lower bound {lev_low:.4f} < threshold {thresh:.4f} (suppressed)"
             log_entries = [

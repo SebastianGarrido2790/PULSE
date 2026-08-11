@@ -26,31 +26,37 @@ def sample_points_df() -> pd.DataFrame:
 
     # Player1 on HARD 1st serve: 15 points, 10 wins -> p_hat = 10/15 = 0.6667 (Tier 0 >= 10)
     for i in range(15):
-        records.append({
-            "server": "player_1",
-            "surface": "HARD",
-            "serve_number": 1,
-            "point_winner": "server" if i < 10 else "returner",
-        })
+        records.append(
+            {
+                "server": "player_1",
+                "surface": "HARD",
+                "serve_number": 1,
+                "point_winner": "server" if i < 10 else "returner",
+            }
+        )
 
     # Player1 on CLAY 1st serve: 5 points, 4 wins -> Tier 0 sample_size = 5 (< 10)
     for i in range(5):
-        records.append({
-            "server": "player_1",
-            "surface": "CLAY",
-            "serve_number": 1,
-            "point_winner": "server" if i < 4 else "returner",
-        })
+        records.append(
+            {
+                "server": "player_1",
+                "surface": "CLAY",
+                "serve_number": 1,
+                "point_winner": "server" if i < 4 else "returner",
+            }
+        )
     # Player1 total 1st serve: 15 + 5 = 20 points, 10 + 4 = 14 wins -> Tier 1 (player overall) >= 20
 
     # Population HARD 2nd serve: 60 points, 30 wins -> Tier 2 (surface pop) >= 50
     for i in range(60):
-        records.append({
-            "server": f"pop_player_{i % 5}",
-            "surface": "HARD",
-            "serve_number": 2,
-            "point_winner": "server" if i < 30 else "returner",
-        })
+        records.append(
+            {
+                "server": f"pop_player_{i % 5}",
+                "surface": "HARD",
+                "serve_number": 2,
+                "point_winner": "server" if i < 30 else "returner",
+            }
+        )
 
     return pd.DataFrame(records)
 
@@ -146,9 +152,7 @@ def test_resolve_tier3_global_default(sample_points_df: pd.DataFrame) -> None:
     assert res.p_hat == params.solver.default_p_serve
 
 
-def test_save_and_load_stratum_table(
-    sample_points_df: pd.DataFrame, tmp_path: Path
-) -> None:
+def test_save_and_load_stratum_table(sample_points_df: pd.DataFrame, tmp_path: Path) -> None:
     """Verify persisting and loading StratumTable artifact JSON."""
     table = build_stratum_table(sample_points_df)
     artifact_dir = tmp_path / "models" / "point_win_classifier"

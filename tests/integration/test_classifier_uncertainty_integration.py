@@ -34,40 +34,44 @@ def synthetic_match_dataset() -> pd.DataFrame:
 
     # Server 1 (Federer): 40 points on HARD 1st serve (30 wins -> p_hat = 0.75, N=40 >= 10)
     for i in range(40):
-        records.append({
-            "server": "player_fed",
-            "returner": "player_nad",
-            "server_is_p1": True,
-            "surface": "HARD",
-            "serve_number": 1,
-            "p1_score": "30",
-            "p2_score": "40",
-            "p1_games": 4,
-            "p2_games": 4,
-            "p1_sets": 1,
-            "p2_sets": 1,
-            "point_winner": "server" if i < 30 else "returner",
-            "leverage": 0.18,  # Elevated bucket 1
-        })
+        records.append(
+            {
+                "server": "player_fed",
+                "returner": "player_nad",
+                "server_is_p1": True,
+                "surface": "HARD",
+                "serve_number": 1,
+                "p1_score": "30",
+                "p2_score": "40",
+                "p1_games": 4,
+                "p2_games": 4,
+                "p1_sets": 1,
+                "p2_sets": 1,
+                "point_winner": "server" if i < 30 else "returner",
+                "leverage": 0.18,  # Elevated bucket 1
+            }
+        )
 
     # Server 1 (Federer): 5 points on CLAY 1st serve (3 wins -> Tier 0 N=5 < 10,
     # Tier 1 overall N=45 >= 20)
     for i in range(5):
-        records.append({
-            "server": "player_fed",
-            "returner": "player_nad",
-            "server_is_p1": True,
-            "surface": "CLAY",
-            "serve_number": 1,
-            "p1_score": "40",
-            "p2_score": "AD",
-            "p1_games": 5,
-            "p2_games": 6,
-            "p1_sets": 0,
-            "p2_sets": 1,
-            "point_winner": "server" if i < 3 else "returner",
-            "leverage": 0.32,  # Critical bucket 2
-        })
+        records.append(
+            {
+                "server": "player_fed",
+                "returner": "player_nad",
+                "server_is_p1": True,
+                "surface": "CLAY",
+                "serve_number": 1,
+                "p1_score": "40",
+                "p2_score": "AD",
+                "p1_games": 5,
+                "p2_games": 6,
+                "p1_sets": 0,
+                "p2_sets": 1,
+                "point_winner": "server" if i < 3 else "returner",
+                "leverage": 0.32,  # Critical bucket 2
+            }
+        )
 
     return pd.DataFrame(records)
 

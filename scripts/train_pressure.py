@@ -122,9 +122,7 @@ def run_pressure_pipeline() -> None:
     logger.info("Computing exact point leverage across dataset")
     console.print("Computing point leverage via Markov solver...")
     records = df.to_dict(orient="records")
-    leverages: list[float] = [
-        compute_point_leverage(row, stratum_table, params) for row in records
-    ]
+    leverages: list[float] = [compute_point_leverage(row, stratum_table, params) for row in records]
 
     work_df = df.copy()
     work_df["leverage"] = leverages
@@ -213,22 +211,26 @@ def run_pressure_pipeline() -> None:
     logger.info("Logging run metrics to MLflow")
     mlflow.set_experiment(params.models.mlflow_experiment_pressure)
     with mlflow.start_run(run_name="train_pressure_deviation_estimator"):
-        mlflow.log_params({
-            "pressure_prior_alpha": params.models.pressure_prior_alpha,
-            "pressure_prior_beta": params.models.pressure_prior_beta,
-            "min_players_per_bucket": params.models.pressure_prior_min_players_per_bucket,
-            "pressure_leverage_buckets": str(params.models.pressure_leverage_buckets),
-        })
-        mlflow.log_metrics({
-            "empirical_coverage_rate": coverage_rate,
-            "total_eval_player_strata": total_eval_players,
-            "bucket0_alpha": pressure_artifact.priors[0].alpha_0,
-            "bucket0_beta": pressure_artifact.priors[0].beta_0,
-            "bucket1_alpha": pressure_artifact.priors[1].alpha_0,
-            "bucket1_beta": pressure_artifact.priors[1].beta_0,
-            "bucket2_alpha": pressure_artifact.priors[2].alpha_0,
-            "bucket2_beta": pressure_artifact.priors[2].beta_0,
-        })
+        mlflow.log_params(
+            {
+                "pressure_prior_alpha": params.models.pressure_prior_alpha,
+                "pressure_prior_beta": params.models.pressure_prior_beta,
+                "min_players_per_bucket": params.models.pressure_prior_min_players_per_bucket,
+                "pressure_leverage_buckets": str(params.models.pressure_leverage_buckets),
+            }
+        )
+        mlflow.log_metrics(
+            {
+                "empirical_coverage_rate": coverage_rate,
+                "total_eval_player_strata": total_eval_players,
+                "bucket0_alpha": pressure_artifact.priors[0].alpha_0,
+                "bucket0_beta": pressure_artifact.priors[0].beta_0,
+                "bucket1_alpha": pressure_artifact.priors[1].alpha_0,
+                "bucket1_beta": pressure_artifact.priors[1].beta_0,
+                "bucket2_alpha": pressure_artifact.priors[2].alpha_0,
+                "bucket2_beta": pressure_artifact.priors[2].beta_0,
+            }
+        )
         mlflow.log_artifact(str(saved_artifact_path))
 
     console.print(f"\n[bold green]Artifacts Exported:[/] {saved_artifact_path}")
@@ -236,9 +238,7 @@ def run_pressure_pipeline() -> None:
 
     # Exit criteria gate check
     if coverage_rate < 0.90:
-        console.print(
-            f"[bold red]WARNING:[/] Empirical coverage ({pct_str}) is below target 90%"
-        )
+        console.print(f"[bold red]WARNING:[/] Empirical coverage ({pct_str}) is below target 90%")
     else:
         console.print(
             "[bold green]Success:[/] Empirical coverage satisfies exit criterion (>= 90%)"
@@ -247,4 +247,3 @@ def run_pressure_pipeline() -> None:
 
 if __name__ == "__main__":
     run_pressure_pipeline()
-

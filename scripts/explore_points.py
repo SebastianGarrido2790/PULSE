@@ -68,7 +68,7 @@ def explore_points_dataset(parquet_path: Path) -> None:
 
     for _, row in serve_stats.iterrows():
         table_serve.add_row(
-            f"{int(row['serve_number'])}st Serve" if row['serve_number'] == 1 else "2nd Serve",
+            f"{int(row['serve_number'])}st Serve" if row["serve_number"] == 1 else "2nd Serve",
             f"{int(row['total_points']):,}",
             f"{row['win_rate']:.4f}",
         )
@@ -113,10 +113,7 @@ def explore_points_dataset(parquet_path: Path) -> None:
         total_points=("is_server_win", "count"), win_rate=("is_server_win", "mean")
     )
     top_players = (
-        pd.DataFrame(player_grp)
-        .sort_values("total_points", ascending=False)
-        .head(10)
-        .reset_index()
+        pd.DataFrame(player_grp).sort_values("total_points", ascending=False).head(10).reset_index()
     )
 
     table_players = Table(title="Top 10 Servers by Volume")

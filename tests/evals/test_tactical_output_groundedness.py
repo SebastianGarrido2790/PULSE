@@ -71,13 +71,10 @@ def verify_narrative_groundedness(
 
         # Check if number matches any payload number or percentage
         match_found = any(
-            abs(rounded_num - p) < 1e-3 or abs(rounded_abs_num - p) < 1e-3
-            for p in payload_numbers
+            abs(rounded_num - p) < 1e-3 or abs(rounded_abs_num - p) < 1e-3 for p in payload_numbers
         )
         if not match_found:
-            violations.append(
-                f"Ungrounded number [{num}] in narrative not present in payload."
-            )
+            violations.append(f"Ungrounded number [{num}] in narrative not present in payload.")
 
     # 2. Stub exploit recommendation hallucination check (Step 44)
     exploit_res = raw_payload.get("exploit_result")

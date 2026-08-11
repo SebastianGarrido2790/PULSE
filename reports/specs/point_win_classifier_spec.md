@@ -45,10 +45,10 @@ from pydantic import BaseModel, Field, model_validator
 class FallbackTier(IntEnum):
     """Hierarchical fallback tier resolution level."""
 
-    EXACT_STRATUM = 0    # (player, surface, serve_number) >= min_stratum_observations
-    PLAYER_OVERALL = 1   # (player, serve_number) >= min_player_observations
+    EXACT_STRATUM = 0  # (player, surface, serve_number) >= min_stratum_observations
+    PLAYER_OVERALL = 1  # (player, serve_number) >= min_player_observations
     SURFACE_POPULATION = 2  # (surface, serve_number) >= min_surface_observations
-    GLOBAL_DEFAULT = 3   # Fallback to solver.default_p_serve
+    GLOBAL_DEFAULT = 3  # Fallback to solver.default_p_serve
 
 
 class StratumEntry(BaseModel):
@@ -63,7 +63,9 @@ class StratumEntry(BaseModel):
         if self.sample_size > 0:
             expected_p = float(self.wins) / float(self.sample_size)
             if abs(self.p_hat - expected_p) > 1e-6:
-                raise ValueError(f"p_hat {self.p_hat} does not match wins/sample_size ({expected_p})")
+                raise ValueError(
+                    f"p_hat {self.p_hat} does not match wins/sample_size ({expected_p})"
+                )
         return self
 
 

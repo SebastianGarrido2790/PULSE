@@ -119,21 +119,15 @@ def run_training_pipeline() -> None:
 
     for tier, count in tier_counts.items():
         pct = (count / len(test_df)) * 100
-        table_tiers.add_row(
-            f"Tier {int(tier)}", tier_names[tier], f"{count:,}", f"{pct:.2f}%"
-        )
+        table_tiers.add_row(f"Tier {int(tier)}", tier_names[tier], f"{count:,}", f"{pct:.2f}%")
     console.print(table_tiers)
 
     # 4. Generate Calibration Curve Plots & Diagnostic Analysis
     # A. Uniform Binning Strategy
-    prob_true_uni, prob_pred_uni = calibration_curve(
-        y_true, y_pred, n_bins=10, strategy="uniform"
-    )
+    prob_true_uni, prob_pred_uni = calibration_curve(y_true, y_pred, n_bins=10, strategy="uniform")
 
     # B. Quantile Binning Strategy (Equal Sample Size per Bin)
-    prob_true_q, prob_pred_q = calibration_curve(
-        y_true, y_pred, n_bins=10, strategy="quantile"
-    )
+    prob_true_q, prob_pred_q = calibration_curve(y_true, y_pred, n_bins=10, strategy="quantile")
 
     # Calculate exact point count per quantile bin
     df_eval = pd.DataFrame({"y_true": y_true, "y_pred": y_pred})
@@ -172,13 +166,15 @@ def run_training_pipeline() -> None:
             f"{m_true:.4f}",
             f"{abs_err:.4f}",
         )
-        quantile_diagnostics.append({
-            "bin_range": bin_str,
-            "count": n_count,
-            "mean_pred": round(m_pred, 4),
-            "mean_true": round(m_true, 4),
-            "abs_error": round(abs_err, 4),
-        })
+        quantile_diagnostics.append(
+            {
+                "bin_range": bin_str,
+                "count": n_count,
+                "mean_pred": round(m_pred, 4),
+                "mean_true": round(m_true, 4),
+                "abs_error": round(abs_err, 4),
+            }
+        )
 
     # Mean Absolute Calibration Error (MACE) across 10 quantile bins
     mace = (
@@ -253,24 +249,28 @@ def run_training_pipeline() -> None:
     logger.info("Logging run metrics to MLflow")
     mlflow.set_experiment(params.models.mlflow_experiment_classifier)
     with mlflow.start_run(run_name="train_hierarchical_stratum_estimator"):
-        mlflow.log_params({
-            "train_test_split": params.models.train_test_split,
-            "random_state": params.models.random_state,
-            "min_stratum_observations": params.uncertainty.min_stratum_observations,
-            "min_player_observations": params.uncertainty.min_player_observations,
-            "min_surface_observations": params.uncertainty.min_surface_observations,
-            "default_p_serve": params.solver.default_p_serve,
-            "max_mace_threshold": params.models.max_mean_absolute_calibration_error,
-            "min_auc_sanity_threshold": params.models.min_holdout_auc_sanity,
-        })
-        mlflow.log_metrics({
-            "mean_absolute_calibration_error": mace,
-            "auc_score": auc_score,
-            "tier0_count": tier_counts[FallbackTier.EXACT_STRATUM],
-            "tier1_count": tier_counts[FallbackTier.PLAYER_OVERALL],
-            "tier2_count": tier_counts[FallbackTier.SURFACE_POPULATION],
-            "tier3_count": tier_counts[FallbackTier.GLOBAL_DEFAULT],
-        })
+        mlflow.log_params(
+            {
+                "train_test_split": params.models.train_test_split,
+                "random_state": params.models.random_state,
+                "min_stratum_observations": params.uncertainty.min_stratum_observations,
+                "min_player_observations": params.uncertainty.min_player_observations,
+                "min_surface_observations": params.uncertainty.min_surface_observations,
+                "default_p_serve": params.solver.default_p_serve,
+                "max_mace_threshold": params.models.max_mean_absolute_calibration_error,
+                "min_auc_sanity_threshold": params.models.min_holdout_auc_sanity,
+            }
+        )
+        mlflow.log_metrics(
+            {
+                "mean_absolute_calibration_error": mace,
+                "auc_score": auc_score,
+                "tier0_count": tier_counts[FallbackTier.EXACT_STRATUM],
+                "tier1_count": tier_counts[FallbackTier.PLAYER_OVERALL],
+                "tier2_count": tier_counts[FallbackTier.SURFACE_POPULATION],
+                "tier3_count": tier_counts[FallbackTier.GLOBAL_DEFAULT],
+            }
+        )
         mlflow.log_artifact(str(calib_plot_path))
         mlflow.log_artifact(str(saved_table_path))
 

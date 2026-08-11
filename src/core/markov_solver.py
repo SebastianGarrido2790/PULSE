@@ -375,9 +375,7 @@ def advance_point_state(state: MatchState, server_won: bool) -> MatchState:
     if gm_srv == 6 and gm_ret == 6:
         new_pt_srv = pt_srv + (1 if server_won else 0)
         new_pt_ret = pt_ret + (1 if not server_won else 0)
-        is_final_set = (
-            st_srv + st_ret == (2 if state.match_format == "bo3" else 4)
-        )
+        is_final_set = st_srv + st_ret == (2 if state.match_format == "bo3" else 4)
         target = 10 if (state.deciding_set_tiebreak and is_final_set) else 7
 
         if new_pt_srv >= target and (new_pt_srv - new_pt_ret) >= 2:

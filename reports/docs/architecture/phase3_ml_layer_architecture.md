@@ -113,13 +113,13 @@ The loader returns a `Params` object whose nested submodels enforce range constr
 
 ```python
 class Params(BaseModel):
-    thresholds: ThresholdsParams    # leverage_escalation, exploit_min_sample_size
+    thresholds: ThresholdsParams  # leverage_escalation, exploit_min_sample_size
     uncertainty: UncertaintyParams  # confidence_level, min_stratum/player/surface_observations
-    solver: SolverParams            # tolerance (1e-9 gate), default_p_serve
-    ingestion: IngestionParams      # raw/validated data paths
-    latency: LatencyParams          # per-node ms budgets
-    models: ModelsParams            # train/test split, MLflow names, pressure priors, MACE threshold
-    ci: CIParams                    # line_ceiling, min_coverage_pct
+    solver: SolverParams  # tolerance (1e-9 gate), default_p_serve
+    ingestion: IngestionParams  # raw/validated data paths
+    latency: LatencyParams  # per-node ms budgets
+    models: ModelsParams  # train/test split, MLflow names, pressure priors, MACE threshold
+    ci: CIParams  # line_ceiling, min_coverage_pct
 ```
 
 ### 2.3 Key Phase 3 Parameters

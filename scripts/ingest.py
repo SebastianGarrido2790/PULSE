@@ -123,12 +123,10 @@ def transform_mcp_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
 
     # 3. Surface
     surface_col = df["Surface"] if "Surface" in df.columns else pd.Series(["HARD"] * len(df))
-    df["surface"] = surface_col.astype(str).str.upper().replace(
-        {"": "HARD", "NONE": "HARD", "UNKNOWN": "HARD"}
+    df["surface"] = (
+        surface_col.astype(str).str.upper().replace({"": "HARD", "NONE": "HARD", "UNKNOWN": "HARD"})
     )
-    df["surface"] = df["surface"].apply(
-        lambda s: s if s in ["HARD", "CLAY", "GRASS"] else "HARD"
-    )
+    df["surface"] = df["surface"].apply(lambda s: s if s in ["HARD", "CLAY", "GRASS"] else "HARD")
 
     # 4. Point winner
     def get_point_winner(r: pd.Series) -> str:
@@ -177,9 +175,7 @@ def transform_mcp_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
     df["p1_sets"] = df["Set1"].apply(lambda x: safe_int(x, 0))
     df["p2_sets"] = df["Set2"].apply(lambda x: safe_int(x, 0))
     df["rally_length"] = (
-        df["rallyCount"].apply(lambda x: safe_int(x, 0))
-        if "rallyCount" in df.columns
-        else 0
+        df["rallyCount"].apply(lambda x: safe_int(x, 0)) if "rallyCount" in df.columns else 0
     )
 
     # 8. Boolean flags
