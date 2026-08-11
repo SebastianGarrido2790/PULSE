@@ -3,7 +3,7 @@
 **Event-Driven Orchestration (LangGraph) — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 4 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-08
-**Status:** 🟢 Stage 7 Complete — Gate 7 Passed (Ready for Stage 8)
+**Status:** 🟢 Stage 8 Complete — Gate 8 Passed (Ready for Stage 9 Integration Verification)
 **Authority:** `reports/docs/decisions/phase4_implementation_plan_and_decisions.md` (v1.0.0, Approved) — every step below traces to a specific approved decision ID
 **Scope of this document:** sequencing only. It translates D-1 through D-11 into an ordered task list with explicit dependencies and verification gates. No implementation begins from this document alone — it's the map, not the code.
 
@@ -127,7 +127,7 @@ _The terminal node. Once this exists, `pulse_graph.py` can be compiled end to en
 
 ---
 
-## Stage 8 — DeepEval Groundedness Test
+## Stage 8 — DeepEval Groundedness Test ✅
 
 _Closes Finding B, scoped exactly as approved — one check, not a general eval suite._
 
