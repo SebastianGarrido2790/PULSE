@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 def make_state_monitor_node(
     stratum_table: StratumTable, params: Params | None = None
-) -> Callable[[PulseGraphState], Any]:
+) -> Callable[..., Any]:
     """Factory creating an async StateMonitorNode callable bound to loaded StratumTable.
 
     Per D-9 & D-10, closes over StratumTable and Params loaded once at graph build time.

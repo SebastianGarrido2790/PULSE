@@ -3,7 +3,7 @@
 **Event-Driven Orchestration (LangGraph) — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 4 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-08
-**Status:** 🟢 Stage 5 Complete — Gate 5 Passed (Ready for Stage 6)
+**Status:** 🟢 Stage 6 Complete — Gate 6 Passed (Ready for Stage 7)
 **Authority:** `reports/docs/decisions/phase4_implementation_plan_and_decisions.md` (v1.0.0, Approved) — every step below traces to a specific approved decision ID
 **Scope of this document:** sequencing only. It translates D-1 through D-11 into an ordered task list with explicit dependencies and verification gates. No implementation begins from this document alone — it's the map, not the code.
 
@@ -96,7 +96,7 @@ _Triggered node #2. Resolves Finding A concretely — the sufficiency gate is re
 
 ---
 
-## Stage 6 — Conditional Edges: Diagnostic Branch
+## Stage 6 — Conditional Edges: Diagnostic Branch ✅
 
 _Wires Stages 3–5 together. This is where D-3, D-4, D-4a, and D-5 all become real code paths for the first time._
 

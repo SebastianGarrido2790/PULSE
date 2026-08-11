@@ -9,16 +9,21 @@ Authority: Phase 4 Decisions D-1 through D-11, ADR-001.
 from pathlib import Path
 from typing import Any
 
-from langgraph.graph import StateGraph
+from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from opentelemetry import trace
 
 from src.config.loader import Params, load_params
-from src.graph.state import PulseGraphState
+from src.graph.pressure_diagnostic import make_pressure_diagnostic_node
+from src.graph.state import DecisionLogEntry, LeverageResult, PulseGraphState
+from src.graph.state_monitor import make_state_monitor_node
+from src.graph.strategy_exploit import make_strategy_exploit_node
 from src.models.point_win_classifier import StratumTable, load_stratum_table
 from src.models.pressure_deviation import PressureModelArtifact, load_pressure_artifact
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+tracer = trace.get_tracer("pulse.graph")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -53,11 +58,107 @@ def load_graph_artifacts(
     t0_cnt = len(stratum_table.tier0_exact)
     p_cnt = len(pressure_artifact.results)
     logger.info(
-        f"Artifacts loaded: StratumTable ({t0_cnt} entries), "
-        f"PressureArtifact ({p_cnt} results)"
+        f"Artifacts loaded: StratumTable ({t0_cnt} entries), PressureArtifact ({p_cnt} results)"
     )
 
     return stratum_table, pressure_artifact
+
+
+def should_escalate(leverage_result: LeverageResult | None, threshold: float) -> bool:
+    """Check if lower confidence bound delta_leverage_low >= leverage_escalation threshold.
+
+    Authority: Phase 4 Decision D-4 (Option B - Lower Bound Gating), D-4a.
+
+    Args:
+        leverage_result: Computed LeverageResult from StateMonitorNode (or None).
+        threshold: Leverage escalation threshold from params.yaml.
+
+    Returns:
+        bool: True if delta_leverage_low >= threshold; False otherwise.
+    """
+    if leverage_result is None:
+        return False
+    return leverage_result.delta_leverage_low >= threshold
+
+
+def route_after_state_monitor(state: PulseGraphState, params: Params | None = None) -> str:
+    """Route after StateMonitorNode: check leverage escalation for PressureDiagnosticNode.
+
+    Authority: Decisions D-3, D-4, D-5. Logs fire/suppress DecisionLogEntry and emits OTel span.
+
+    Args:
+        state: Current PulseGraphState input object.
+        params: Optional Params configuration object.
+
+    Returns:
+        str: Destination node name ("pressure_diagnostic" or "tactical_output").
+    """
+    cfg = params if params is not None else load_params()
+    threshold = cfg.thresholds.leverage_escalation
+
+    lev_res = state.leverage_result
+    lev_low = lev_res.delta_leverage_low if lev_res is not None else 0.0
+    escalate = should_escalate(lev_res, threshold)
+
+    if escalate:
+        fired = True
+        reason = f"Leverage lower bound {lev_low:.4f} >= threshold {threshold:.4f}"
+        destination = "pressure_diagnostic"
+    else:
+        fired = False
+        reason = f"Leverage lower bound {lev_low:.4f} < threshold {threshold:.4f} (suppressed)"
+        destination = "tactical_output"
+
+    state.decision_log.append(
+        DecisionLogEntry(node="pressure_diagnostic", fired=fired, reason=reason)
+    )
+
+    with tracer.start_as_current_span("route_after_state_monitor") as span:
+        span.set_attribute("pulse.target_node", "pressure_diagnostic")
+        span.set_attribute("pulse.fired", fired)
+        span.set_attribute("pulse.reason", reason)
+
+    logger.debug(f"Routing after StateMonitorNode -> [{destination}] ({reason})")
+    return destination
+
+
+def route_after_pressure_diagnostic(state: PulseGraphState, params: Params | None = None) -> str:
+    """Route after PressureDiagnosticNode: check leverage escalation for StrategyExploitNode.
+
+    Authority: Decisions D-3, D-4a, D-5. Logs fire/suppress DecisionLogEntry and emits OTel span.
+
+    Args:
+        state: Current PulseGraphState input object.
+        params: Optional Params configuration object.
+
+    Returns:
+        str: Destination node name ("strategy_exploit" or "tactical_output").
+    """
+    cfg = params if params is not None else load_params()
+    threshold = cfg.thresholds.leverage_escalation
+
+    lev_res = state.leverage_result
+    lev_low = lev_res.delta_leverage_low if lev_res is not None else 0.0
+    escalate = should_escalate(lev_res, threshold)
+
+    if escalate:
+        fired = True
+        reason = f"Leverage lower bound {lev_low:.4f} >= threshold {threshold:.4f}"
+        destination = "strategy_exploit"
+    else:
+        fired = False
+        reason = f"Leverage lower bound {lev_low:.4f} < threshold {threshold:.4f} (suppressed)"
+        destination = "tactical_output"
+
+    state.decision_log.append(DecisionLogEntry(node="strategy_exploit", fired=fired, reason=reason))
+
+    with tracer.start_as_current_span("route_after_pressure_diagnostic") as span:
+        span.set_attribute("pulse.target_node", "strategy_exploit")
+        span.set_attribute("pulse.fired", fired)
+        span.set_attribute("pulse.reason", reason)
+
+    logger.debug(f"Routing after PressureDiagnosticNode -> [{destination}] ({reason})")
+    return destination
 
 
 def build_pulse_graph(
@@ -79,24 +180,42 @@ def build_pulse_graph(
     cfg = params if params is not None else load_params()
     stratum_table, pressure_artifact = load_graph_artifacts(artifacts_dir=artifacts_dir)
 
-    # Placeholder no-op node factory function for Gate 2 verification
-    def make_placeholder_node(table: StratumTable, artifact: PressureModelArtifact, p: Params):
-        async def placeholder_node(state: PulseGraphState) -> dict[str, Any]:
-            thresh = p.thresholds.leverage_escalation
-            logger.debug(
-                f"Placeholder node executed. Stratum entries: {len(table.tier0_exact)}, "
-                f"Pressure entries: {len(artifact.results)}, Escalation threshold: {thresh}"
-            )
-            return {}
-
-        return placeholder_node
-
     builder = StateGraph(PulseGraphState)
 
-    # Register placeholder node for initial skeleton verification
-    placeholder_fn = make_placeholder_node(stratum_table, pressure_artifact, cfg)
-    builder.add_node("state_monitor", placeholder_fn)
+    # 1. Register node factory functions
+    builder.add_node("state_monitor", make_state_monitor_node(stratum_table, cfg))
+    builder.add_node("pressure_diagnostic", make_pressure_diagnostic_node(pressure_artifact, cfg))
+    builder.add_node("strategy_exploit", make_strategy_exploit_node(stratum_table, cfg))
+
+    # Placeholder for TacticalOutputNode until Stage 7
+    async def placeholder_tactical_output(state: PulseGraphState) -> dict[str, Any]:
+        return {}
+
+    builder.add_node("tactical_output", placeholder_tactical_output)
+
+    # 2. Wire entry point and conditional edges
     builder.set_entry_point("state_monitor")
+
+    builder.add_conditional_edges(
+        "state_monitor",
+        route_after_state_monitor,
+        {
+            "pressure_diagnostic": "pressure_diagnostic",
+            "tactical_output": "tactical_output",
+        },
+    )
+
+    builder.add_conditional_edges(
+        "pressure_diagnostic",
+        route_after_pressure_diagnostic,
+        {
+            "strategy_exploit": "strategy_exploit",
+            "tactical_output": "tactical_output",
+        },
+    )
+
+    builder.add_edge("strategy_exploit", "tactical_output")
+    builder.add_edge("tactical_output", END)
 
     compiled_graph = builder.compile()
     logger.info("PULSE LangGraph orchestration graph built and compiled successfully.")
