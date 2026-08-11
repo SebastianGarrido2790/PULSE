@@ -12,7 +12,7 @@ from typing import Any
 
 from src.config.loader import Params, load_params
 from src.core.leverage_uncertainty import propagate_leverage_uncertainty
-from src.graph.state import LeverageResult, PulseGraphState
+from src.graph.state import DecisionLogEntry, LeverageResult, PulseGraphState
 from src.models.point_win_classifier import StratumTable, resolve_point_win_probability
 from src.utils.logger import get_logger
 
@@ -84,15 +84,23 @@ def make_state_monitor_node(
             fallback_tier=int(stratum_res.fallback_tier),
         )
 
+        # 5. Determine escalation decision and record audit log entries (D-3, D-4, D-5)
+        thresh = cfg.thresholds.leverage_escalation
         lev_low = leverage_result.delta_leverage_low
-        lev_high = leverage_result.delta_leverage_high
-        logger.debug(
-            f"StateMonitorNode output: leverage={leverage_result.delta_leverage:.4f} "
-            f"band=[{lev_low:.4f}, {lev_high:.4f}] "
-            f"p_hat={leverage_result.p_hat:.4f} N={leverage_result.sample_size} "
-            f"tier={leverage_result.fallback_tier}"
-        )
+        escalate = lev_low >= thresh
 
-        return {"leverage_result": leverage_result}
+        if escalate:
+            reason = f"Leverage lower bound {lev_low:.4f} >= threshold {thresh:.4f}"
+            log_entries = [
+                DecisionLogEntry(node="pressure_diagnostic", fired=True, reason=reason)
+            ]
+        else:
+            reason = f"Leverage lower bound {lev_low:.4f} < threshold {thresh:.4f} (suppressed)"
+            log_entries = [
+                DecisionLogEntry(node="pressure_diagnostic", fired=False, reason=reason),
+                DecisionLogEntry(node="strategy_exploit", fired=False, reason=reason),
+            ]
+
+        return {"leverage_result": leverage_result, "decision_log": log_entries}
 
     return state_monitor_node

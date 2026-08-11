@@ -14,7 +14,7 @@ from opentelemetry import trace
 
 from src.config.loader import Params, load_params
 from src.graph.pressure_diagnostic import make_pressure_diagnostic_node
-from src.graph.state import DecisionLogEntry, LeverageResult, PulseGraphState
+from src.graph.state import LeverageResult, PulseGraphState
 from src.graph.state_monitor import make_state_monitor_node
 from src.graph.strategy_exploit import make_strategy_exploit_node
 from src.graph.tactical_output import make_tactical_output_node
@@ -109,10 +109,6 @@ def route_after_state_monitor(state: PulseGraphState, params: Params | None = No
         reason = f"Leverage lower bound {lev_low:.4f} < threshold {threshold:.4f} (suppressed)"
         destination = "tactical_output"
 
-    state.decision_log.append(
-        DecisionLogEntry(node="pressure_diagnostic", fired=fired, reason=reason)
-    )
-
     with tracer.start_as_current_span("route_after_state_monitor") as span:
         span.set_attribute("pulse.target_node", "pressure_diagnostic")
         span.set_attribute("pulse.fired", fired)
@@ -149,8 +145,6 @@ def route_after_pressure_diagnostic(state: PulseGraphState, params: Params | Non
         fired = False
         reason = f"Leverage lower bound {lev_low:.4f} < threshold {threshold:.4f} (suppressed)"
         destination = "tactical_output"
-
-    state.decision_log.append(DecisionLogEntry(node="strategy_exploit", fired=fired, reason=reason))
 
     with tracer.start_as_current_span("route_after_pressure_diagnostic") as span:
         span.set_attribute("pulse.target_node", "strategy_exploit")

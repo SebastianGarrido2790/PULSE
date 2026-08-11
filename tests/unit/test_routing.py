@@ -1,8 +1,7 @@
 """PULSE — Unit Tests for Graph Routing Functions (src/graph/pulse_graph.py).
 
-Verifies the shared escalation gate (D-4 lower bound rule), routing decisions,
-decision_log logging (D-3, D-5), and OpenTelemetry span attributes across
-all combinations of leverage bounds and thresholds.
+Verifies the shared escalation gate (D-4 lower bound rule), destination routing decisions,
+and OpenTelemetry span emissions across all combinations of leverage bounds and thresholds.
 
 Authority: Stage 6 Step 33, Decisions D-3, D-4, D-4a, D-5, ADR-001.
 """
@@ -44,7 +43,7 @@ def test_should_escalate_lower_bound_rule() -> None:
 
 
 def test_route_after_state_monitor_escalate() -> None:
-    """Verify route_after_state_monitor routes to pressure_diagnostic and logs fire entry."""
+    """Verify route_after_state_monitor routes to pressure_diagnostic when low bound >= thresh."""
     context = PointContext(
         match_id="m1",
         point_index=0,
@@ -64,17 +63,11 @@ def test_route_after_state_monitor_escalate() -> None:
     state = PulseGraphState(point_context=context, leverage_result=leverage)
 
     destination = route_after_state_monitor(state)
-
     assert destination == "pressure_diagnostic"
-    assert len(state.decision_log) == 1
-    log_entry = state.decision_log[0]
-    assert log_entry.node == "pressure_diagnostic"
-    assert log_entry.fired is True
-    assert "0.1200 >= threshold 0.1000" in log_entry.reason
 
 
 def test_route_after_state_monitor_suppressed() -> None:
-    """Verify route_after_state_monitor routes to tactical_output and logs suppress entry."""
+    """Verify route_after_state_monitor routes to tactical_output when low bound < thresh."""
     context = PointContext(
         match_id="m2",
         point_index=1,
@@ -94,17 +87,11 @@ def test_route_after_state_monitor_suppressed() -> None:
     state = PulseGraphState(point_context=context, leverage_result=leverage)
 
     destination = route_after_state_monitor(state)
-
     assert destination == "tactical_output"
-    assert len(state.decision_log) == 1
-    log_entry = state.decision_log[0]
-    assert log_entry.node == "pressure_diagnostic"
-    assert log_entry.fired is False
-    assert "(suppressed)" in log_entry.reason
 
 
 def test_route_after_pressure_diagnostic_escalate() -> None:
-    """Verify route_after_pressure_diagnostic routes to strategy_exploit and logs fire entry."""
+    """Verify route_after_pressure_diagnostic routes to strategy_exploit when low bound high."""
     context = PointContext(
         match_id="m3",
         point_index=2,
@@ -124,17 +111,11 @@ def test_route_after_pressure_diagnostic_escalate() -> None:
     state = PulseGraphState(point_context=context, leverage_result=leverage)
 
     destination = route_after_pressure_diagnostic(state)
-
     assert destination == "strategy_exploit"
-    assert len(state.decision_log) == 1
-    log_entry = state.decision_log[0]
-    assert log_entry.node == "strategy_exploit"
-    assert log_entry.fired is True
-    assert "0.1500 >= threshold 0.1000" in log_entry.reason
 
 
 def test_route_after_pressure_diagnostic_suppressed() -> None:
-    """Verify route_after_pressure_diagnostic routes to tactical_output and logs suppress entry."""
+    """Verify route_after_pressure_diagnostic routes to tactical_output when low bound < thresh."""
     context = PointContext(
         match_id="m4",
         point_index=3,
@@ -154,10 +135,4 @@ def test_route_after_pressure_diagnostic_suppressed() -> None:
     state = PulseGraphState(point_context=context, leverage_result=leverage)
 
     destination = route_after_pressure_diagnostic(state)
-
     assert destination == "tactical_output"
-    assert len(state.decision_log) == 1
-    log_entry = state.decision_log[0]
-    assert log_entry.node == "strategy_exploit"
-    assert log_entry.fired is False
-    assert "(suppressed)" in log_entry.reason

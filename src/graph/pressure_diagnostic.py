@@ -10,7 +10,7 @@ from collections.abc import Callable
 from typing import Any
 
 from src.config.loader import Params, load_params
-from src.graph.state import PulseGraphState
+from src.graph.state import DecisionLogEntry, PulseGraphState
 from src.models.pressure_deviation import (
     PressureModelArtifact,
     assign_leverage_bucket,
@@ -81,12 +81,22 @@ def make_pressure_diagnostic_node(
                 f"bounds=[{dev_low:+.4f}, {dev_high:+.4f}] "
                 f"sufficient={pressure_res.is_sufficient_sample}"
             )
-        else:
-            logger.debug(
-                f"PressureDiagnosticNode miss (sparse player) for [{ctx.server_id}] "
-                f"in bucket [{bucket_idx}]"
-            )
+        # 3. Record audit log entry for strategy_exploit firing decision
+        thresh = cfg.thresholds.leverage_escalation
+        lev_low = state.leverage_result.delta_leverage_low
+        escalate = lev_low >= thresh
 
-        return {"pressure_result": pressure_res}
+        if escalate:
+            reason = f"Leverage lower bound {lev_low:.4f} >= threshold {thresh:.4f}"
+            log_entries = [
+                DecisionLogEntry(node="strategy_exploit", fired=True, reason=reason)
+            ]
+        else:
+            reason = f"Leverage lower bound {lev_low:.4f} < threshold {thresh:.4f} (suppressed)"
+            log_entries = [
+                DecisionLogEntry(node="strategy_exploit", fired=False, reason=reason)
+            ]
+
+        return {"pressure_result": pressure_res, "decision_log": log_entries}
 
     return pressure_diagnostic_node

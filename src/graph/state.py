@@ -6,7 +6,8 @@ the event-driven orchestration nodes in pulse_graph.py.
 Authority: Phase 4 Decisions D-2, D-2a, D-2b.
 """
 
-from typing import Any, Literal
+import operator
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -120,6 +121,6 @@ class PulseGraphState(BaseModel):
     tactical_output: TacticalOutputResult | None = Field(
         default=None, description="Populated by TacticalOutputNode"
     )
-    decision_log: list[DecisionLogEntry] = Field(
+    decision_log: Annotated[list[DecisionLogEntry], operator.add] = Field(
         default_factory=list, description="Appended by graph routing functions for audit tracking"
     )
