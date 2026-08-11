@@ -7,7 +7,6 @@ Authority: Phase 4 Decisions D-1 through D-11, ADR-001.
 """
 
 from pathlib import Path
-from typing import Any
 
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -18,6 +17,7 @@ from src.graph.pressure_diagnostic import make_pressure_diagnostic_node
 from src.graph.state import DecisionLogEntry, LeverageResult, PulseGraphState
 from src.graph.state_monitor import make_state_monitor_node
 from src.graph.strategy_exploit import make_strategy_exploit_node
+from src.graph.tactical_output import make_tactical_output_node
 from src.models.point_win_classifier import StratumTable, load_stratum_table
 from src.models.pressure_deviation import PressureModelArtifact, load_pressure_artifact
 from src.utils.logger import get_logger
@@ -186,12 +186,7 @@ def build_pulse_graph(
     builder.add_node("state_monitor", make_state_monitor_node(stratum_table, cfg))
     builder.add_node("pressure_diagnostic", make_pressure_diagnostic_node(pressure_artifact, cfg))
     builder.add_node("strategy_exploit", make_strategy_exploit_node(stratum_table, cfg))
-
-    # Placeholder for TacticalOutputNode until Stage 7
-    async def placeholder_tactical_output(state: PulseGraphState) -> dict[str, Any]:
-        return {}
-
-    builder.add_node("tactical_output", placeholder_tactical_output)
+    builder.add_node("tactical_output", make_tactical_output_node(cfg))
 
     # 2. Wire entry point and conditional edges
     builder.set_entry_point("state_monitor")
