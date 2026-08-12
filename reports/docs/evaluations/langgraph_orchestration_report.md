@@ -187,10 +187,10 @@ tests/unit/test_tactical_output.py ...                                   [100%]
 | `src/graph/state_monitor.py` | 27 | 0 | **100%** | None |
 | `src/graph/strategy_exploit.py` | 29 | 0 | **100%** | None |
 | `src/graph/tactical_output.py` | 37 | 0 | **100%** | None |
-| `src/graph/pressure_diagnostic.py` | 31 | 2 | **94%** | 93-94 |
-| **Total `src/` Package** | **1,066** | **101** | **91%** | Target $\ge 70\%$ |
+| `src/graph/pressure_diagnostic.py` | 27 | 0 | **100%** | None |
+| **Total `src/` Package** | **1,067** | **99** | **91%** | Target $\ge 70\%$ |
 
-### 6.3 DeepEval Groundedness Verification (D-9)
+### 6.3 DeepEval Groundedness Verification (D-8)
 
 To prevent LLM hallucination of numbers or statistical claims, `tests/evals/test_tactical_output_groundedness.py` enforces string groundedness:
 - Asserts narrative numbers (percentages, bounds, leverage figures) originate from `raw_payload`.

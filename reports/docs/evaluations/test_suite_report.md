@@ -1,8 +1,8 @@
 # PULSE — Test Suite Report
 
-> **Version:** v0.4.0 — _Living Document_  
-> **Phase:** 4 — Event-Driven Orchestration (LangGraph)  
-> **Status:** 🟢 67 / 67 Tests Passing  
+> **Version:** v0.4.1 — _Living Document_  
+> **Phase:** 4.1 — Event-Driven Orchestration Patch & Sync  
+> **Status:** 🟢 68 / 68 Tests Passing  
 > **Coverage:** 91% Total Code Coverage (100% Graph Topology, Core Math & Schemas)  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
 > **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase4_implementation_plan_and_decisions.md](../decisions/phase4_implementation_plan_and_decisions.md), [system_design.md](../architecture/system_design.md)
@@ -87,7 +87,7 @@ PULSE/
 | Tool            | Ruleset                                                                                                | Status                       |
 | :-------------- | :----------------------------------------------------------------------------------------------------- | :--------------------------- |
 | **Ruff Check**  | `E` (pycodestyle), `F` (Pyflakes), `I` (isort), `UP` (pyupgrade), `B` (bugbear), `RUF` (Ruff-specific) | 🟢 PASS (0 Linter Errors)    |
-| **Ruff Format** | Line length = 100                                                                                      | 🟢 PASS (27 Files Formatted) |
+| **Ruff Format** | Line length = 100                                                                                      | 🟢 PASS (78 Files Formatted) |
 
 ---
 
@@ -132,10 +132,10 @@ PULSE/
 | :------------------------------------------------- | :------------------------- | :------------------------------------------------------------------------------------------------------------- | :------ |
 | `tests/unit/test_graph_state.py`                   | `PulseGraphState` Schema   | Pydantic v2 validation, default factories, and `DecisionLogEntry` list reducer aggregation.                    | 🟢 PASS |
 | `tests/unit/test_state_monitor.py`                 | `StateMonitorNode`         | Always-on node execution, Wilson interval propagation, and leverage calculation.                               | 🟢 PASS |
-| `tests/unit/test_pressure_diagnostic.py`           | `PressureDiagnosticNode`   | Empirical-Bayes shrinkage lookup and leverage bucket resolution on high-leverage points.                       | 🟢 PASS |
+| `tests/unit/test_pressure_diagnostic.py`           | `PressureDiagnosticNode`   | Empirical-Bayes shrinkage lookup and leverage bucket resolution on high-leverage points (100% coverage).     | 🟢 PASS |
 | `tests/unit/test_strategy_exploit.py`              | `StrategyExploitNode`      | Sufficiency gate ($N \ge 30$) enforcement and graceful degradation (`status: "insufficient_data"`).            | 🟢 PASS |
 | `tests/unit/test_tactical_output.py`               | `TacticalOutputNode`       | Narrative synthesis and deterministic raw-signal fallback when LLM API call fails.                             | 🟢 PASS |
-| `tests/unit/test_routing.py`                       | Graph Routing & Gate Rule  | D-4 lower bound rule ($\Delta L_{\text{low}} \ge 0.10$) and OpenTelemetry span attributes.                     | 🟢 PASS |
+| `tests/unit/test_routing.py`                       | Graph Routing & Closures   | D-4 lower bound rule ($\Delta L_{\text{low}} \ge 0.10$), OTel spans, and zero `load_params()` per-point calls. | 🟢 PASS |
 | `tests/evals/test_tactical_output_groundedness.py` | DeepEval Groundedness      | Numerical fidelity verification ensuring LLM narrative text introduces zero numbers absent from input payload. | 🟢 PASS |
 | `tests/integration/test_conditional_graph.py`      | Dynamic Execution Topology | Dynamic node path variance across 4 match fixtures (routine vs escalated vs sparse data vs sufficient data).   | 🟢 PASS |
 
@@ -163,9 +163,10 @@ Phase 3: Tier 1 ML Models (Complete — 41 Passes)
   ├── Pressure Deviation Empirical-Bayes Shrinkage Tests (Coverage = 93.75% >= 90%)
   └── Classifier-Uncertainty-Solver Integration Smoke Tests
        │
-Phase 4: Agent Orchestration Layer (Complete — 67 Passes)
+Phase 4: Agent Orchestration Layer (Complete — 68 Passes)
   ├── LangGraph Conditional Edge Execution Tests (StateMonitor -> Diagnostic/Exploit)
   ├── Sufficiency Gate Fallback Integration Tests (Data-sparse fallback to leverage-only)
+  ├── Routing Factory Closure Zero-Per-Point Disk I/O Regression Test
   └── DeepEval Narrative Groundedness (Number Hallucination Checks)
        │
 Phase 5: Game Theory Exploitative Module (Scheduled Next)
@@ -191,7 +192,7 @@ Phase 6: API, Simulation & Streaming Quality Suite
 | **Run Linter Checks**          | `uv run ruff check .`                               | Imports, syntax, and style rules enforcement                |
 | **Run Formatter Checks**       | `uv run ruff format --check .`                      | Verifies 100-character line length compliance               |
 
-**Live Output (Phase 4 Complete — 2026-08-11):**
+**Live Output (Phase 4.1 Complete — 2026-08-11):**
 
 ```text
 =============================== tests coverage ================================
@@ -206,8 +207,8 @@ src\core\leverage_uncertainty.py        48      0   100%
 src\core\markov_solver.py              228     46    80%   62, 67, 115, 140, 183, 251-272, 318, 325, 376-406, 424-425, 429, 431-432, 442, 444-445, 450-451, 469, 526
 src\graph\__init__.py                    0      0   100%
 src\graph\llm_client.py                 29     20    31%   42-82
-src\graph\pressure_diagnostic.py        31      2    94%   93-94
-src\graph\pulse_graph.py                86      0   100%
+src\graph\pressure_diagnostic.py        27      0   100%
+src\graph\pulse_graph.py                91      0   100%
 src\graph\state.py                      50      0   100%
 src\graph\state_monitor.py              27      0   100%
 src\graph\strategy_exploit.py           29      0   100%
@@ -222,6 +223,6 @@ src\utils\__init__.py                    0      0   100%
 src\utils\exceptions.py                 35      5    86%   30-31, 37-40
 src\utils\logger.py                     36      9    75%   51-53, 64-69, 76-78
 ------------------------------------------------------------------
-TOTAL                                 1066    101    91%
-============================= 67 passed in 8.85s ==============================
+TOTAL                                 1067     99    91%
+============================= 68 passed in 3.59s ==============================
 ```
