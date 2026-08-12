@@ -1,0 +1,195 @@
+# Phase 5 — Implementation Plan & Decisions
+**Game-Theoretic Exploit Module**
+
+**Product:** PULSE | **Phase:** 5 of 7 | **Version:** 0.1.0 (Draft — Pending Approval) | **Date:** 2026-08-12
+**Status:** 🟡 Planning — no code written
+**Authority:** `technical_roadmap.md` (Phase 5), the Phase 4→5 hand-off summary's Phase 5 deliverable list, `system_design.md` (ADR-002 Fail-Loud Policy, ADR-003 Sufficiency Gate, ADR-005/ADR-010 artifact-loading precedent), `prd.md` §3 (Non-Goals)
+**Approval required from:** Sebastian, before any implementation begins
+
+---
+
+## 0. How to Read This Document
+
+Same structure and conventions as the Phase 4 decisions document:
+
+- **Section 1** is the mandatory current-state audit. It drives Section 2.
+- **Section 2** holds one entry per decision, tagged 🔴 **Decision required** (a real fork exists) or 🟢 **No input required** (constraints leave one defensible option, recorded for traceability only).
+- Sub-decisions are nested under the primary decision they branch from.
+
+**Scope caveat, stated up front:** `reports/specs/game_theory_spec.md` — the document explicitly named as this phase's governing specification everywhere it's referenced — was not included in this conversation. Every decision below is derived instead from `technical_roadmap.md`'s Phase 5 section and the Phase 4→5 hand-off summary's deliverable list. **Reading that spec file and reconciling it against this document is the first action of implementation, not an afterthought** — if it already resolves a decision below (especially D-1), that resolution takes precedence over what's proposed here.
+
+---
+
+## 1. Current State Audit
+
+### 1.1 Phase 5 Deliverable Files
+
+| File | Status | Notes / Findings |
+|---|---|---|
+| `src/core/game_theory.py` | Does not exist. Phase 5 scope. | Needs: 2x2 exact analytical Nash solver, `scipy.optimize.linprog` fallback for 3x3, best-response deviation + EV-shift computation, payoff-matrix construction/loading, and a sufficiency evaluation. |
+| `tests/unit/test_game_theory.py` | Does not exist. | Golden-value equilibrium tests (mix sums to 1, indifference-inducing) and sparse-data sufficiency-gate tests, per the roadmap's own wording. |
+| `src/graph/strategy_exploit.py` | Exists — Phase 4 stub, verified working through the Phase 4.1 patch. | Its `count_opponent_observations()` helper is explicitly flagged in its own docstring as a Phase-4-scoped approximation ("will be superseded in Phase 5 by `core/game_theory.py`'s real return-positioning dataset pipeline"). `make_strategy_exploit_node()` currently returns `status: "module_not_yet_implemented"` whenever the (approximate) gate passes — Phase 5's job is to replace that branch with a real call into `core/game_theory.py`, not to rebuild the node itself. |
+| `src/graph/state.py` — `ExploitResult` | Exists — Phase 4 schema. Fields today: `status: str`, `opponent_id: str`, `sample_size: int`, `is_sufficient_sample: bool`, `recommendation: str \| None`. | Extending this schema is in scope for Phase 5; rebuilding it is not. Governs **D-8**. |
+| `src/schemas/point_record.py` | Exists — Phase 2, stable, not reopened. But its field set gates this entire phase's feasibility. | **VERIFY, central to D-1**: does it expose any field capturing return positioning, beyond the already-confirmed `serve_direction` (`wide`/`body`/`T`)? Not evidenced anywhere reviewed so far — see 1.3. |
+| `reports/specs/game_theory_spec.md` | Referenced everywhere as this phase's governing spec; content not available in this conversation. | See scope caveat above. |
+| `params.yaml` | Reviewed in full (current state). No game-theory-specific keys exist yet. | `thresholds.exploit_min_sample_size: 30` already exists and is directly reusable. New keys needed pending **D-2**, **D-5**. |
+| `dvc.yaml` | Reviewed in full (current state). Only `ingest`, `train_classifier`, `train_pressure`, `evaluate` (placeholder) exist. | Whether Phase 5 needs a new stage here is exactly **D-7**. |
+| `src/core/markov_solver.py`, `src/core/leverage_uncertainty.py` | Stable, Phase 2, upstream — not reopened. | — |
+| `scipy` dependency | Already present since Phase 1's `pyproject.toml` baseline. | No new dependency needed — **D-10**. |
+
+### 1.2 Cross-Document Consistency Check
+
+No contradiction found this time. `technical_roadmap.md`'s Phase 5 section now correctly reads "`StrategyExploitNode` from **Phase 4** wired to this module" and "Dependencies: Phase 1 (historical data), **Phase 4** (node to wire into)" — the mis-numbering caught during Phase 4's audit is fully and consistently resolved. Nothing in this phase's roadmap entry contradicts the Phase 4→5 hand-off summary.
+
+### 1.3 The Central Feasibility Question (drives D-1)
+
+The roadmap and hand-off summary both describe this phase's data work as "opponent **return-positioning** bias estimation from historical charted data" and a payoff matrix over serve direction (Wide/Tee, or Wide/Body/Tee) **vs.** return positioning (Deuce-guard/Ad-guard). Two pieces of evidence, both already established in prior phases, cast real doubt on whether literal return-position data exists to build that second axis from:
+
+1. Phase 2's ingestion pipeline is confirmed to parse and store **serve direction** (`'4'→wide`, `'5'→body`, `'6'→T`) — this axis is real and already in the data.
+2. Nothing reviewed so far — the `PointRecordSchema` fields, the sample raw payload, or any other document — shows a comparable field for the *returner's* court position. Standard tennis shot-charting notation (which is what this project's ingestion pipeline targets) records serve direction and rally shot outcomes, not a returner's standing position; that's normally the domain of ball-tracking/video systems, and `prd.md` §3 explicitly places "video/vision-based state extraction" out of scope for this project, for exactly the reasons that would make it costly to add now.
+
+This is not a contradiction in the documents — nothing claims return-position data exists — but it's a real, unaddressed gap between what the roadmap describes and what appears to be available to build it from. It's the reason D-1 exists.
+
+---
+
+## 2. Decisions
+
+### D-1 🔴 Return-Positioning Data Availability & What the "Opponent's Strategy" Actually Represents
+
+**Context:** Per 1.3. If return-position data doesn't exist in `point_record.py`, the payoff matrix's second axis can't be literally "which side the returner stood on" — it has to represent something else that's actually observable.
+
+| Option | Description | Trade-off |
+|---|---|---|
+| **A — Confirm return-position data exists, build as literally scoped** | If `point_record.py` (or a companion charting field) does expose returner positioning, build the 2x2/3x3 game exactly as described: serve direction vs. literal return positioning. | Best case, and the cleanest to explain to a coach ("stand wider against this server"). Contingent entirely on a VERIFY that, on current evidence, is unlikely to succeed. |
+| **B — Proxy from return-shot direction, if charted** | If the dataset separately charts the *direction of the return shot itself* (not the returner's pre-serve position), use that as an indirect signal of returner tendency/coverage. | Plausible middle ground if that finer-grained shot data exists, but introduces its own new VERIFY, and conflates "where the ball went" with "where the player was standing" — a real semantic gap. |
+| **C — Redefine the opponent's "strategy" as an empirically observable outcome profile** | Model the game as server's serve-direction mix vs. the *returner's point-win rate conditioned on each serve direction* — an empirical effectiveness profile, not a positioning choice. The Nash equilibrium becomes "the serve-direction mix that's hardest for this specific returner to convert against," and the recommendation becomes "serve more to [direction], where this returner's win rate is lowest" — tactically actionable without claiming to know anything about physical positioning. | Fully supported by data already confirmed to exist (serve direction + point outcome, both in `point_record.py` since Phase 2). Requires reframing "return positioning" language in downstream copy (recommendation text, any UI labels) to "return effectiveness by serve direction" — a real, visible change from how the roadmap phrases it, not just an implementation detail. |
+
+**Proposal: Option C**, unless the VERIFY against `point_record.py` and `game_theory_spec.md` turns up positioning data that makes Option A viable. C is the only option that doesn't depend on a fact I have no evidence for, it reuses data this project has already validated and shipped, and it keeps the eventual coach-facing claim honest — which is the same sufficiency-gate philosophy already governing every other signal PULSE emits. This is the decision everything else in this document is downstream of; if you resolve it differently after reading the actual spec, most of D-2 through D-9 should be revisited too.
+
+---
+
+### D-2 🔴 Matrix Dimensionality — 2x2 Default vs. 3x3, and the Rule for Choosing
+
+**Context:** The roadmap frames 2x2 (exact, closed-form) as primary and 3x3 (`linprog`, numerical) as a "fallback." Given serve direction already has three charted categories (Wide/Body/Tee), the natural question is which is actually the default and what triggers the other.
+
+| Option | Mechanism | Trade-off |
+|---|---|---|
+| **A — 3x3 by default, collapse to 2x2 only on failure** | Always attempt the full 3-category matrix; fall back to 2x2 (merging Body into whichever neighbor it's statistically closer to) only if the LP is degenerate or a category is too sparse. | Uses the richer data by default, but makes the exact, always-well-behaved 2x2 solver the exception rather than the rule — inverts the roadmap's own framing of which one is "primary." |
+| **B — 2x2 by default, escalate to 3x3 above a sample-size threshold** | Default to the closed-form 2x2 form (simpler, always converges, no solver dependency); use 3x3 only once a specific opponent has enough charted points to support three independently-estimated columns reliably, per a new `params.yaml` threshold. | Mirrors the same escalation-only-with-sufficient-data philosophy already governing every other gate in this system (leverage escalation, pressure-bucket priors, the exploit sample-size gate itself). Matrix dimensionality becomes just another sufficiency-gated escalation, not a new kind of decision. |
+| **C — Fixed, non-adaptive 3x3 always** | Simplest code, no runtime branching. | Discards the exact-analytical path entirely, always depends on `linprog` convergence, and loses the "primary/fallback" structure the roadmap explicitly asks for. |
+
+**Proposal: Option B.** It's the one that treats matrix complexity the same way this project already treats every other confidence question — don't use a more elaborate method than the data justifies — rather than inventing a new pattern for this one component.
+
+**D-2a 🔴 — where the 2x2→3x3 threshold lives.** A new `params.yaml` key, e.g. `thresholds.game_theory_3x3_min_sample_size`, read by `core/game_theory.py` at fit time — not hardcoded, consistent with the project's existing no-magic-numbers convention. Exact value is a calibration question for after real data is examined, not something to fix in this planning document.
+
+---
+
+### D-3 🟢 Best-Response Deviation & EV-Shift Computation
+
+The roadmap already fixes this output shape explicitly: "best-response deviation computation & expected value shift ΔEV." The natural, only-real-option implementation is one function in `core/game_theory.py` — e.g. `compute_best_response(payoff_matrix, equilibrium_mix) -> (best_pure_strategy, ev_gain)` — taking the fitted matrix and its solved equilibrium mix and returning the single best deviating pure strategy plus its EV gain over the mixed equilibrium. No real fork here; recorded for completeness.
+
+---
+
+### D-4 🔴 Sufficiency-Gate Ownership — Retire the Phase-4 Approximation
+
+**Context:** `strategy_exploit.py`'s `count_opponent_observations()` was explicitly built and documented as a temporary Phase-4 stand-in, using the Tier-1 stratum table's *serve* observation counts as a rough proxy for opponent data volume — not a return-specific count.
+
+| Option | Description | Trade-off |
+|---|---|---|
+| **A — `core/game_theory.py` owns sufficiency, `strategy_exploit.py` just reads it** | The payoff-matrix fit returns a result object carrying its own `sample_size` and `is_sufficient: bool`, mirroring `PressureModelArtifact`'s `is_prior_estimated` pattern from Phase 3. `strategy_exploit.py` retires `count_opponent_observations()` entirely and reads the fitted result's fields instead. | The sufficiency criterion is intrinsically about the data backing the payoff matrix — that's `core/game_theory.py`'s domain, not the graph node's. Matches the exact precedent Phase 3 already established for pressure-deviation sufficiency. |
+| **B — Keep the count in `strategy_exploit.py`, treat `core/game_theory.py` as pure computation** | Node keeps gating; `game_theory.py` assumes sufficiency was already checked before it's called. | Leaves the Phase-4 approximation's flawed proxy (serve counts, not return-relevant counts) as the system of record for a decision it was never designed to make well. |
+
+**Proposal: Option A.** Same reasoning as the Phase 4 decision that put the pressure-deviation lookup accessor in `models/pressure_deviation.py` rather than inline in the node: shared, data-dependent logic belongs in the layer that owns the data, not the orchestration layer that just routes based on it.
+
+---
+
+### D-5 🔴 Payoff-Matrix Smoothing Method
+
+**Context:** The roadmap specifies "empirical payoff matrix construction with Bayesian smoothing" without naming a method.
+
+| Option | Description | Trade-off |
+|---|---|---|
+| **A — Empirical-Bayes Beta shrinkage per matrix cell** | Reuse the exact pattern already built and validated in `pressure_deviation.py`: each cell's win-rate is shrunk toward a population/marginal baseline, strength of shrinkage set by that cell's own observation count, weak fallback prior when there's not enough data to fit a trustworthy one. | Directly reuses tested, already-approved machinery and statistical philosophy; nothing new to validate from scratch. |
+| **B — Uniform Laplace / add-k smoothing** | Simple additive smoothing constant. | Easier to implement, but inconsistent with this project's established convention of fitting priors from data rather than picking arbitrary constants — and arbitrary here means genuinely arbitrary, since there's no existing calibration data to justify a specific k. |
+| **C — Joint Dirichlet-multinomial model over the whole matrix** | More statistically complete treatment of the full joint distribution. | Real added complexity and scope for a phase that's already data-constrained per D-1; the roadmap's own wording ("Bayesian smoothing") reads as per-cell shrinkage, not a joint categorical model. |
+
+**Proposal: Option A**, for direct precedent-consistency with Phase 3's already-validated approach, and because it avoids introducing a second, different smoothing philosophy into a codebase that just spent Phase 3 establishing one.
+
+---
+
+### D-6 🟢 Solver-Failure Handling
+
+An LP that fails to converge (a degenerate zero-sum game, or a numerically unstable payoff matrix) is a different failure mode than "not enough data" — the sample-size gate already handles the latter gracefully by design (FR-6). A solver failure is an unexpected computational fault, and this project's already-established exception policy is explicit that such faults must fail loud, not degrade silently. The only defensible choice: reuse (or lightly subclass) the existing solver-failure exception already defined for the Markov solver's own mathematical/domain-state errors, rather than inventing a silent fallback or a second, differently-behaved error path. Recorded for completeness.
+
+---
+
+### D-7 🔴 Where the Payoff Matrix Is Fit and Stored
+
+**Context:** This phase actually has two distinct computational steps that are easy to conflate: (1) *fitting* the empirical payoff matrix from historical data (a data-estimation step), and (2) *solving* the Nash equilibrium given that matrix (an exact optimization step). The project's own file layout already separates these categories elsewhere — `game_theory.py` lives under the deterministic core, not under the MLflow-tracked models directory, unlike the point-win classifier and pressure-deviation estimator.
+
+| Option | Description | Trade-off |
+|---|---|---|
+| **A — Offline-fit, DVC-tracked artifact + live in-process solve** | A new pipeline step produces a payoff-matrix artifact (per-opponent, smoothed per D-5) and tracks it via DVC, mirroring how `stratum_table.json` and the pressure-deviation artifact are built and versioned today. `core/game_theory.py` exposes a loader plus a solver that operates on the loaded matrix at request time — the equilibrium math itself (2x2 closed-form or the 3x3 LP) is fast enough to run live per point, same as the Markov solver already does. | Matches the "load once at graph-construction time, O(1)-ish per point after that" latency pattern this project has used consistently since Phase 3/4. Not MLflow-tracked, since there's no calibration curve or train/test split concept here — just DVC, matching Phase 2's ingestion pattern more than Phase 3's model-training pattern. |
+| **B — Fully live computation, no offline artifact** | Build the payoff matrix from raw historical data on every request, inside `strategy_exploit.py`'s invocation path. | Breaks the artifact-loading latency discipline this project has held to since Phase 4's own D-9 — reloading and re-aggregating historical charting data per point is exactly the kind of per-point I/O that decision was written to prevent. |
+
+**Proposal: Option A.** This is a strong recommendation, not a close call: it's the same pattern every prior phase has used for anything derived from historical data, and the file-structure evidence (`game_theory.py` under `core/`, not `models/`) already signals that the equilibrium *solve* is meant to behave like the Markov solver — exact, in-process, live — while the matrix *fit* behind it should behave like every other artifact this project loads once and reuses.
+
+---
+
+### D-8 🔴 `ExploitResult` Schema Extension — Structured Fields, Not Pre-Written Narrative
+
+**Context:** The hand-off summary describes this phase as making `ExploitResult` "return actionable tactical exploit recommendations" once sufficiency is met. `ExploitResult.recommendation` is already typed `str | None` today. `TacticalOutputNode` already exists specifically to turn structured, pre-computed signals into coach-readable prose — no upstream node writes narrative text today; `PressureDiagnosticNode` reports numbers, not sentences.
+
+| Option | Description | Trade-off |
+|---|---|---|
+| **A — Extend with structured numeric fields; leave narrative phrasing to `TacticalOutputNode`** | Add fields like `recommended_direction: str`, `expected_value_gain: float`, `equilibrium_mix: dict[str, float]` to `ExploitResult`; either drop `recommendation` or repurpose it as a structured sub-object rather than free text. | Consistent with every other upstream node's contract, and keeps the DeepEval groundedness check's job exactly as scoped today (verify narrative numbers trace back to structured payload fields) — a pre-written recommendation string sitting in the payload would be an odd, unchecked exception to that discipline. |
+| **B — Populate `recommendation` with actual prose now** | Write the tactical sentence directly inside `strategy_exploit_node()`, matching the hand-off summary's literal phrasing. | Duplicates `TacticalOutputNode`'s role, risks the LLM re-narrating an already-narrated string (or ignoring it inconsistently), and gives the groundedness eval a second kind of narrative text to reason about that it wasn't designed for. |
+
+**Proposal: Option A.** "Actionable recommendation" doesn't require pre-written prose — it requires enough structured information that `TacticalOutputNode` can phrase it faithfully, exactly as it already does for pressure deviations. This is a genuine, visible deviation from how the hand-off summary phrased the deliverable, flagged explicitly rather than silently reinterpreted.
+
+---
+
+### D-9 🔴 Opponent-Matrix Granularity
+
+**Context:** Should the payoff matrix be fit per `(opponent, surface)`, or per opponent only?
+
+| Option | Description | Trade-off |
+|---|---|---|
+| **A — Per `(opponent, surface)`** | Matches the classifier's finest stratum granularity. | Multiplies an already-thin signal (per D-1's data concerns) by a surface dimension, on data that's likely to be sparse even before splitting by surface. |
+| **B — Opponent-level only, with hierarchical fallback if it proves too thin even at that level** | Mirrors the classifier's own Tier 0→1→2→3 fallback philosophy: try the most specific data available, only coarsen when there isn't enough of it — but starting from a coarser base level here than the classifier does, given this signal is inherently sparser to begin with. | Reuses an already-validated pattern rather than inventing a new one; keeps the phase's scope from expanding into a second full stratification system. |
+
+**Proposal: Option B.** Same reasoning as D-5: reuse the hierarchical-fallback machinery this project already trusts rather than building a parallel one for a signal that's already the most data-constrained part of this phase.
+
+---
+
+### D-10 🟢 No New Dependency
+
+`scipy` has been present since Phase 1's baseline `pyproject.toml`. `scipy.optimize.linprog` requires no new dependency, no version bump, no environment change. Recorded for completeness.
+
+---
+
+### D-11 🟢 `TacticalOutputNode`'s LLM-Call Guard Is Unaffected
+
+The guard that decides whether to invoke the LLM already fires on `pressure_result is not None or exploit_result is not None` — Phase 5 changes *what* `exploit_result` contains once `StrategyExploitNode` fires, not *whether* or *when* it fires. No change needed to `tactical_output.py`. Recorded for completeness.
+
+---
+
+## 3. Decision Summary
+
+| ID | Title | Status |
+|---|---|---|
+| D-1 | Redefine "opponent strategy" as return-effectiveness-by-serve-direction, not literal positioning | 🔴 Pending — central decision, gates everything below |
+| D-2 / D-2a | 2x2 default, escalate to 3x3 above a sample-size threshold | 🔴 Pending |
+| D-3 | Best-response deviation as a single function taking matrix + equilibrium | 🟢 Recorded |
+| D-4 | Sufficiency gate moves into `core/game_theory.py`, Phase-4 approximation retired | 🔴 Pending |
+| D-5 | Empirical-Bayes Beta shrinkage per matrix cell, reusing Phase 3's pattern | 🔴 Pending |
+| D-6 | Solver failures fail loud via the existing solver-exception pattern | 🟢 Recorded |
+| D-7 | Offline DVC-tracked payoff-matrix artifact + live in-process equilibrium solve | 🔴 Pending |
+| D-8 | `ExploitResult` gets structured fields, not pre-written narrative text | 🔴 Pending |
+| D-9 | Opponent-level granularity with hierarchical fallback, not opponent×surface | 🔴 Pending |
+| D-10 | No new dependency | 🟢 Recorded |
+| D-11 | No change to `TacticalOutputNode`'s LLM-call guard | 🟢 Recorded |
+
+**Before any implementation:** read `reports/specs/game_theory_spec.md` and reconcile it against D-1 specifically — if the spec already resolves what "opponent strategy" means with information not available in this conversation, that resolution overrides the proposal here, and several downstream decisions (D-2, D-5, D-8, D-9) may need to be revisited in light of it.
+
+No implementation begins until the 🔴 items above are resolved.
