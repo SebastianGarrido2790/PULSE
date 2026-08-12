@@ -207,11 +207,14 @@ sequenceDiagram
 class BasePulseException(Exception):
     """Base exception for all PULSE engine errors."""
 
+
 class SolverException(BasePulseException):
     """Raised when Markov solver encounters mathematical or domain state errors."""
 
+
 class SufficiencyGateException(BasePulseException):
     """Raised when data sufficiency thresholds are violated."""
+
 
 class IngestionException(BasePulseException):
     """Raised when raw CSV parsing or schema validation fails."""

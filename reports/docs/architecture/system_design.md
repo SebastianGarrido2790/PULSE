@@ -248,10 +248,23 @@ Phase 4 implements the event-driven LangGraph orchestration state machine for PU
 2. **State Reducer for Audit Logging (D-2a):** `PulseGraphState.decision_log` is annotated with `Annotated[list[DecisionLogEntry], operator.add]`, enabling node output dictionaries to append audit entries seamlessly without in-place state mutation issues.
 3. **Wilson Lower Bound Escalation Gate (D-4):** Shared escalation condition checks `delta_leverage_low >= leverage_escalation` (0.10 in `params.yaml`). On routine points, downstream diagnostic nodes are suppressed, logging explicit audit reasons to `decision_log`.
 4. **Single-LLM Vendor with Passthrough Fallback (D-7, D-8):** Routine points trigger zero LLM calls (cost guard). On escalated points, `TacticalOutputNode` invokes a single LLM vendor (`call_narrative_llm`). On network/vendor exceptions, it falls back to a deterministic raw-signal payload without attempting a secondary LLM provider.
-5. **Numerical Groundedness CI Gate (D-9):** DeepEval evaluation suite (`tests/evals/test_tactical_output_groundedness.py`) verifies that LLM narratives never hallucinate numbers, bounds, or player statistics absent from input payloads.
+5. **Numerical Groundedness CI Gate (D-8):** DeepEval evaluation suite (`tests/evals/test_tactical_output_groundedness.py`) verifies that LLM narratives never hallucinate numbers, bounds, or player statistics absent from input payloads.
 
 **Consequences:**
 The conditional topology is empirically validated: routine points execute only `StateMonitorNode` and `TacticalOutputNode` in 0.05ms, while high-leverage points fire diagnostic nodes and synthesize LLM narratives.
+
+#### ADR-010 Amendment 1: Routing Function Factory Closures (Phase 4.1 — 2026-08-11)
+
+**Status:** Validated (Phase 4.1 — 2026-08-11)
+
+**Context & Rationale:**
+Post-Phase 4 review identified that `route_after_state_monitor` and `route_after_pressure_diagnostic` in `src/graph/pulse_graph.py` took `params: Params | None = None` and fell back to calling `load_params()` per invocation when unregistered un-bound. While node factories (`make_state_monitor_node`, etc.) correctly closed over `cfg` per D-9/D-10, registering the raw routing functions directly with LangGraph's `add_conditional_edges()` caused `params` to take its default (`None`), silently hitting `load_params()` on every point event.
+
+**Amended Decision:**
+1. Refactor `route_after_state_monitor` and `route_after_pressure_diagnostic` into factory functions (`make_route_after_state_monitor(params)` and `make_route_after_pressure_diagnostic(params)`), matching the D-10 factory-closure pattern used across `src/graph/`.
+2. In `build_pulse_graph()`, register `make_route_after_state_monitor(cfg)` and `make_route_after_pressure_diagnostic(cfg)`.
+3. Add a unit regression test in `tests/unit/test_routing.py` (`test_routing_does_not_reload_params_from_disk`) verifying zero calls to `load_params()` occur during routing.
+4. Reaffirm sample-size gate placement: `StrategyExploitNode` executes on the escalated path ($\Delta L_{\text{low}} \ge 0.10$) and enforces the ADR-003 sample-size gate ($N_{\text{opp}} \ge 30$) internally, outputting `"module_not_yet_implemented"` or `"insufficient_data"`.
 
 ---
 

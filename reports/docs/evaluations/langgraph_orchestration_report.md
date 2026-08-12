@@ -97,7 +97,7 @@ Every fire or suppression decision records:
 - **Output:**
 ```json
 {
-  "narrative": "Routine point — leverage lower bound 0.0000 below escalation threshold 0.1000.",
+  "narrative": "Routine point (ΔL=0.0001). No escalation required.",
   "escalated": false,
   "raw_payload": {
     "leverage_result": {

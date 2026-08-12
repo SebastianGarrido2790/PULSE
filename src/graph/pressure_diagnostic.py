@@ -84,14 +84,8 @@ def make_pressure_diagnostic_node(
         # 3. Record audit log entry for strategy_exploit firing decision
         thresh = cfg.thresholds.leverage_escalation
         lev_low = state.leverage_result.delta_leverage_low
-        escalate = lev_low >= thresh
-
-        if escalate:
-            reason = f"Leverage lower bound {lev_low:.4f} >= threshold {thresh:.4f}"
-            log_entries = [DecisionLogEntry(node="strategy_exploit", fired=True, reason=reason)]
-        else:
-            reason = f"Leverage lower bound {lev_low:.4f} < threshold {thresh:.4f} (suppressed)"
-            log_entries = [DecisionLogEntry(node="strategy_exploit", fired=False, reason=reason)]
+        reason = f"Leverage lower bound {lev_low:.4f} >= threshold {thresh:.4f}"
+        log_entries = [DecisionLogEntry(node="strategy_exploit", fired=True, reason=reason)]
 
         return {"pressure_result": pressure_res, "decision_log": log_entries}
 

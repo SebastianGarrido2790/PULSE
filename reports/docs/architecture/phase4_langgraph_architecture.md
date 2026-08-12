@@ -220,9 +220,7 @@ PulseGraphState
 The most architecturally significant detail in `state.py` is the `decision_log` field annotation:
 
 ```python
-decision_log: Annotated[list[DecisionLogEntry], operator.add] = Field(
-    default_factory=list
-)
+decision_log: Annotated[list[DecisionLogEntry], operator.add] = Field(default_factory=list)
 ```
 
 LangGraph's `StateGraph` uses this annotation to determine how to merge a node's returned update dictionary with the current state. Without `operator.add`, returning `{"decision_log": [entry]}` would **replace** the log. With `operator.add`, LangGraph calls `operator.add(existing_log, [entry])` — which is list concatenation — so entries accumulate across node executions.
@@ -245,8 +243,7 @@ def make_state_monitor_node(
 ) -> Callable[..., Any]:
     cfg = params if params is not None else load_params()
 
-    async def state_monitor_node(state: PulseGraphState) -> dict[str, Any]:
-        ...  # all logic here
+    async def state_monitor_node(state: PulseGraphState) -> dict[str, Any]: ...  # all logic here
 
     return state_monitor_node
 ```
@@ -329,10 +326,10 @@ def should_escalate(leverage_result: LeverageResult | None, threshold: float) ->
 builder = StateGraph(PulseGraphState)
 
 # 1. Register nodes (factory functions called here; artifacts bound via closure)
-builder.add_node("state_monitor",       make_state_monitor_node(stratum_table, cfg))
+builder.add_node("state_monitor", make_state_monitor_node(stratum_table, cfg))
 builder.add_node("pressure_diagnostic", make_pressure_diagnostic_node(pressure_artifact, cfg))
-builder.add_node("strategy_exploit",    make_strategy_exploit_node(stratum_table, cfg))
-builder.add_node("tactical_output",     make_tactical_output_node(cfg))
+builder.add_node("strategy_exploit", make_strategy_exploit_node(stratum_table, cfg))
+builder.add_node("tactical_output", make_tactical_output_node(cfg))
 
 # 2. Entry point
 builder.set_entry_point("state_monitor")
@@ -340,12 +337,12 @@ builder.set_entry_point("state_monitor")
 # 3. Conditional edges
 builder.add_conditional_edges(
     "state_monitor",
-    route_after_state_monitor,
+    make_route_after_state_monitor(cfg),
     {"pressure_diagnostic": "pressure_diagnostic", "tactical_output": "tactical_output"},
 )
 builder.add_conditional_edges(
     "pressure_diagnostic",
-    route_after_pressure_diagnostic,
+    make_route_after_pressure_diagnostic(cfg),
     {"strategy_exploit": "strategy_exploit", "tactical_output": "tactical_output"},
 )
 
@@ -414,9 +411,9 @@ sample_size = count_opponent_observations(stratum_table, opponent_id)
 is_sufficient = sample_size >= cfg.thresholds.exploit_min_sample_size  # 30 in params.yaml
 
 if is_sufficient:
-    status = "module_not_yet_implemented"   # Honest Phase 5 placeholder
+    status = "module_not_yet_implemented"  # Honest Phase 5 placeholder
 else:
-    status = "insufficient_data"             # Sufficiency Gate enforcement
+    status = "insufficient_data"  # Sufficiency Gate enforcement
 ```
 
 **Why the gate runs even in the stub phase:**
@@ -500,14 +497,14 @@ The system prompt is deliberately minimal: one role, one output format, one hard
 ```python
 api_key = os.environ.get("ANTHROPIC_API_KEY")
 if not api_key:
-    return None          # No key → immediate None (no retry)
+    return None  # No key → immediate None (no retry)
 
 try:
     response = await client.messages.create(...)
     return response.content[0].text.strip()
 except Exception as e:
     logger.warning(f"LLM narrative synthesis failed ({type(e).__name__}: {e}).")
-    return None          # Any exception → None (no secondary vendor)
+    return None  # Any exception → None (no secondary vendor)
 ```
 
 `None` propagates to `TacticalOutputNode`, which sets `is_llm_fallback=True` and returns the raw structured payload. A deterministic passthrough is a complete fallback — it is not a degraded mode.
@@ -726,12 +723,12 @@ src/graph/
 |---|---|---|
 | Conditional edge topology (not fixed pipeline) | ADR-001, D-1 | Routine points warrant zero diagnostic compute; emitting signals on every point violates Sufficiency Gate |
 | Wilson lower bound as escalation gate | D-4 (Option B) | Wide uncertainty bands suppress escalation even if point estimate is high — honest about what the data supports |
-| Factory-closure pattern for node binding | D-10 | One-time artifact loading; clean per-point async callable signature |
+| Factory-closure pattern for nodes & routing | D-10, Phase 4.1 | One-time artifact/params loading; clean per-point async callable signature with zero disk I/O during routing |
 | `operator.add` reducer for `decision_log` | D-2a | LangGraph-native list accumulation without in-place mutation |
 | Routing functions in `pulse_graph.py`, not in nodes | D-3 | Routing is a graph concern; nodes remain pure computation units |
 | Single LLM vendor with passthrough fallback | D-7, §2 | Deterministic passthrough is a complete fallback; a second vendor adds complexity with no gain |
 | LLM call guard reads `pressure_result`/`exploit_result` presence | D-7 | Structurally coupled to actual execution — cannot drift out of sync with routing threshold |
-| DeepEval groundedness gate in CI | D-9 | Automated verification that LLM never fabricates numbers absent from input payload |
+| DeepEval groundedness gate in CI | D-8 | Automated verification that LLM never fabricates numbers absent from input payload |
 
 ---
 

@@ -6,9 +6,12 @@ and OpenTelemetry span emissions across all combinations of leverage bounds and 
 Authority: Stage 6 Step 33, Decisions D-3, D-4, D-4a, D-5, ADR-001.
 """
 
+import pytest
+
+from src.config.loader import load_params
 from src.graph.pulse_graph import (
-    route_after_pressure_diagnostic,
-    route_after_state_monitor,
+    make_route_after_pressure_diagnostic,
+    make_route_after_state_monitor,
     should_escalate,
 )
 from src.graph.state import LeverageResult, PointContext, PulseGraphState
@@ -62,7 +65,8 @@ def test_route_after_state_monitor_escalate() -> None:
     )
     state = PulseGraphState(point_context=context, leverage_result=leverage)
 
-    destination = route_after_state_monitor(state)
+    route_fn = make_route_after_state_monitor()
+    destination = route_fn(state)
     assert destination == "pressure_diagnostic"
 
 
@@ -86,7 +90,8 @@ def test_route_after_state_monitor_suppressed() -> None:
     )
     state = PulseGraphState(point_context=context, leverage_result=leverage)
 
-    destination = route_after_state_monitor(state)
+    route_fn = make_route_after_state_monitor()
+    destination = route_fn(state)
     assert destination == "tactical_output"
 
 
@@ -110,7 +115,8 @@ def test_route_after_pressure_diagnostic_escalate() -> None:
     )
     state = PulseGraphState(point_context=context, leverage_result=leverage)
 
-    destination = route_after_pressure_diagnostic(state)
+    route_fn = make_route_after_pressure_diagnostic()
+    destination = route_fn(state)
     assert destination == "strategy_exploit"
 
 
@@ -134,5 +140,40 @@ def test_route_after_pressure_diagnostic_suppressed() -> None:
     )
     state = PulseGraphState(point_context=context, leverage_result=leverage)
 
-    destination = route_after_pressure_diagnostic(state)
+    route_fn = make_route_after_pressure_diagnostic()
+    destination = route_fn(state)
     assert destination == "tactical_output"
+
+
+def test_routing_does_not_reload_params_from_disk(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify factory-built routing functions do not call load_params() per point (D-9)."""
+    cfg = load_params()
+    route_sm = make_route_after_state_monitor(cfg)
+    route_pd = make_route_after_pressure_diagnostic(cfg)
+
+    def mock_load_params() -> None:
+        raise RuntimeError("load_params() was called during routing execution!")
+
+    monkeypatch.setattr("src.graph.pulse_graph.load_params", mock_load_params)
+
+    context = PointContext(
+        match_id="m5",
+        point_index=4,
+        server_id="alcaraz_c",
+        returner_id="sinner_j",
+        surface="HARD",
+        serve_number=1,
+    )
+    leverage = LeverageResult(
+        delta_leverage=0.20,
+        delta_leverage_low=0.15,
+        delta_leverage_high=0.25,
+        p_hat=0.70,
+        sample_size=60,
+        fallback_tier=0,
+    )
+    state = PulseGraphState(point_context=context, leverage_result=leverage)
+
+    # Calling routing closures repeatedly must NOT hit load_params()
+    assert route_sm(state) == "pressure_diagnostic"
+    assert route_pd(state) == "strategy_exploit"

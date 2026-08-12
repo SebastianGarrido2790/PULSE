@@ -6,6 +6,7 @@ and compiles the event-driven conditional graph for live match state monitoring.
 Authority: Phase 4 Decisions D-1 through D-11, ADR-001.
 """
 
+from collections.abc import Callable
 from pathlib import Path
 
 from langgraph.graph import END, StateGraph
@@ -81,78 +82,102 @@ def should_escalate(leverage_result: LeverageResult | None, threshold: float) ->
     return leverage_result.delta_leverage_low >= threshold
 
 
-def route_after_state_monitor(state: PulseGraphState, params: Params | None = None) -> str:
-    """Route after StateMonitorNode: check leverage escalation for PressureDiagnosticNode.
-
-    Authority: Decisions D-3, D-4, D-5. Logs fire/suppress DecisionLogEntry and emits OTel span.
+def make_route_after_state_monitor(
+    params: Params | None = None,
+) -> Callable[[PulseGraphState], str]:
+    """Factory creating a route_after_state_monitor closure bound to Params (D-9, D-10).
 
     Args:
-        state: Current PulseGraphState input object.
         params: Optional Params configuration object.
 
     Returns:
-        str: Destination node name ("pressure_diagnostic" or "tactical_output").
+        Callable[[PulseGraphState], str]: Routing function.
     """
     cfg = params if params is not None else load_params()
     threshold = cfg.thresholds.leverage_escalation
 
-    lev_res = state.leverage_result
-    lev_low = lev_res.delta_leverage_low if lev_res is not None else 0.0
-    escalate = should_escalate(lev_res, threshold)
+    def route_after_state_monitor(state: PulseGraphState) -> str:
+        """Route after StateMonitorNode: check leverage escalation for PressureDiagnosticNode.
 
-    if escalate:
-        fired = True
-        reason = f"Leverage lower bound {lev_low:.4f} >= threshold {threshold:.4f}"
-        destination = "pressure_diagnostic"
-    else:
-        fired = False
-        reason = f"Leverage lower bound {lev_low:.4f} < threshold {threshold:.4f} (suppressed)"
-        destination = "tactical_output"
+        Authority: Decisions D-3, D-4, D-5. Logs fire/suppress DecisionLogEntry and emits OTel span.
 
-    with tracer.start_as_current_span("route_after_state_monitor") as span:
-        span.set_attribute("pulse.target_node", "pressure_diagnostic")
-        span.set_attribute("pulse.fired", fired)
-        span.set_attribute("pulse.reason", reason)
+        Args:
+            state: Current PulseGraphState input object.
 
-    logger.debug(f"Routing after StateMonitorNode -> [{destination}] ({reason})")
-    return destination
+        Returns:
+            str: Destination node name ("pressure_diagnostic" or "tactical_output").
+        """
+        lev_res = state.leverage_result
+        lev_low = lev_res.delta_leverage_low if lev_res is not None else 0.0
+        escalate = should_escalate(lev_res, threshold)
+
+        if escalate:
+            fired = True
+            reason = f"Leverage lower bound {lev_low:.4f} >= threshold {threshold:.4f}"
+            destination = "pressure_diagnostic"
+        else:
+            fired = False
+            reason = f"Leverage lower bound {lev_low:.4f} < threshold {threshold:.4f} (suppressed)"
+            destination = "tactical_output"
+
+        with tracer.start_as_current_span("route_after_state_monitor") as span:
+            span.set_attribute("pulse.target_node", "pressure_diagnostic")
+            span.set_attribute("pulse.fired", fired)
+            span.set_attribute("pulse.reason", reason)
+
+        logger.debug(f"Routing after StateMonitorNode -> [{destination}] ({reason})")
+        return destination
+
+    return route_after_state_monitor
 
 
-def route_after_pressure_diagnostic(state: PulseGraphState, params: Params | None = None) -> str:
-    """Route after PressureDiagnosticNode: check leverage escalation for StrategyExploitNode.
-
-    Authority: Decisions D-3, D-4a, D-5. Logs fire/suppress DecisionLogEntry and emits OTel span.
+def make_route_after_pressure_diagnostic(
+    params: Params | None = None,
+) -> Callable[[PulseGraphState], str]:
+    """Factory creating a route_after_pressure_diagnostic closure bound to Params (D-9, D-10).
 
     Args:
-        state: Current PulseGraphState input object.
         params: Optional Params configuration object.
 
     Returns:
-        str: Destination node name ("strategy_exploit" or "tactical_output").
+        Callable[[PulseGraphState], str]: Routing function.
     """
     cfg = params if params is not None else load_params()
     threshold = cfg.thresholds.leverage_escalation
 
-    lev_res = state.leverage_result
-    lev_low = lev_res.delta_leverage_low if lev_res is not None else 0.0
-    escalate = should_escalate(lev_res, threshold)
+    def route_after_pressure_diagnostic(state: PulseGraphState) -> str:
+        """Route after PressureDiagnosticNode: check leverage escalation for StrategyExploitNode.
 
-    if escalate:
-        fired = True
-        reason = f"Leverage lower bound {lev_low:.4f} >= threshold {threshold:.4f}"
-        destination = "strategy_exploit"
-    else:
-        fired = False
-        reason = f"Leverage lower bound {lev_low:.4f} < threshold {threshold:.4f} (suppressed)"
-        destination = "tactical_output"
+        Authority: Decisions D-3, D-4a, D-5. Logs fire/suppress DecisionLogEntry & OTel span.
 
-    with tracer.start_as_current_span("route_after_pressure_diagnostic") as span:
-        span.set_attribute("pulse.target_node", "strategy_exploit")
-        span.set_attribute("pulse.fired", fired)
-        span.set_attribute("pulse.reason", reason)
+        Args:
+            state: Current PulseGraphState input object.
 
-    logger.debug(f"Routing after PressureDiagnosticNode -> [{destination}] ({reason})")
-    return destination
+        Returns:
+            str: Destination node name ("strategy_exploit" or "tactical_output").
+        """
+        lev_res = state.leverage_result
+        lev_low = lev_res.delta_leverage_low if lev_res is not None else 0.0
+        escalate = should_escalate(lev_res, threshold)
+
+        if escalate:
+            fired = True
+            reason = f"Leverage lower bound {lev_low:.4f} >= threshold {threshold:.4f}"
+            destination = "strategy_exploit"
+        else:
+            fired = False
+            reason = f"Leverage lower bound {lev_low:.4f} < threshold {threshold:.4f} (suppressed)"
+            destination = "tactical_output"
+
+        with tracer.start_as_current_span("route_after_pressure_diagnostic") as span:
+            span.set_attribute("pulse.target_node", "strategy_exploit")
+            span.set_attribute("pulse.fired", fired)
+            span.set_attribute("pulse.reason", reason)
+
+        logger.debug(f"Routing after PressureDiagnosticNode -> [{destination}] ({reason})")
+        return destination
+
+    return route_after_pressure_diagnostic
 
 
 def build_pulse_graph(
@@ -187,7 +212,7 @@ def build_pulse_graph(
 
     builder.add_conditional_edges(
         "state_monitor",
-        route_after_state_monitor,
+        make_route_after_state_monitor(cfg),
         {
             "pressure_diagnostic": "pressure_diagnostic",
             "tactical_output": "tactical_output",
@@ -196,7 +221,7 @@ def build_pulse_graph(
 
     builder.add_conditional_edges(
         "pressure_diagnostic",
-        route_after_pressure_diagnostic,
+        make_route_after_pressure_diagnostic(cfg),
         {
             "strategy_exploit": "strategy_exploit",
             "tactical_output": "tactical_output",

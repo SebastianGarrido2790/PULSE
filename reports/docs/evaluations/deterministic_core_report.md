@@ -188,17 +188,17 @@ raw_payload = {
     "server": "Jesper De Jong",
     "returner": "Michael Zheng",
     "server_is_p1": False,
-    "surface": "clay",            # Lowercase string coerced to Surface.CLAY
+    "surface": "clay",  # Lowercase string coerced to Surface.CLAY
     "serve_number": 1,
     "serve_direction": "wide",
     "p1_score": "40",
-    "p2_score": "AD",             # Score string validated against ValidPointScore
+    "p2_score": "AD",  # Score string validated against ValidPointScore
     "p1_games": 1,
     "p2_games": 0,
     "p1_sets": 0,
     "p2_sets": 1,
     "rally_length": 4,
-    "point_winner": "returner"
+    "point_winner": "returner",
 }
 
 # Validation Result
