@@ -8,6 +8,7 @@ Authority: Phase 4 Decisions D-2, D-2a, D-2b.
 import pytest
 from pydantic import ValidationError
 
+from src.core.game_theory import PayoffMatrix
 from src.graph.state import (
     DecisionLogEntry,
     ExploitResult,
@@ -85,12 +86,21 @@ def test_pulse_graph_state_full_payload() -> None:
         is_prior_estimated=True,
         is_sufficient_sample=True,
     )
+    dummy_payoff = PayoffMatrix(
+        matrix=[[0.70, 0.55], [0.60, 0.75]],
+        row_labels=["Wide", "T"],
+        col_labels=["Cover Wide", "Cover T"],
+        observation_counts=[[10, 11], [10, 11]],
+        n_opp_total=42,
+        server_id="djokovic_n",
+        returner_id="medvedev_d",
+        surface="CLAY",
+        serve_number=2,
+    )
     exploit = ExploitResult(
-        status="module_not_yet_implemented",
-        opponent_id="medvedev_d",
-        sample_size=42,
-        is_sufficient_sample=True,
-        recommendation=None,
+        sufficient_data=True,
+        n_opp_total=42,
+        payoff_matrix=dummy_payoff,
     )
     tactical = TacticalOutputResult(
         narrative="High leverage point on 2nd serve. Server shows +3% pressure deviation.",
@@ -116,7 +126,7 @@ def test_pulse_graph_state_full_payload() -> None:
     assert state.pressure_result is not None
     assert state.pressure_result.pressure_deviation == 0.03
     assert state.exploit_result is not None
-    assert state.exploit_result.status == "module_not_yet_implemented"
+    assert state.exploit_result.sufficient_data is True
     assert state.tactical_output is not None
     assert state.tactical_output.escalated is True
     assert len(state.decision_log) == 1

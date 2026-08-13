@@ -11,6 +11,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
+from src.core.game_theory import ExploitResult as ExploitResult
 from src.core.markov_solver import MatchState
 from src.models.pressure_deviation import PressureDeviationResult
 
@@ -65,20 +66,6 @@ class LeverageResult(BaseModel):
         ge=0,
         le=3,
         description="Stratum fallback tier (0=Exact, 1=Player, 2=Surface, 3=Default)",
-    )
-
-
-class ExploitResult(BaseModel):
-    """Strategy exploit result payload computed by StrategyExploitNode (stub in Phase 4)."""
-
-    status: str = Field(..., description="Execution status e.g. 'module_not_yet_implemented'")
-    opponent_id: str = Field(..., description="Opponent player ID being analyzed")
-    sample_size: int = Field(..., ge=0, description="Opponent observation count")
-    is_sufficient_sample: bool = Field(
-        ..., description="True if sample_size >= exploit_min_sample_size"
-    )
-    recommendation: str | None = Field(
-        default=None, description="Exploit recommendation string if available"
     )
 
 

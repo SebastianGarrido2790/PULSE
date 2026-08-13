@@ -22,6 +22,7 @@ class ThresholdsParams(BaseModel):
 
     leverage_escalation: float = Field(..., ge=0.0, le=1.0)
     exploit_min_sample_size: int = Field(..., ge=1)
+    game_theory_3x3_min_sample_size: int = Field(default=50, ge=1)
 
 
 class UncertaintyParams(BaseModel):
@@ -81,6 +82,9 @@ class ModelsParams(BaseModel):
     pressure_prior_alpha: float = Field(..., gt=0.0)
     pressure_prior_beta: float = Field(..., gt=0.0)
     pressure_prior_min_players_per_bucket: int = Field(..., ge=1)
+    game_theory_prior_alpha: float = Field(default=2.0, gt=0.0)
+    game_theory_prior_beta: float = Field(default=2.0, gt=0.0)
+    game_theory_min_observations_per_cell: int = Field(default=5, ge=1)
     pressure_leverage_buckets: list[float]
 
 

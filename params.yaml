@@ -4,6 +4,7 @@
 thresholds:
   leverage_escalation: 0.10       # Leverage threshold to trigger PressureDiagnosticNode (calibrate in Phase 3)
   exploit_min_sample_size: 30     # Opponent minimum observation count for StrategyExploitNode (ADR-003)
+  game_theory_3x3_min_sample_size: 50 # Minimum opponent observation count to include 3 serve directions (D-2a)
 
 uncertainty:
   confidence_level: 0.95          # 95% Wilson score confidence interval (z = 1.95996) per ADR-005
@@ -47,6 +48,11 @@ models:
   pressure_prior_alpha: 2.0       # Fallback Beta prior alpha (weak 4-observation prior)
   pressure_prior_beta: 2.0        # Fallback Beta prior beta
   pressure_prior_min_players_per_bucket: 15 # Minimum players in bucket required to fit MLE prior
+
+  # Empirical-Bayes Shrinkage Priors & Fallback Thresholds (Game Theory Module)
+  game_theory_prior_alpha: 2.0    # Beta prior alpha for payoff matrix cell win rates (D-5)
+  game_theory_prior_beta: 2.0     # Beta prior beta for payoff matrix cell win rates (D-5)
+  game_theory_min_observations_per_cell: 5 # Minimum observations per cell to fit prior
 
   # Leverage bucket upper boundaries (exclusive). Partition for per-bucket pressure deviation estimation.
   # [0.10, 0.25] produces 3 buckets: [0, 0.10) Routine, [0.10, 0.25) Elevated, [0.25, 1.0] Critical.

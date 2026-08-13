@@ -29,7 +29,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 1 — Shared Contracts
+## Stage 1 — Shared Contracts ✅
 
 6. Create the `src/core/game_theory.py` module skeleton (imports, module docstring). Confirm from Stage 0 whether `PayoffMatrix` belongs in this file or a separate schemas module — default assumption absent contrary confirmation: alongside the solver, mirroring `markov_solver.py`'s own pattern of keeping its domain model (`MatchState`) in the same file. **[D-7]**
 7. Define `PayoffMatrix` (Pydantic v2) exactly per D-8's contract: `matrix`, `row_labels`, `col_labels`, `observation_counts`, `n_opp_total`, `server_id`, `returner_id`, `surface: Literal["HARD","CLAY","GRASS"]`, `serve_number: int`. Add a cross-field `model_validator` enforcing `len(matrix) == len(row_labels)`, every row's length `== len(col_labels)`, and `observation_counts` matching `matrix`'s shape — the same class of structural bug a missing cross-field validator caused once already in this project (Phase 3's `MatchState` hardening fix). **[D-1, D-8]**

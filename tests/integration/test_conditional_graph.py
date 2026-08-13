@@ -102,10 +102,9 @@ async def test_high_leverage_sparse_data(mock_llm: AsyncMock, compiled_graph) ->
     assert final_state.get("pressure_result") is not None
     assert final_state["pressure_result"].server_id == "Carlos Alcaraz"
 
-    # 3. Assert exploit node ran and degraded gracefully (status: insufficient_data)
+    # 3. Assert exploit node ran and degraded gracefully (sufficient_data: False)
     assert final_state.get("exploit_result") is not None
-    assert final_state["exploit_result"].status == "insufficient_data"
-    assert final_state["exploit_result"].is_sufficient_sample is False
+    assert final_state["exploit_result"].sufficient_data is False
 
     # 4. Assert decision log records both nodes firing
     log = final_state["decision_log"]
@@ -150,11 +149,9 @@ async def test_high_leverage_sufficient_data(mock_llm: AsyncMock, compiled_graph
     assert final_state.get("pressure_result") is not None
     assert final_state["pressure_result"].server_id == "Carlos Alcaraz"
 
-    # 2. Assert exploit node ran and passed sufficiency gate (status: module_not_yet_implemented)
+    # 2. Assert exploit node ran and passed sufficiency gate (sufficient_data: True)
     assert final_state.get("exploit_result") is not None
-    assert final_state["exploit_result"].status == "module_not_yet_implemented"
-    assert final_state["exploit_result"].is_sufficient_sample is True
-    assert final_state["exploit_result"].recommendation is None
+    assert final_state["exploit_result"].sufficient_data is True
 
     # 3. Assert zero suppressions in decision log
     log = final_state["decision_log"]
