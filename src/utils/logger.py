@@ -47,7 +47,7 @@ def get_logger(name: str | None = None, headline: str | None = None) -> logging.
         try:
             from rich.logging import RichHandler
 
-            console_handler = RichHandler(rich_tracebacks=True, markup=True)
+            console_handler = RichHandler(rich_tracebacks=True, markup=False)
             console_handler.setFormatter(logging.Formatter("%(message)s"))
         except ImportError:
             console_handler = logging.StreamHandler()
