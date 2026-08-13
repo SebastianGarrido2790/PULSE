@@ -35,6 +35,7 @@ def get_logger(name: str | None = None, headline: str | None = None) -> logging.
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
         file_handler = RotatingFileHandler(
             LOG_FILE,
             maxBytes=5_000_000,  # 5 MB per log file
