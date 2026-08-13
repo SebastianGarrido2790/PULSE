@@ -97,7 +97,10 @@ venv.bak/
 # Note: DVC usually manages its own .gitignore files in subfolders, 
 # but these global ignores provide a safety net.
 data/
-artifacts/
+artifacts/*
+!artifacts/models/
+!artifacts/models/**
+*.png
 models/*.pkl
 models/*.h5
 models/*.pt
