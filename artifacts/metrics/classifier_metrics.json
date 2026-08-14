@@ -1,0 +1,86 @@
+{
+  "mean_absolute_calibration_error": 0.0065,
+  "auc_score": 0.6339,
+  "holdout_sample_size": 109496,
+  "train_sample_size": 437982,
+  "tier_counts": {
+    "Tier 0 (Exact Stratum)": 109458,
+    "Tier 1 (Player Overall)": 18,
+    "Tier 2 (Surface Population)": 20,
+    "Tier 3 (Global Default)": 0
+  },
+  "quantile_diagnostics": [
+    {
+      "bin_range": "(0.0657, 0.489]",
+      "count": 11005,
+      "mean_pred": 0.4503,
+      "mean_true": 0.4748,
+      "abs_error": 0.0245
+    },
+    {
+      "bin_range": "(0.489, 0.516]",
+      "count": 10942,
+      "mean_pred": 0.5043,
+      "mean_true": 0.5076,
+      "abs_error": 0.0033
+    },
+    {
+      "bin_range": "(0.516, 0.544]",
+      "count": 10943,
+      "mean_pred": 0.5274,
+      "mean_true": 0.5216,
+      "abs_error": 0.0058
+    },
+    {
+      "bin_range": "(0.544, 0.631]",
+      "count": 11031,
+      "mean_pred": 0.5734,
+      "mean_true": 0.5672,
+      "abs_error": 0.0062
+    },
+    {
+      "bin_range": "(0.631, 0.683]",
+      "count": 10855,
+      "mean_pred": 0.66,
+      "mean_true": 0.6676,
+      "abs_error": 0.0076
+    },
+    {
+      "bin_range": "(0.683, 0.712]",
+      "count": 10940,
+      "mean_pred": 0.6982,
+      "mean_true": 0.693,
+      "abs_error": 0.0053
+    },
+    {
+      "bin_range": "(0.712, 0.729]",
+      "count": 10939,
+      "mean_pred": 0.7198,
+      "mean_true": 0.7213,
+      "abs_error": 0.0015
+    },
+    {
+      "bin_range": "(0.729, 0.75]",
+      "count": 11271,
+      "mean_pred": 0.7406,
+      "mean_true": 0.7399,
+      "abs_error": 0.0007
+    },
+    {
+      "bin_range": "(0.75, 0.772]",
+      "count": 11049,
+      "mean_pred": 0.7645,
+      "mean_true": 0.7642,
+      "abs_error": 0.0002
+    },
+    {
+      "bin_range": "(0.772, 0.941]",
+      "count": 10521,
+      "mean_pred": 0.7881,
+      "mean_true": 0.7784,
+      "abs_error": 0.0096
+    }
+  ],
+  "exit_criterion_met": true,
+  "auc_sanity_passed": true
+}

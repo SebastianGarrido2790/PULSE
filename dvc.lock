@@ -10,12 +10,12 @@ stages:
       nfiles: 3
     - path: scripts/ingest.py
       hash: md5
-      md5: bfb414c70d898ce598a4fea4a1fd6ec7
-      size: 9123
+      md5: 3c2f28ee3006c0893e6fc060b154734f
+      size: 9095
     - path: src/schemas/point_record.py
       hash: md5
-      md5: ebaa031a0ab5705eedfa3b7b33f4712c
-      size: 8506
+      md5: 99c90594278b8c2deb7756395a6eddfe
+      size: 8492
     params:
       params.yaml:
         ingestion.raw_data_dir: data/raw
@@ -124,3 +124,43 @@ stages:
       hash: md5
       md5: bec9d3358ac4384bbba204c3c0bc2355
       size: 2912
+  build_payoff_matrices:
+    cmd: uv run python scripts/build_payoff_matrices.py
+    deps:
+    - path: artifacts/validated_data/points.parquet
+      hash: md5
+      md5: 552c25c3c31db6ba5a087857b54d59b5
+      size: 5181695
+    - path: params.yaml
+      hash: md5
+      md5: 1bd29afb313b29643be7e3500c3619a0
+      size: 3828
+    - path: scripts/build_payoff_matrices.py
+      hash: md5
+      md5: 1803eb681fdf2dcbfde1a2ccc3ffda31
+      size: 11934
+    - path: src/config/loader.py
+      hash: md5
+      md5: 23017a42c3ddf7e007dd4fd8cf567e66
+      size: 4688
+    - path: src/core/game_theory.py
+      hash: md5
+      md5: e676254912c9ac49eeff945ef9ee53c2
+      size: 6084
+    params:
+      params.yaml:
+        models.game_theory_min_observations_per_cell: 5
+        models.game_theory_prior_alpha: 2.0
+        models.game_theory_prior_beta: 2.0
+        thresholds.exploit_min_sample_size: 30
+        thresholds.game_theory_3x3_min_sample_size: 50
+    outs:
+    - path: artifacts/metrics/game_theory_metrics.json
+      hash: md5
+      md5: 9552e75681ee889ee79ef32ca88672bc
+      size: 224
+    - path: artifacts/models/game_theory/
+      hash: md5
+      md5: dee60978231bc42b025e1c76abf9831e.dir
+      size: 1269816
+      nfiles: 1

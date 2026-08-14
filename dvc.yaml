@@ -59,6 +59,26 @@ stages:
       - artifacts/metrics/pressure_metrics.json:
           cache: false
 
+  build_payoff_matrices:
+    cmd: uv run python scripts/build_payoff_matrices.py
+    deps:
+      - scripts/build_payoff_matrices.py
+      - src/core/game_theory.py
+      - src/config/loader.py
+      - artifacts/validated_data/points.parquet
+      - params.yaml
+    params:
+      - thresholds.exploit_min_sample_size
+      - thresholds.game_theory_3x3_min_sample_size
+      - models.game_theory_prior_alpha
+      - models.game_theory_prior_beta
+      - models.game_theory_min_observations_per_cell
+    outs:
+      - artifacts/models/game_theory/
+    metrics:
+      - artifacts/metrics/game_theory_metrics.json:
+          cache: false
+
   evaluate:
     cmd: echo "Stage not yet implemented — Phase 6 Evaluation Suite & Solver Gate"
     deps:

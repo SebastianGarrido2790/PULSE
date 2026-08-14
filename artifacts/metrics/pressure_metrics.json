@@ -1,0 +1,26 @@
+{
+  "empirical_coverage_rate": 0.9375,
+  "total_eval_player_strata": 400,
+  "covered_player_strata": 375,
+  "bucket_priors": {
+    "bucket_0": {
+      "alpha": 23.8771,
+      "beta": 15.3982,
+      "is_prior_estimated": true,
+      "player_count": 471
+    },
+    "bucket_1": {
+      "alpha": 14.9535,
+      "beta": 11.668,
+      "is_prior_estimated": true,
+      "player_count": 270
+    },
+    "bucket_2": {
+      "alpha": 14.7268,
+      "beta": 7.1459,
+      "is_prior_estimated": true,
+      "player_count": 130
+    }
+  },
+  "exit_criterion_met": true
+}

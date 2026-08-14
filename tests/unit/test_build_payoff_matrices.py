@@ -199,3 +199,27 @@ def test_fit_beta_prior_mom_calculation():
     )
     assert fallback_alpha == 3.0
     assert fallback_beta == 3.0
+
+
+def test_payoff_matrices_artifact_round_trip():
+    """Verify built artifact exists on disk and round-trips through PayoffMatrix validator."""
+    import json
+    from pathlib import Path
+
+    artifact_path = Path("artifacts/models/game_theory/payoff_matrices.json")
+    if not artifact_path.exists():
+        pytest.skip("Artifact not generated yet. Run scripts/build_payoff_matrices.py first.")
+
+    with artifact_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    assert len(data) > 0
+
+    # Validate first 10 entries against PayoffMatrix Pydantic validator
+    sample_keys = list(data.keys())[:10]
+    for k in sample_keys:
+        matrix_dict = data[k]
+        obj = PayoffMatrix.model_validate(matrix_dict)
+        assert isinstance(obj, PayoffMatrix)
+        assert len(obj.matrix) in (2, 3)
+        assert len(obj.col_labels) == 2

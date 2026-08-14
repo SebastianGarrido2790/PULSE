@@ -3,7 +3,7 @@
 **Game-Theoretic Exploit Module — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 5 of 7 | **Version:** 2.0.0 (rebuilt against reconciled decisions v2.0.0) | **Date:** 2026-08-12
-**Status:** 🟢 Stage 2 complete — 10 - 15 steps verified, gates 0-2 closed 🔒
+**Status:** 🟢 Stage 3 complete — 16 to 18 steps verified, gates 0-3 closed 🔒
 **Authority:** `phase5_implementation_plan_and_decisions.md` v2.0.0 (D-1–D-11, all resolved)
 **Scope of this document:** sequencing only, no code.
 
@@ -53,7 +53,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 3 — DVC Pipeline Stage for Payoff-Matrix Artifacts
+## Stage 3 — DVC Pipeline Stage for Payoff-Matrix Artifacts ✅
 
 16. Add `scripts/build_payoff_matrices.py`, following `scripts/train_pressure.py`'s shape: reads `artifacts/validated_data/points.parquet`, runs Stage 2's construction for every opponent with enough data, writes `artifacts/models/game_theory/payoff_matrices.json` (keyed by `returner_id`, and by `(returner_id, surface, serve_number)` where the finer stratum was used). **[D-7]**
 17. Add a new `dvc.yaml` stage (`build_payoff_matrices`): `deps` on the script, `src/core/game_theory.py`, `params.yaml`, `artifacts/validated_data/points.parquet`; `outs` on the artifact path.

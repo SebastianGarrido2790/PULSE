@@ -98,8 +98,8 @@ venv.bak/
 # but these global ignores provide a safety net.
 data/
 artifacts/*
-!artifacts/models/
-!artifacts/models/**
+!artifacts/metrics/
+!artifacts/metrics/**
 *.png
 models/*.pkl
 models/*.h5

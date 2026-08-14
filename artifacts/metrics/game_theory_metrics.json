@@ -1,0 +1,9 @@
+{
+  "total_matrices_built": 2139,
+  "total_opponents_charted": 471,
+  "opponents_with_sufficient_sample": 469,
+  "matrix_2x2_count": 245,
+  "matrix_3x2_count": 226,
+  "prior_alpha": 29.3138,
+  "prior_beta": 15.1447
+}
