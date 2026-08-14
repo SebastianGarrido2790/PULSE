@@ -32,7 +32,8 @@ stages:
       - uncertainty.confidence_level
       - solver.default_p_serve
     outs:
-      - artifacts/models/point_win_classifier/
+      - artifacts/models/point_win_classifier/:
+          cache: false
     metrics:
       - artifacts/metrics/classifier_metrics.json:
           cache: false
@@ -54,7 +55,8 @@ stages:
       - models.mlflow_experiment_pressure
       - models.random_state
     outs:
-      - artifacts/models/pressure_deviation/
+      - artifacts/models/pressure_deviation/:
+          cache: false
     metrics:
       - artifacts/metrics/pressure_metrics.json:
           cache: false
@@ -74,7 +76,8 @@ stages:
       - models.game_theory_prior_beta
       - models.game_theory_min_observations_per_cell
     outs:
-      - artifacts/models/game_theory/
+      - artifacts/models/game_theory/:
+          cache: false
     metrics:
       - artifacts/metrics/game_theory_metrics.json:
           cache: false
