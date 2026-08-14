@@ -3,7 +3,7 @@
 **Game-Theoretic Exploit Module — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 5 of 7 | **Version:** 2.0.0 (rebuilt against reconciled decisions v2.0.0) | **Date:** 2026-08-12
-**Status:** 🟢 Stage 3 complete — 16 to 18 steps verified, gates 0-3 closed 🔒
+**Status:** 🟢 Stage 4 complete — 19 to 23 steps verified, gates 0-4 closed 🔒
 **Authority:** `phase5_implementation_plan_and_decisions.md` v2.0.0 (D-1–D-11, all resolved)
 **Scope of this document:** sequencing only, no code.
 
@@ -63,7 +63,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 4 — Equilibrium Solver
+## Stage 4 — Equilibrium Solver ✅
 
 19. In `core/game_theory.py`, implement the closed-form 2x2 analytical Nash solver — exact algebraic formula, no `scipy` dependency on this path. **[D-2]**
 20. Implement the degenerate-game check (zero-determinant condition, per D-6); on detection, raise `SolverException` rather than returning a degraded result. **[D-6]**

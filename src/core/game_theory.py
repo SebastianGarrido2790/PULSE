@@ -12,7 +12,11 @@ Authority: game_theory_spec.md, ADR-003, Project Constitution §0.1, §2.
 
 from typing import Literal
 
+import numpy as np
 from pydantic import BaseModel, Field, model_validator
+from scipy.optimize import linprog
+
+from src.utils.exceptions import SolverException
 
 
 class PayoffMatrix(BaseModel):
@@ -117,3 +121,208 @@ class ExploitResult(BaseModel):
     delta: float | None = Field(default=None, ge=0.0, description="Exploitation gain delta")
     n_opp_total: int = Field(..., ge=0, description="Total opponent observation count")
     payoff_matrix: PayoffMatrix = Field(..., description="Input PayoffMatrix payload")
+
+
+def _solve_2x2_analytical(
+    matrix: list[list[float]],
+) -> tuple[list[float], list[float], float]:
+    """Compute Nash equilibrium for 2x2 zero-sum matrix game via exact algebraic formula.
+
+    Formula (game_theory_spec.md §3.2):
+        Pi = [[a, b], [c, d]]
+        D = a - b - c + d
+        x1* = (d - c) / D, x2* = 1 - x1*
+        y1* = (d - b) / D, y2* = 1 - y1*
+        V = (a * d - b * c) / D
+
+    Args:
+        matrix: 2x2 payoff matrix [[a, b], [c, d]].
+
+    Returns:
+        tuple[list[float], list[float], float]: (server_mix, returner_mix, game_value).
+
+    Raises:
+        SolverException: If determinant D is zero or game has dominant pure strategy.
+    """
+    a = matrix[0][0]
+    b = matrix[0][1]
+    c = matrix[1][0]
+    d = matrix[1][1]
+
+    denom = a - b - c + d
+
+    # Degenerate case guard (D-6)
+    if abs(denom) < 1e-12:
+        raise SolverException(
+            f"Degenerate 2x2 game: denominator D={denom:.6e} is zero or near-zero "
+            "(game has dominant strategy equilibrium; pure strategy applies)"
+        )
+
+    x1 = (d - c) / denom
+    x2 = 1.0 - x1
+    y1 = (d - b) / denom
+    y2 = 1.0 - y1
+    v = (a * d - b * c) / denom
+
+    # Bounds check on mixed strategies: valid probabilities must lie in [0, 1]
+    if x1 < -1e-9 or x1 > 1.0 + 1e-9 or y1 < -1e-9 or y1 > 1.0 + 1e-9:
+        raise SolverException(
+            f"Degenerate 2x2 game: algebraic equilibrium x*=[{x1:.4f}, {x2:.4f}], "
+            f"y*=[{y1:.4f}, {y2:.4f}] falls outside valid probability simplex [0, 1] "
+            "(dominant pure strategy present)"
+        )
+
+    x1_clamped = float(np.clip(x1, 0.0, 1.0))
+    x2_clamped = 1.0 - x1_clamped
+    y1_clamped = float(np.clip(y1, 0.0, 1.0))
+    y2_clamped = 1.0 - y1_clamped
+    v_clamped = float(np.clip(v, 0.0, 1.0))
+
+    return (
+        [round(x1_clamped, 6), round(x2_clamped, 6)],
+        [round(y1_clamped, 6), round(y2_clamped, 6)],
+        round(v_clamped, 6),
+    )
+
+
+def _solve_mn_linprog(
+    matrix: list[list[float]],
+) -> tuple[list[float], list[float], float]:
+    """Compute Nash equilibrium for general m x n zero-sum game via exact linear programming.
+
+    Uses scipy.optimize.linprog with method='highs' (game_theory_spec.md §3.3).
+
+    Args:
+        matrix: (m x n) payoff matrix.
+
+    Returns:
+        tuple[list[float], list[float], float]: (server_mix, returner_mix, game_value).
+
+    Raises:
+        SolverException: If linear program fails to converge or find feasible solution.
+    """
+    pi_arr = np.array(matrix, dtype=np.float64)
+    m, n = pi_arr.shape
+
+    # 1. Solve Server's LP (primal): max V s.t. Pi^T x >= V*1, sum(x)=1, x>=0
+    # Min -V with variables z = [x_0, ..., x_{m-1}, V] in R^{m+1}
+    c_primal = np.zeros(m + 1, dtype=np.float64)
+    c_primal[-1] = -1.0
+
+    # Constraints: V - Pi^T x <= 0  ->  [-pi_0j, -pi_1j, ..., -pi_{m-1}j, 1.0] * z <= 0
+    A_ub_primal = np.zeros((n, m + 1), dtype=np.float64)
+    for j in range(n):
+        A_ub_primal[j, :m] = -pi_arr[:, j]
+        A_ub_primal[j, m] = 1.0
+    b_ub_primal = np.zeros(n, dtype=np.float64)
+
+    A_eq_primal = np.zeros((1, m + 1), dtype=np.float64)
+    A_eq_primal[0, :m] = 1.0
+    b_eq_primal = np.array([1.0], dtype=np.float64)
+
+    bounds_primal = [(0.0, 1.0) for _ in range(m)] + [(0.0, 1.0)]
+
+    res_primal = linprog(
+        c_primal,
+        A_ub=A_ub_primal,
+        b_ub=b_ub_primal,
+        A_eq=A_eq_primal,
+        b_eq=b_eq_primal,
+        bounds=bounds_primal,
+        method="highs",
+    )
+
+    if not res_primal.success:
+        raise SolverException(
+            f"Linear programming solver failed for primal game: {res_primal.message}"
+        )
+
+    # 2. Solve Returner's LP (dual): min V s.t. Pi y <= V*1, sum(y)=1, y>=0
+    # Min V with variables w = [y_0, ..., y_{n-1}, V] in R^{n+1}
+    c_dual = np.zeros(n + 1, dtype=np.float64)
+    c_dual[-1] = 1.0
+
+    # Constraints: Pi y - V <= 0  ->  [pi_i0, pi_i1, ..., pi_i{n-1}, -1.0] * w <= 0
+    A_ub_dual = np.zeros((m, n + 1), dtype=np.float64)
+    for i in range(m):
+        A_ub_dual[i, :n] = pi_arr[i, :]
+        A_ub_dual[i, n] = -1.0
+    b_ub_dual = np.zeros(m, dtype=np.float64)
+
+    A_eq_dual = np.zeros((1, n + 1), dtype=np.float64)
+    A_eq_dual[0, :n] = 1.0
+    b_eq_dual = np.array([1.0], dtype=np.float64)
+
+    bounds_dual = [(0.0, 1.0) for _ in range(n)] + [(0.0, 1.0)]
+
+    res_dual = linprog(
+        c_dual,
+        A_ub=A_ub_dual,
+        b_ub=b_ub_dual,
+        A_eq=A_eq_dual,
+        b_eq=b_eq_dual,
+        bounds=bounds_dual,
+        method="highs",
+    )
+
+    if not res_dual.success:
+        raise SolverException(f"Linear programming solver failed for dual game: {res_dual.message}")
+
+    x_raw = res_primal.x[:m]
+    y_raw = res_dual.x[:n]
+    v_raw = float(res_primal.x[m])
+
+    # Normalize vectors to ensure exact simplex sum = 1.0
+    x_sum = float(np.sum(x_raw))
+    x_opt = (
+        [round(float(val) / x_sum, 6) for val in x_raw] if x_sum > 0 else [round(1.0 / m, 6)] * m
+    )
+
+    y_sum = float(np.sum(y_raw))
+    y_opt = (
+        [round(float(val) / y_sum, 6) for val in y_raw] if y_sum > 0 else [round(1.0 / n, 6)] * n
+    )
+
+    v_val = round(float(np.clip(v_raw, 0.0, 1.0)), 6)
+
+    return x_opt, y_opt, v_val
+
+
+def solve_nash_equilibrium(
+    payoff_matrix: PayoffMatrix,
+) -> tuple[list[float], list[float], float]:
+    """Compute mixed-strategy Nash equilibrium for a PayoffMatrix.
+
+    Dispatches to 2x2 closed-form analytical solver if matrix is (2x2),
+    or scipy.optimize.linprog (method='highs') if (m > 2 or n > 2).
+
+    Args:
+        payoff_matrix: Validated PayoffMatrix instance.
+
+    Returns:
+        tuple[list[float], list[float], float]: (server_mix x*, returner_mix y*, game_value V).
+
+    Raises:
+        SolverException: If input validation fails, game is degenerate, or LP fails.
+    """
+    matrix = payoff_matrix.matrix
+    m = len(matrix)
+    if m < 2:
+        raise SolverException(f"Payoff matrix must have at least 2 rows (got {m})")
+
+    n = len(matrix[0])
+    if n < 2:
+        raise SolverException(f"Payoff matrix must have at least 2 columns (got {n})")
+
+    # Boundary validation check (Step 22)
+    for i in range(m):
+        for j in range(n):
+            val = matrix[i][j]
+            if val < 0.0 or val > 1.0:
+                raise SolverException(
+                    f"Payoff matrix entry [{i}][{j}] = {val} is outside [0.0, 1.0]"
+                )
+
+    if m == 2 and n == 2:
+        return _solve_2x2_analytical(matrix)
+    return _solve_mn_linprog(matrix)
