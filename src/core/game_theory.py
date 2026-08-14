@@ -30,14 +30,10 @@ class PayoffMatrix(BaseModel):
         serve_number: Serve attempt number (1 or 2).
     """
 
-    matrix: list[list[float]] = Field(
-        ..., description="(m x n) empirical win probability matrix"
-    )
+    matrix: list[list[float]] = Field(..., description="(m x n) empirical win probability matrix")
     row_labels: list[str] = Field(..., description="Serve direction labels (length m)")
     col_labels: list[str] = Field(..., description="Returner position labels (length n)")
-    observation_counts: list[list[int]] = Field(
-        ..., description="(m x n) cell observation counts"
-    )
+    observation_counts: list[list[int]] = Field(..., description="(m x n) cell observation counts")
     n_opp_total: int = Field(..., ge=0, description="Total observations for opponent in stratum")
     server_id: str = Field(..., description="Serving player identifier")
     returner_id: str = Field(..., description="Returning player identifier")
@@ -99,9 +95,7 @@ class ExploitResult(BaseModel):
         payoff_matrix: The PayoffMatrix input payload (carried for logging/traceability).
     """
 
-    sufficient_data: bool = Field(
-        ..., description="True if N_opp and cell counts >= min threshold"
-    )
+    sufficient_data: bool = Field(..., description="True if N_opp and cell counts >= min threshold")
     equilibrium_value: float | None = Field(
         default=None, ge=0.0, le=1.0, description="Nash game value V"
     )

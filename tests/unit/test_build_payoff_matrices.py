@@ -17,49 +17,61 @@ def sample_stratum_df_sufficient() -> pd.DataFrame:
     rows = []
     # 40 wide points (24 server wins, 16 returner wins)
     for _ in range(24):
-        rows.append({
-            "serve_direction": "wide",
-            "point_winner": "server",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "wide",
+                "point_winner": "server",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     for _ in range(16):
-        rows.append({
-            "serve_direction": "wide",
-            "point_winner": "returner",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "wide",
+                "point_winner": "returner",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     # 60 body points (>= 50 threshold for 3x2)
     for _ in range(35):
-        rows.append({
-            "serve_direction": "body",
-            "point_winner": "server",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "body",
+                "point_winner": "server",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     for _ in range(25):
-        rows.append({
-            "serve_direction": "body",
-            "point_winner": "returner",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "body",
+                "point_winner": "returner",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     # 40 T points
     for _ in range(26):
-        rows.append({
-            "serve_direction": "T",
-            "point_winner": "server",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "T",
+                "point_winner": "server",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     for _ in range(14):
-        rows.append({
-            "serve_direction": "T",
-            "point_winner": "returner",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "T",
+                "point_winner": "returner",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
 
     return pd.DataFrame(rows)
 
@@ -70,49 +82,61 @@ def sample_stratum_df_sparse_body() -> pd.DataFrame:
     rows = []
     # 30 wide points
     for _ in range(20):
-        rows.append({
-            "serve_direction": "wide",
-            "point_winner": "server",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "wide",
+                "point_winner": "server",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     for _ in range(10):
-        rows.append({
-            "serve_direction": "wide",
-            "point_winner": "returner",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "wide",
+                "point_winner": "returner",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     # 5 body points (< 50 threshold)
     for _ in range(3):
-        rows.append({
-            "serve_direction": "body",
-            "point_winner": "server",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "body",
+                "point_winner": "server",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     for _ in range(2):
-        rows.append({
-            "serve_direction": "body",
-            "point_winner": "returner",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "body",
+                "point_winner": "returner",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     # 30 T points
     for _ in range(18):
-        rows.append({
-            "serve_direction": "T",
-            "point_winner": "server",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "T",
+                "point_winner": "server",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
     for _ in range(12):
-        rows.append({
-            "serve_direction": "T",
-            "point_winner": "returner",
-            "surface": "HARD",
-            "serve_number": 1,
-        })
+        rows.append(
+            {
+                "serve_direction": "T",
+                "point_winner": "returner",
+                "surface": "HARD",
+                "serve_number": 1,
+            }
+        )
 
     return pd.DataFrame(rows)
 
@@ -163,12 +187,14 @@ def test_build_payoff_matrix_2x2_sparse_body(sample_stratum_df_sparse_body: pd.D
 def test_build_payoff_matrix_empty_stratum_returns_none():
     """Verify empty stratum returns None as explicit insufficient-data marker."""
     params = load_params()
-    empty_df = pd.DataFrame({
-        "serve_direction": [],
-        "point_winner": [],
-        "surface": [],
-        "serve_number": [],
-    })
+    empty_df = pd.DataFrame(
+        {
+            "serve_direction": [],
+            "point_winner": [],
+            "surface": [],
+            "serve_number": [],
+        }
+    )
     matrix = build_payoff_matrix_for_stratum(
         df_stratum=empty_df,
         returner_id="unknown_player",
