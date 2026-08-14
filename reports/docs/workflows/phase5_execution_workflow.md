@@ -3,7 +3,7 @@
 **Game-Theoretic Exploit Module — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 5 of 7 | **Version:** 2.0.0 (rebuilt against reconciled decisions v2.0.0) | **Date:** 2026-08-12
-**Status:** 🟢 Stage 4 complete — 19 to 23 steps verified, gates 0-4 closed 🔒
+**Status:** 🟢 Stage 5 complete — 24 to 26 steps verified, gates 0-5 closed 🔒
 **Authority:** `phase5_implementation_plan_and_decisions.md` v2.0.0 (D-1–D-11, all resolved)
 **Scope of this document:** sequencing only, no code.
 
@@ -75,7 +75,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 5 — Sufficiency Gate & `compute_exploit()` Orchestration
+## Stage 5 — Sufficiency Gate & `compute_exploit()` Orchestration ✅
 
 24. Implement the two-level sufficiency check (D-4): `n_opp_total < threshold` OR any relevant `observation_counts[i][j] < threshold` → return `ExploitResult(sufficient_data=False, ..., n_opp_total=..., payoff_matrix=...)` with every equilibrium/recommendation field left `None`. Graceful degradation (FR-6), not an exception — distinct from Stage 4's fail-loud solver-fault path.
 25. Implement `compute_exploit(payoff_matrix, params) -> ExploitResult`: sufficiency check first; if sufficient, call Stage 4's solver for the equilibrium mixes and value, compute the observed returner mix from `observation_counts`, find the best-response pure strategy x_BR = argmax_x xᵀΠŷ, compute `delta` and `expected_value_if_exploiting`. **[D-3, D-4]**
