@@ -107,6 +107,7 @@ models/*.pt
 
 # Agent Customizations
 .agents/
+AGENTS.md
 
 # Logs
 logs/

@@ -3,7 +3,7 @@
 **Game-Theoretic Exploit Module — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 5 of 7 | **Version:** 2.0.0 (rebuilt against reconciled decisions v2.0.0) | **Date:** 2026-08-12
-**Status:** 🟢 Stage 0 complete — 5 steps verified
+**Status:** 🟢 Stage 2 complete — 10 - 15 steps verified, gates 0-2 closed 🔒
 **Authority:** `phase5_implementation_plan_and_decisions.md` v2.0.0 (D-1–D-11, all resolved)
 **Scope of this document:** sequencing only, no code.
 
@@ -40,7 +40,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 2 — Data Layer: Returner-Strategy Mapping & Matrix Construction
+## Stage 2 — Data Layer: Returner-Strategy Mapping & Matrix Construction ✅
 
 10. Implement the mapping from charted point data to a discrete returner-strategy label (e.g. `"Cover Wide"`, `"Cover T"`) per Stage 0 step 1's confirmed rule. New transformation logic — belongs in `scripts/`, alongside `scripts/train_classifier.py`/`train_pressure.py`'s existing offline-fitting pattern, not inside `core/game_theory.py` itself. **[D-1]**
 11. Implement the serve-direction row-label inclusion rule (D-2a): include all three (Wide/Body/Tee) when each has enough charted observations for a given opponent; collapse to two otherwise. This lives here, in matrix construction — **not** inside the solver (see Stage 4). **[D-2]**
