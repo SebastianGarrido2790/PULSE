@@ -10,6 +10,8 @@ Provides deterministic game-theoretic models for serve-return interactions:
 Authority: game_theory_spec.md, ADR-003, Project Constitution §0.1, §2.
 """
 
+import json
+from pathlib import Path
 from typing import Literal
 
 import numpy as np
@@ -18,6 +20,10 @@ from scipy.optimize import linprog
 
 from src.config.loader import Params
 from src.utils.exceptions import GameTheorySolverException
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class PayoffMatrix(BaseModel):
@@ -427,3 +433,33 @@ def compute_exploit(
         n_opp_total=n_opp_total,
         payoff_matrix=payoff_matrix,
     )
+
+
+def load_payoff_matrices(
+    artifact_path: Path | None = None,
+) -> dict[str, PayoffMatrix]:
+    """Load payoff matrices artifact from disk into a dictionary of validated PayoffMatrix objects.
+
+    Args:
+        artifact_path: Optional path to payoff_matrices.json or its parent directory.
+
+    Returns:
+        dict[str, PayoffMatrix]: Mapping of stratum keys to PayoffMatrix instances.
+    """
+    if artifact_path is None:
+        target_path = PROJECT_ROOT / "artifacts" / "models" / "game_theory" / "payoff_matrices.json"
+    elif artifact_path.is_dir():
+        target_path = artifact_path / "payoff_matrices.json"
+    else:
+        target_path = artifact_path
+
+    if not target_path.exists():
+        logger.warning(
+            f"Payoff matrices artifact not found at [{target_path}], returning empty dict"
+        )
+        return {}
+
+    with target_path.open("r", encoding="utf-8") as f:
+        raw_data = json.load(f)
+
+    return {k: PayoffMatrix.model_validate(v) for k, v in raw_data.items()}

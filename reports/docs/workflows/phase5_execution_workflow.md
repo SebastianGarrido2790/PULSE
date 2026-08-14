@@ -3,7 +3,7 @@
 **Game-Theoretic Exploit Module — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 5 of 7 | **Version:** 2.0.0 (rebuilt against reconciled decisions v2.0.0) | **Date:** 2026-08-12
-**Status:** 🟢 Stage 6 complete — 27 to 28 steps verified, gates 0-6 closed 🔒
+**Status:** 🟢 Stage 7 complete — 29 to 34 steps verified, gates 0-7 closed 🔒
 **Authority:** `phase5_implementation_plan_and_decisions.md` v2.0.0 (D-1–D-11, all resolved)
 **Scope of this document:** sequencing only, no code.
 
@@ -94,7 +94,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 7 — `StrategyExploitNode` Integration
+## Stage 7 — `StrategyExploitNode` Integration ✅
 
 29. In `src/graph/strategy_exploit.py`, remove `count_opponent_observations()` entirely and its now-unused `StratumTable` import if nothing else in the file needs it — this Phase-4 approximation is superseded by `PayoffMatrix.n_opp_total`/`observation_counts`. **[D-4]**
 30. Update `make_strategy_exploit_node()`'s factory signature to close over the loaded payoff-matrix artifact (Stage 3's output), matching `make_pressure_diagnostic_node(pressure_artifact, params)`'s established closure pattern.

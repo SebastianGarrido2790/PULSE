@@ -14,6 +14,7 @@ from langgraph.graph.state import CompiledStateGraph
 from opentelemetry import trace
 
 from src.config.loader import Params, load_params
+from src.core.game_theory import PayoffMatrix, load_payoff_matrices
 from src.graph.pressure_diagnostic import make_pressure_diagnostic_node
 from src.graph.state import LeverageResult, PulseGraphState
 from src.graph.state_monitor import make_state_monitor_node
@@ -31,15 +32,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 def load_graph_artifacts(
     artifacts_dir: Path | None = None,
-) -> tuple[StratumTable, PressureModelArtifact]:
-    """Load Phase 3 ML artifacts (StratumTable and PressureModelArtifact) exactly once from disk.
+) -> tuple[StratumTable, PressureModelArtifact, dict[str, PayoffMatrix]]:
+    """Load Phase 3 and Phase 5 ML artifacts exactly once from disk.
 
     Args:
         artifacts_dir: Root directory containing models artifacts.
             Defaults to PROJECT_ROOT / "artifacts" / "models".
 
     Returns:
-        tuple[StratumTable, PressureModelArtifact]: Loaded artifacts.
+        tuple[StratumTable, PressureModelArtifact, dict[str, PayoffMatrix]]: Loaded artifacts.
 
     Raises:
         ModelInferenceError: If artifacts are missing or corrupted.
@@ -49,6 +50,7 @@ def load_graph_artifacts(
     )
     classifier_dir = base_dir / "point_win_classifier"
     pressure_dir = base_dir / "pressure_deviation"
+    game_theory_dir = base_dir / "game_theory"
 
     logger.info(f"Loading Phase 3 StratumTable from [{classifier_dir}]")
     stratum_table = load_stratum_table(classifier_dir)
@@ -56,13 +58,18 @@ def load_graph_artifacts(
     logger.info(f"Loading Phase 3 PressureModelArtifact from [{pressure_dir}]")
     pressure_artifact = load_pressure_artifact(pressure_dir)
 
+    logger.info(f"Loading Phase 5 Payoff Matrices from [{game_theory_dir}]")
+    payoff_matrices = load_payoff_matrices(game_theory_dir)
+
     t0_cnt = len(stratum_table.tier0_exact)
     p_cnt = len(pressure_artifact.results)
+    gt_cnt = len(payoff_matrices)
     logger.info(
-        f"Artifacts loaded: StratumTable ({t0_cnt} entries), PressureArtifact ({p_cnt} results)"
+        f"Artifacts loaded: StratumTable ({t0_cnt} entries), "
+        f"PressureArtifact ({p_cnt} results), PayoffMatrices ({gt_cnt} strata)"
     )
 
-    return stratum_table, pressure_artifact
+    return stratum_table, pressure_artifact, payoff_matrices
 
 
 def should_escalate(leverage_result: LeverageResult | None, threshold: float) -> bool:
@@ -197,14 +204,16 @@ def build_pulse_graph(
         CompiledStateGraph: Compiled LangGraph application instance.
     """
     cfg = params if params is not None else load_params()
-    stratum_table, pressure_artifact = load_graph_artifacts(artifacts_dir=artifacts_dir)
+    stratum_table, pressure_artifact, payoff_matrices = load_graph_artifacts(
+        artifacts_dir=artifacts_dir
+    )
 
     builder = StateGraph(PulseGraphState)
 
     # 1. Register node factory functions
     builder.add_node("state_monitor", make_state_monitor_node(stratum_table, cfg))
     builder.add_node("pressure_diagnostic", make_pressure_diagnostic_node(pressure_artifact, cfg))
-    builder.add_node("strategy_exploit", make_strategy_exploit_node(stratum_table, cfg))
+    builder.add_node("strategy_exploit", make_strategy_exploit_node(payoff_matrices, cfg))
     builder.add_node("tactical_output", make_tactical_output_node(cfg))
 
     # 2. Wire entry point and conditional edges
