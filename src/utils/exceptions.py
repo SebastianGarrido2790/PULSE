@@ -71,6 +71,10 @@ class SolverException(BasePulseException):
     """Raised when the closed-form Markov solver encounters mathematical or convergence errors."""
 
 
+class GameTheorySolverException(SolverException):
+    """Raised when game-theoretic Nash equilibrium or Linear Programming solvers fail."""
+
+
 class SufficiencyGateException(BasePulseException):
     """Raised when an operation violates data sufficiency thresholds."""
 

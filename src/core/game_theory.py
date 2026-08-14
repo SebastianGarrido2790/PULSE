@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, model_validator
 from scipy.optimize import linprog
 
 from src.config.loader import Params
-from src.utils.exceptions import SolverException
+from src.utils.exceptions import GameTheorySolverException
 
 
 class PayoffMatrix(BaseModel):
@@ -143,7 +143,7 @@ def _solve_2x2_analytical(
         tuple[list[float], list[float], float]: (server_mix, returner_mix, game_value).
 
     Raises:
-        SolverException: If determinant D is zero or game has dominant pure strategy.
+        GameTheorySolverException: If determinant D is zero or game has dominant pure strategy.
     """
     a = matrix[0][0]
     b = matrix[0][1]
@@ -154,7 +154,7 @@ def _solve_2x2_analytical(
 
     # Degenerate case guard (D-6)
     if abs(denom) < 1e-12:
-        raise SolverException(
+        raise GameTheorySolverException(
             f"Degenerate 2x2 game: denominator D={denom:.6e} is zero or near-zero "
             "(game has dominant strategy equilibrium; pure strategy applies)"
         )
@@ -167,7 +167,7 @@ def _solve_2x2_analytical(
 
     # Bounds check on mixed strategies: valid probabilities must lie in [0, 1]
     if x1 < -1e-9 or x1 > 1.0 + 1e-9 or y1 < -1e-9 or y1 > 1.0 + 1e-9:
-        raise SolverException(
+        raise GameTheorySolverException(
             f"Degenerate 2x2 game: algebraic equilibrium x*=[{x1:.4f}, {x2:.4f}], "
             f"y*=[{y1:.4f}, {y2:.4f}] falls outside valid probability simplex [0, 1] "
             "(dominant pure strategy present)"
@@ -200,7 +200,7 @@ def _solve_mn_linprog(
         tuple[list[float], list[float], float]: (server_mix, returner_mix, game_value).
 
     Raises:
-        SolverException: If linear program fails to converge or find feasible solution.
+        GameTheorySolverException: If linear program fails to converge or find feasible solution.
     """
     pi_arr = np.array(matrix, dtype=np.float64)
     m, n = pi_arr.shape
@@ -234,7 +234,7 @@ def _solve_mn_linprog(
     )
 
     if not res_primal.success:
-        raise SolverException(
+        raise GameTheorySolverException(
             f"Linear programming solver failed for primal game: {res_primal.message}"
         )
 
@@ -267,7 +267,9 @@ def _solve_mn_linprog(
     )
 
     if not res_dual.success:
-        raise SolverException(f"Linear programming solver failed for dual game: {res_dual.message}")
+        raise GameTheorySolverException(
+            f"Linear programming solver failed for dual game: {res_dual.message}"
+        )
 
     x_raw = res_primal.x[:m]
     y_raw = res_dual.x[:n]
@@ -304,23 +306,23 @@ def solve_nash_equilibrium(
         tuple[list[float], list[float], float]: (server_mix x*, returner_mix y*, game_value V).
 
     Raises:
-        SolverException: If input validation fails, game is degenerate, or LP fails.
+        GameTheorySolverException: If input validation fails, game is degenerate, or LP fails.
     """
     matrix = payoff_matrix.matrix
     m = len(matrix)
     if m < 2:
-        raise SolverException(f"Payoff matrix must have at least 2 rows (got {m})")
+        raise GameTheorySolverException(f"Payoff matrix must have at least 2 rows (got {m})")
 
     n = len(matrix[0])
     if n < 2:
-        raise SolverException(f"Payoff matrix must have at least 2 columns (got {n})")
+        raise GameTheorySolverException(f"Payoff matrix must have at least 2 columns (got {n})")
 
     # Boundary validation check (Step 22)
     for i in range(m):
         for j in range(n):
             val = matrix[i][j]
             if val < 0.0 or val > 1.0:
-                raise SolverException(
+                raise GameTheorySolverException(
                     f"Payoff matrix entry [{i}][{j}] = {val} is outside [0.0, 1.0]"
                 )
 
@@ -353,6 +355,9 @@ def compute_exploit(
     Returns:
         ExploitResult: Structured payload containing sufficiency status, equilibrium,
             and exploit metrics.
+
+    Raises:
+        GameTheorySolverException: If underlying Nash equilibrium computation fails.
     """
     n_opp_total = payoff_matrix.n_opp_total
     min_opp_sample = params.thresholds.exploit_min_sample_size

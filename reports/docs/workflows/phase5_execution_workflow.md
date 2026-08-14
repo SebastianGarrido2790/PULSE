@@ -3,7 +3,7 @@
 **Game-Theoretic Exploit Module — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 5 of 7 | **Version:** 2.0.0 (rebuilt against reconciled decisions v2.0.0) | **Date:** 2026-08-12
-**Status:** 🟢 Stage 5 complete — 24 to 26 steps verified, gates 0-5 closed 🔒
+**Status:** 🟢 Stage 6 complete — 27 to 28 steps verified, gates 0-6 closed 🔒
 **Authority:** `phase5_implementation_plan_and_decisions.md` v2.0.0 (D-1–D-11, all resolved)
 **Scope of this document:** sequencing only, no code.
 
@@ -85,7 +85,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 6 — Solver-Failure Exception Wiring
+## Stage 6 — Solver-Failure Exception Wiring ✅
 
 27. Confirm (or add) a `SolverException` subclass/reuse path in `src/utils/exceptions.py` specific enough to distinguish a game-theory fault from a Markov-solver fault in logs, while inheriting the same `BasePulseException` hierarchy. **[D-6]**
 28. Confirm neither Stage 4's solver functions nor Stage 5's `compute_exploit()` ever silently catch and swallow a `SolverException` anywhere.
