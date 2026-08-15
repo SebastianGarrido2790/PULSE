@@ -3,7 +3,7 @@
 **Game-Theoretic Exploit Module — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 5 of 7 | **Version:** 2.0.0 (rebuilt against reconciled decisions v2.0.0) | **Date:** 2026-08-12
-**Status:** 🟢 Stage 7 complete — 29 to 34 steps verified, gates 0-7 closed 🔒
+**Status:** 🟢 Stage 8 complete — 35 to 36 steps verified, gates 0-8 closed 🔒
 **Authority:** `phase5_implementation_plan_and_decisions.md` v2.0.0 (D-1–D-11, all resolved)
 **Scope of this document:** sequencing only, no code.
 
@@ -107,7 +107,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 8 — `tests/unit/test_game_theory.py`
+## Stage 8 — `tests/unit/test_game_theory.py` ✅
 
 35. Consolidate the full set of golden-value/gate-verification properties from Stage 0 step 2 into `tests/unit/test_game_theory.py`.
 36. Confirm each property has its own explicitly-named test function — not folded into one parametrized test that could hide which specific property failed.
