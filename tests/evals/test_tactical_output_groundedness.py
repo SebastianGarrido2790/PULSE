@@ -3,7 +3,7 @@
 Verifies that TacticalOutputNode narrative text does not introduce any numbers,
 confidence claims, or exploit recommendations absent from its input signal payload.
 
-Authority: Phase 4 Decisions D-1, D-8, FR-7, DeepEval test framework §7.
+Authority: Phase 5 Decisions D-1, D-8, D-11, FR-7, DeepEval test framework §7.
 """
 
 import json
@@ -50,7 +50,7 @@ def verify_narrative_groundedness(
 
     Checks:
     1. Numbers in narrative exist in payload (or direct percentage translations).
-    2. Stub exploit payloads (status: "module_not_yet_implemented", recommendation: None)
+    2. Exploit payloads with sufficient_data=False or best_response_action=None
        do not claim specific tactical exploit actions.
 
     Args:
@@ -76,13 +76,13 @@ def verify_narrative_groundedness(
         if not match_found:
             violations.append(f"Ungrounded number [{num}] in narrative not present in payload.")
 
-    # 2. Stub exploit recommendation hallucination check (Step 44)
+    # 2. Gated exploit recommendation hallucination check (Step 39, D-11)
     exploit_res = raw_payload.get("exploit_result")
     if exploit_res is not None:
-        status = exploit_res.get("status")
-        rec = exploit_res.get("recommendation")
+        sufficient_data = exploit_res.get("sufficient_data", True)
+        best_response = exploit_res.get("best_response_action")
 
-        if status == "module_not_yet_implemented" or rec is None:
+        if not sufficient_data or best_response is None:
             # Check for hallucinated action verbs/tactics
             tactical_action_keywords = [
                 "target",
@@ -97,7 +97,7 @@ def verify_narrative_groundedness(
             for kw in tactical_action_keywords:
                 if kw in narrative_lower:
                     violations.append(
-                        f"Hallucinated action [{kw}] when exploit recommendation is None/stub."
+                        f"Hallucinated action [{kw}] when exploit recommendation is None/gated."
                     )
 
     is_grounded = len(violations) == 0
@@ -178,8 +178,8 @@ def test_groundedness_catches_hallucinated_numbers() -> None:
 
 
 @pytest.mark.evals
-def test_groundedness_valid_stub_exploit_payload() -> None:
-    """Verify groundedness passes for Stage 5 stub exploit payload (Step 44)."""
+def test_groundedness_valid_gated_exploit_payload() -> None:
+    """Verify groundedness passes for Phase 5 gated exploit payload (Step 39)."""
     payload = {
         "point_context": {
             "match_id": "m102",
@@ -198,26 +198,26 @@ def test_groundedness_valid_stub_exploit_payload() -> None:
             "fallback_tier": 0,
         },
         "exploit_result": {
-            "status": "module_not_yet_implemented",
-            "opponent_id": "sinner_j",
-            "sample_size": 40,
-            "is_sufficient_sample": True,
-            "recommendation": None,
+            "sufficient_data": False,
+            "n_opp_total": 12,
+            "equilibrium_value": None,
+            "best_response_action": None,
+            "expected_value_if_exploiting": None,
+            "delta": None,
         },
     }
 
-    valid_stub_narrative = (
-        "Elevated leverage point against sinner_j (sample size=40). "
-        "Exploit module not yet implemented."
+    valid_gated_narrative = (
+        "Elevated leverage point against sinner_j (insufficient sample size N=12)."
     )
 
-    is_grounded, violations = verify_narrative_groundedness(valid_stub_narrative, payload)
+    is_grounded, violations = verify_narrative_groundedness(valid_gated_narrative, payload)
     assert is_grounded, f"Groundedness violations found: {violations}"
 
 
 @pytest.mark.evals
-def test_groundedness_catches_hallucinated_stub_exploit_recommendation() -> None:
-    """Verify groundedness fails if narrative invents a tactic from a stub payload (Step 44)."""
+def test_groundedness_catches_hallucinated_gated_exploit_recommendation() -> None:
+    """Verify groundedness fails if narrative invents a tactic from a gated exploit payload."""
     payload = {
         "point_context": {
             "match_id": "m103",
@@ -236,11 +236,12 @@ def test_groundedness_catches_hallucinated_stub_exploit_recommendation() -> None
             "fallback_tier": 0,
         },
         "exploit_result": {
-            "status": "module_not_yet_implemented",
-            "opponent_id": "sinner_j",
-            "sample_size": 40,
-            "is_sufficient_sample": True,
-            "recommendation": None,
+            "sufficient_data": False,
+            "n_opp_total": 12,
+            "equilibrium_value": None,
+            "best_response_action": None,
+            "expected_value_if_exploiting": None,
+            "delta": None,
         },
     }
 

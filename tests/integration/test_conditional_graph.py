@@ -3,10 +3,11 @@
 Verifies end-to-end graph execution across match states, proving the conditional topology:
 1. Routine point (low leverage): only StateMonitorNode runs; pressure/exploit suppressed.
 2. High-leverage, sparse opponent data: pressure diagnostic runs; exploit degrades.
-3. High-leverage, sufficient opponent data: pressure diagnostic and exploit stub run.
-4. Named assertion proving visited node paths differ across match states (Phase 4 Exit Criteria).
+3. High-leverage, sufficient opponent data: pressure diagnostic and exploit run.
+4. High-leverage, uncharted opponent: pressure diagnostic runs; exploit returns n_opp_total=0.
+5. Named assertion proving visited node paths differ across match states.
 
-Authority: Phase 4 Decisions D-1 through D-11, ADR-001, FR-3 through FR-7.
+Authority: Phase 5 Decisions D-1 through D-11, ADR-001, FR-3 through FR-7.
 """
 
 from unittest.mock import AsyncMock, patch
@@ -121,9 +122,9 @@ async def test_high_leverage_sparse_data(mock_llm: AsyncMock, compiled_graph) ->
 @pytest.mark.asyncio
 @patch("src.graph.tactical_output.call_narrative_llm", new_callable=AsyncMock)
 async def test_high_leverage_sufficient_data(mock_llm: AsyncMock, compiled_graph) -> None:
-    """Fixture 3 — High Leverage, Sufficient Opponent: pressure diagnostic & exploit stub run."""
+    """Fixture 3 — High Leverage, Sufficient Opponent: pressure diagnostic & exploit run."""
     mock_llm.return_value = (
-        "Carlos Alcaraz under pressure: -6.5% serve win rate. Exploit module pending."
+        "Carlos Alcaraz under pressure: -6.5% serve win rate. Exploit recommendation: Wide."
     )
 
     # Final set (1-1 in sets, 4-5 in games, 30-40 Break Point: dL_low ~0.87 >= 0.10)
@@ -131,7 +132,7 @@ async def test_high_leverage_sufficient_data(mock_llm: AsyncMock, compiled_graph
         match_id="match_integ_003",
         point_index=12,
         server_id="Carlos Alcaraz",
-        returner_id="Carlos Alcaraz",  # Opponent with >= 30 sample size in stratum table
+        returner_id="Carlos Alcaraz",  # Opponent with >= 30 sample size in payoff matrices
         surface="HARD",
         serve_number=1,
         point_score_server=2,
@@ -150,8 +151,15 @@ async def test_high_leverage_sufficient_data(mock_llm: AsyncMock, compiled_graph
     assert final_state["pressure_result"].server_id == "Carlos Alcaraz"
 
     # 2. Assert exploit node ran and passed sufficiency gate (sufficient_data: True)
-    assert final_state.get("exploit_result") is not None
-    assert final_state["exploit_result"].sufficient_data is True
+    exploit_res = final_state.get("exploit_result")
+    assert exploit_res is not None
+    assert exploit_res.sufficient_data is True
+    assert exploit_res.best_response_action in ["Wide", "Body", "T"]
+    assert exploit_res.delta is not None
+    assert exploit_res.delta >= 0.0
+    assert exploit_res.equilibrium_value is not None
+    assert exploit_res.n_opp_total >= 30
+    assert exploit_res.payoff_matrix.returner_id == "Carlos Alcaraz"
 
     # 3. Assert zero suppressions in decision log
     log = final_state["decision_log"]
@@ -160,6 +168,40 @@ async def test_high_leverage_sufficient_data(mock_llm: AsyncMock, compiled_graph
 
     # 4. Assert LLM narrative synthesis was invoked
     assert mock_llm.call_count == 1
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+@patch("src.graph.tactical_output.call_narrative_llm", new_callable=AsyncMock)
+async def test_high_leverage_uncharted_opponent(mock_llm: AsyncMock, compiled_graph) -> None:
+    """Fixture 4 — High Leverage, Uncharted Opponent: pressure runs, exploit N=0."""
+    mock_llm.return_value = "Elevated leverage point against uncharted opponent."
+
+    context = PointContext(
+        match_id="match_integ_004",
+        point_index=5,
+        server_id="Carlos Alcaraz",
+        returner_id="completely_uncharted_opponent_xyz",
+        surface="HARD",
+        serve_number=1,
+        point_score_server=2,
+        point_score_returner=3,
+        game_score_server=4,
+        game_score_returner=5,
+        set_score_server=1,
+        set_score_returner=1,
+    )
+    initial_state = PulseGraphState(point_context=context)
+
+    final_state = await compiled_graph.ainvoke(initial_state)
+
+    assert final_state.get("exploit_result") is not None
+    exploit_res = final_state["exploit_result"]
+    assert exploit_res.sufficient_data is False
+    assert exploit_res.n_opp_total == 0
+    assert exploit_res.equilibrium_value is None
+    assert exploit_res.best_response_action is None
+    assert exploit_res.delta is None
 
 
 @pytest.mark.integration

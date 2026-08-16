@@ -3,7 +3,7 @@
 **Game-Theoretic Exploit Module — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 5 of 7 | **Version:** 2.0.0 (rebuilt against reconciled decisions v2.0.0) | **Date:** 2026-08-12
-**Status:** 🟢 Stage 8 complete — 35 to 36 steps verified, gates 0-8 closed 🔒
+**Status:** 🟢 Stage 9 complete — 37 to 39 steps verified, gates 0-9 closed 🔒
 **Authority:** `phase5_implementation_plan_and_decisions.md` v2.0.0 (D-1–D-11, all resolved)
 **Scope of this document:** sequencing only, no code.
 
@@ -116,7 +116,7 @@ D-1 is resolved, not open — this stage is about confirming exact details the r
 
 ---
 
-## Stage 9 — Integration Tests Through `PulseGraphState`
+## Stage 9 — Integration Tests Through `PulseGraphState` ✅
 
 37. Update `tests/integration/test_conditional_graph.py`'s existing "high-leverage, high-data" fixture (built in Phase 4) to assert against the new `ExploitResult` contract instead of the retired `status: "module_not_yet_implemented"` value — this fixture already reaches `StrategyExploitNode`; its assertions need updating, not a rebuild.
 38. Add one new fixture for the no-payoff-matrix-exists case (an opponent never charted) — Phase 4's original three fixtures never had reason to cover this branch.
