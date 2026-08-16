@@ -121,3 +121,21 @@ def test_solver_timing_sanity_under_5ms():
 
     # Budget is 1,000ms. In production it runs in <0.5ms; allow 25ms for CI / coverage trace
     assert elapsed < 0.025, f"Solver too slow: {elapsed * 1000:.2f}ms"
+
+
+def test_linprog_strong_duality_verified():
+    """Verify general m x n LP solver strictly satisfies Von Neumann Strong Duality."""
+    matrix_3x2 = [
+        [0.72, 0.54],
+        [0.61, 0.61],
+        [0.55, 0.73],
+    ]
+    x_opt, y_opt, v_opt = _solve_mn_linprog(matrix_3x2)
+
+    # Server payoff under best response against y* is at most V
+    server_payoffs = [matrix_3x2[i][0] * y_opt[0] + matrix_3x2[i][1] * y_opt[1] for i in range(3)]
+    assert max(server_payoffs) <= v_opt + 1e-4
+
+    # Returner cost under best response against x* is at least V
+    returner_costs = [sum(matrix_3x2[i][j] * x_opt[i] for i in range(3)) for j in range(2)]
+    assert min(returner_costs) >= v_opt - 1e-4

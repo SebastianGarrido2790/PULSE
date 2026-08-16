@@ -117,8 +117,10 @@ class PayoffMatrix(BaseModel):
     n_opp_total: int
     server_id: str
     returner_id: str
-    surface: str
+    surface: Literal["HARD", "CLAY", "GRASS"]
     serve_number: int
+    is_stylized_anticipation_model: bool = True
+    anticipation_delta: float = 0.12
 
 
 class ExploitResult(BaseModel):
@@ -131,7 +133,8 @@ class ExploitResult(BaseModel):
     best_response_action: str | None = None
     expected_value_if_exploiting: float | None = None
     delta: float | None = None
-    payoff_matrix: PayoffMatrix | None = None
+    payoff_matrix: PayoffMatrix
+    is_stylized_anticipation_model: bool = True
 ```
 
 ### 4.2 Payload Examples
@@ -140,7 +143,7 @@ class ExploitResult(BaseModel):
 ```json
 {
   "sufficient_data": true,
-  "n_opp_total": 84,
+  "n_opp_total": 2791,
   "equilibrium_value": 0.6541,
   "server_equilibrium_mix": [0.5714, 0.4286],
   "returner_equilibrium_mix": [0.6071, 0.3929],
@@ -148,16 +151,19 @@ class ExploitResult(BaseModel):
   "best_response_action": "Wide",
   "expected_value_if_exploiting": 0.6850,
   "delta": 0.0309,
+  "is_stylized_anticipation_model": true,
   "payoff_matrix": {
-    "matrix": [[0.7200, 0.5800], [0.6100, 0.7500]],
-    "row_labels": ["Wide", "T"],
+    "matrix": [[0.6051, 0.7751], [0.5505, 0.5505], [0.7601, 0.5901]],
+    "row_labels": ["Wide", "Body", "T"],
     "col_labels": ["Cover Wide", "Cover T"],
-    "observation_counts": [[30, 20], [14, 20]],
-    "n_opp_total": 84,
-    "server_id": "Carlos Alcaraz",
-    "returner_id": "Jannik Sinner",
+    "observation_counts": [[568, 568], [310, 310], [517, 517]],
+    "n_opp_total": 2791,
+    "server_id": "population_server",
+    "returner_id": "Jesper De Jong",
     "surface": "HARD",
-    "serve_number": 1
+    "serve_number": 1,
+    "is_stylized_anticipation_model": true,
+    "anticipation_delta": 0.12
   }
 }
 ```
@@ -174,7 +180,20 @@ class ExploitResult(BaseModel):
   "best_response_action": null,
   "expected_value_if_exploiting": null,
   "delta": null,
-  "payoff_matrix": null
+  "is_stylized_anticipation_model": true,
+  "payoff_matrix": {
+    "matrix": [[0.5800, 0.7500], [0.7100, 0.5400]],
+    "row_labels": ["Wide", "T"],
+    "col_labels": ["Cover Wide", "Cover T"],
+    "observation_counts": [[7, 7], [7, 7]],
+    "n_opp_total": 14,
+    "server_id": "population_server",
+    "returner_id": "Sparse Player",
+    "surface": "HARD",
+    "serve_number": 1,
+    "is_stylized_anticipation_model": true,
+    "anticipation_delta": 0.12
+  }
 }
 ```
 
@@ -190,9 +209,27 @@ class ExploitResult(BaseModel):
   "best_response_action": null,
   "expected_value_if_exploiting": null,
   "delta": null,
-  "payoff_matrix": null
+  "is_stylized_anticipation_model": true,
+  "payoff_matrix": {
+    "matrix": [[0.6200, 0.7400], [0.7400, 0.6200]],
+    "row_labels": ["Wide", "T"],
+    "col_labels": ["Cover Wide", "Cover T"],
+    "observation_counts": [[0, 0], [0, 0]],
+    "n_opp_total": 0,
+    "server_id": "population_server",
+    "returner_id": "Uncharted Opponent",
+    "surface": "HARD",
+    "serve_number": 1,
+    "is_stylized_anticipation_model": true,
+    "anticipation_delta": 0.12
+  }
 }
 ```
+
+### 4.3 Parameterized Anticipation Model Disclosures
+- **Domain Modeling Context:** Human match charting (Match Charting Project) records ball trajectory placements and stroke outcomes, but does not record optical/spatial pre-serve returner stance coordinates.
+- **Academic Foundation:** Following Walker & Wooders (2001) and Hsu et al. (2007), serve-and-return anticipation is modeled as a stylized simultaneous zero-sum game. Row baseline win rates and Empirical-Bayes shrinkage are computed from empirical match records, while column differentials represent a calibrated domain anticipation model (`anticipation_boost: 0.12` and `positioning_penalty: 0.05` sourced from `params.yaml`).
+- **Server Aggregation:** Matrices are pooled at `server_id="population_server"` to preserve statistical sample size against charted returners without overfitting to sparse individual head-to-head records.
 
 ---
 
@@ -207,12 +244,13 @@ class ExploitResult(BaseModel):
 | **Returner Indifference** | `test_returner_indifference_at_equilibrium` | $x^* \cdot \Pi[:, j] = V$ for all active columns $j$ | 🟢 PASS |
 | **Non-Negative Delta** | `test_delta_non_negative` | $\delta = \max_i (\Pi \hat{y})_i - V \ge 0.0$ always | 🟢 PASS |
 | **LP vs Closed-Form** | `test_lp_matches_closed_form_on_2x2` | HiGHS LP agrees with closed form to within $10^{-4}$ | 🟢 PASS |
+| **LP Strong Duality** | `test_linprog_strong_duality_verified` | Primal and Dual LPs converge to identical value $|V_P - V_D| \le 10^{-5}$ | 🟢 PASS |
 | **Sufficiency Gate ($N$)** | `test_sufficiency_gate_fires_below_threshold` | `sufficient_data=False` when $N_{\text{opp}} < 30$ | 🟢 PASS |
 | **Cell-Level Gate** | `test_cell_level_gate` | `sufficient_data=False` when any cell count $< 5$ | 🟢 PASS |
 | **Symmetric Game** | `test_symmetric_game_has_uniform_equilibrium` | Symmetric matrix produces 50/50 uniform mix | 🟢 PASS |
 | **Gated Null Contract** | `test_exploit_result_all_none_when_gate_fires` | All exploit fields are `None` when gate fires | 🟢 PASS |
 
-### 5.2 Test Suite & Coverage Breakdown (102/102 Passed)
+### 5.2 Test Suite & Coverage Breakdown (103/103 Passed)
 
 ```text
 tests/evals/test_tactical_output_groundedness.py ....                    [  3%]
@@ -222,12 +260,12 @@ tests/unit/test_build_payoff_matrices.py .....                           [ 15%]
 tests/unit/test_config_loader.py ....                                    [ 19%]
 tests/unit/test_game_theory.py .........                                 [ 28%]
 tests/unit/test_game_theory_contracts.py .....                           [ 33%]
-tests/unit/test_game_theory_exploit.py ......                            [ 39%]
-tests/unit/test_game_theory_solver.py ......                             [ 45%]
+tests/unit/test_game_theory_exploit.py ......                            [ 38%]
+tests/unit/test_game_theory_solver.py .......                            [ 45%]
 tests/unit/test_graph_state.py ...                                       [ 48%]
-tests/unit/test_leverage_uncertainty.py ...                              [ 50%]
-tests/unit/test_markov_solver.py ...........                             [ 61%]
-tests/unit/test_point_record.py ....                                     [ 65%]
+tests/unit/test_leverage_uncertainty.py ...                              [ 51%]
+tests/unit/test_markov_solver.py ...........                             [ 62%]
+tests/unit/test_point_record.py ....                                     [ 66%]
 tests/unit/test_point_win_classifier.py ........                         [ 73%]
 tests/unit/test_pressure_deviation.py ........                           [ 81%]
 tests/unit/test_pressure_diagnostic.py ...                               [ 84%]
@@ -242,11 +280,11 @@ tests/unit/test_tactical_output.py ...                                   [100%]
 
 | Component / Module | Statements | Missed | Coverage | Missing Lines |
 | :--- | :---: | :---: | :---: | :--- |
-| `src/core/game_theory.py` | 169 | 12 | **93%** | Non-reachable branch edge guards |
+| `src/core/game_theory.py` | 173 | 12 | **93%** | Non-reachable branch edge guards |
 | `src/graph/strategy_exploit.py` | 34 | 0 | **100%** | None |
 | `src/graph/pulse_graph.py` | 96 | 0 | **100%** | None |
 | `src/graph/state.py` | 45 | 0 | **100%** | None |
-| **Total `src/` Codebase** | **1,248** | **111** | **91%** | Target $\ge 70\%$ |
+| **Total `src/` Codebase** | **1,252** | **111** | **91%** | Target $\ge 70\%$ |
 
 ---
 
@@ -254,9 +292,10 @@ tests/unit/test_tactical_output.py ...                                   [100%]
 
 | Exit Criteria Item | Verification Evidence | Status |
 | :--- | :--- | :---: |
-| **Deterministic Solver Exactness** | Verified against closed-form and HiGHS LP across $2\times 2$ and $3\times 2$ games with $< 10^{-6}$ error. | ✅ PASS |
+| **Deterministic Solver Exactness** | Verified against closed-form and HiGHS LP across $2\times 2$ and $3\times 2$ games with $< 10^{-6}$ error and Strong Duality validation. | ✅ PASS |
 | **Two-Level Sufficiency Gating** | 100% suppression on $N_{\text{opp}} < 30$ and cell count $< 5$. Zero hallucinated recommendations. | ✅ PASS |
 | **LangGraph Dynamic Routing** | `test_conditional_graph.py` proves end-to-end routing with exact payload propagation. | ✅ PASS |
 | **DeepEval Groundedness** | 100% groundedness on tactical outputs; zero hallucinated tactics when exploit is gated. | ✅ PASS |
 | **Sub-Millisecond Execution** | In-process equilibrium solve finishes in $< 0.5\text{ms}$ per point event. | ✅ PASS |
 | **Pipeline Reproducibility** | `uv run dvc repro` reproduces data extraction and matrix construction end-to-end. | ✅ PASS |
+

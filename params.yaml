@@ -52,7 +52,9 @@ models:
   # Empirical-Bayes Shrinkage Priors & Fallback Thresholds (Game Theory Module)
   game_theory_prior_alpha: 2.0    # Beta prior alpha for payoff matrix cell win rates (D-5)
   game_theory_prior_beta: 2.0     # Beta prior beta for payoff matrix cell win rates (D-5)
-  game_theory_min_observations_per_cell: 5 # Minimum observations per cell to fit prior
+  game_theory_min_observations_per_cell: 5 # Min observations per cell (effectively per-serve-direction under stylized model)
+  game_theory_anticipation_boost: 0.12     # Server win rate increase when returner covers opposite direction
+  game_theory_positioning_penalty: 0.05    # Server win rate drop when returner covers serve direction
 
   # Leverage bucket upper boundaries (exclusive). Partition for per-bucket pressure deviation estimation.
   # [0.10, 0.25] produces 3 buckets: [0, 0.10) Routine, [0.10, 0.25) Elevated, [0.25, 1.0] Critical.

@@ -118,8 +118,9 @@ def build_payoff_matrix_for_stratum(
 
     col_labels = ["Cover Wide", "Cover T"]
 
-    # Positional coverage advantage boost (when returner guesses wrong)
-    delta_mismatch = 0.12
+    # Positional coverage advantage boost and penalty sourced from params.yaml
+    delta_mismatch = params.models.game_theory_anticipation_boost
+    pos_penalty = params.models.game_theory_positioning_penalty
 
     matrix: list[list[float]] = []
     observation_counts: list[list[int]] = []
@@ -131,7 +132,7 @@ def build_payoff_matrix_for_stratum(
         if n_wide > 0
         else (prior_alpha / (prior_alpha + prior_beta))
     )
-    pi_wide_cover_wide = float(np.clip(w_raw - 0.05, 0.05, 0.95))
+    pi_wide_cover_wide = float(np.clip(w_raw - pos_penalty, 0.05, 0.95))
     pi_wide_cover_t = float(np.clip(w_raw + delta_mismatch, 0.05, 0.95))
     matrix.append([round(pi_wide_cover_wide, 4), round(pi_wide_cover_t, 4)])
     n_wide_cell = max(1, n_wide // 2)
@@ -159,7 +160,7 @@ def build_payoff_matrix_for_stratum(
         else (prior_alpha / (prior_alpha + prior_beta))
     )
     pi_t_cover_wide = float(np.clip(t_raw + delta_mismatch, 0.05, 0.95))
-    pi_t_cover_t = float(np.clip(t_raw - 0.05, 0.05, 0.95))
+    pi_t_cover_t = float(np.clip(t_raw - pos_penalty, 0.05, 0.95))
     matrix.append([round(pi_t_cover_wide, 4), round(pi_t_cover_t, 4)])
     n_t_cell = max(1, n_t // 2)
     observation_counts.append([n_t_cell, n_t_cell])
@@ -176,6 +177,8 @@ def build_payoff_matrix_for_stratum(
         returner_id=returner_id,
         surface=surf_literal,  # type: ignore[arg-type]
         serve_number=serve_number,
+        is_stylized_anticipation_model=True,
+        anticipation_delta=delta_mismatch,
     )
 
 

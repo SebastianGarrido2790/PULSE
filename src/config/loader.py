@@ -85,6 +85,8 @@ class ModelsParams(BaseModel):
     game_theory_prior_alpha: float = Field(default=2.0, gt=0.0)
     game_theory_prior_beta: float = Field(default=2.0, gt=0.0)
     game_theory_min_observations_per_cell: int = Field(default=5, ge=1)
+    game_theory_anticipation_boost: float = Field(default=0.12, ge=0.0, le=0.5)
+    game_theory_positioning_penalty: float = Field(default=0.05, ge=0.0, le=0.5)
     pressure_leverage_buckets: list[float]
 
 

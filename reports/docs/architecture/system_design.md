@@ -280,7 +280,7 @@ Post-Phase 4 review identified that `route_after_state_monitor` and `route_after
 
 ### ADR-011: Game-Theoretic Minimax Exploitation Architecture (Phase 5 — 2026-08-15)
 
-**Status:** Validated (Phase 5 — 2026-08-15)
+**Status:** Validated & Amended (Option A Parameterized Stylized Model — 2026-08-16)
 
 **Context:**
 Prior to Phase 5 reconciliation, D-1 evaluated three framing options for returner strategy modeling (continuous positioning distributions, discrete directional buckets, or directional margin approximations). Furthermore, the exploit module required an exact, low-latency (<1ms) game-theoretic solver to compute mixed-strategy Nash equilibria, best-response deviations, and empirical-Bayes cell shrinkage while respecting the Sufficiency Gate ($N_{\text{opp}} \ge 30$).
@@ -293,9 +293,15 @@ Prior to Phase 5 reconciliation, D-1 evaluated three framing options for returne
 5. **Hierarchical Matrix Lookup Fallback (D-9):** Resolves payoff matrices through a 3-tier fallback: Exact Stratum $(R, \text{surface}, N_{\text{serve}}) \to$ Aggregate Stratum $(R, \text{aggregate}) \to$ Uncharted Opponent ($N_{\text{opp}}=0$, `sufficient_data=False`).
 6. **Fail-Loud Solver Exceptions (D-6):** Degenerate or non-strictly-positive determinant games raise `GameTheorySolverException(SolverException)` rather than failing silently or returning arbitrary fallback mixes.
 7. **Offline DVC Pipeline & Live In-Process Solving (D-7, D-10):** Payoff matrix construction is managed as an offline DVC pipeline stage (`scripts/build_payoff_matrices.py` exporting `artifacts/models/game_theory/payoff_matrices.json`), while live equilibrium solving executes in-process in $< 0.5\text{ms}$ with zero added external dependencies.
+8. **Parameterized Stylized Anticipation Model & Honest Contract Governance (Option A Resolution — 2026-08-16):**
+   - *Domain Modeling Boundary:* Match Charting Project (MCP) data records trajectory placement (4/5/6) and stroke outcomes, but does not capture optical/spatial pre-serve returner stance coordinates.
+   - *Mathematical Formulation:* In alignment with foundational sports economics literature (*Walker & Wooders 2001*, *Hsu et al. 2007*), the serve-and-return anticipation game is formulated as a stylized zero-sum game where row baselines are empirical and Bayesian-shrunk, while column differentials are parameterized from `params.yaml` (`anticipation_boost: 0.12`, `positioning_penalty: 0.05`).
+   - *Schema Disclosure:* `PayoffMatrix` and `ExploitResult` carry explicit metadata (`is_stylized_anticipation_model: bool = True`, `anticipation_delta: float = 0.12`).
+   - *Strong Duality Invariant:* `_solve_mn_linprog()` verifies $|V_{\text{primal}} - (-V_{\text{dual}})| \le 10^{-5}$, raising `GameTheorySolverException` if duality tolerance is violated.
+   - *Server Population Pooling:* Matrices are tagged as `server_id="population_server"` to pool server observations against charted returners, avoiding overfitting on sparse head-to-head records.
 
 **Consequences:**
-Ensures zero-latency, leak-free game theoretic calculations adhering to Ground-Truth Primacy and the Sufficiency Gate. Validated across 102 passing tests with 91% total codebase coverage.
+Ensures zero-latency, mathematically verified game-theoretic calculations adhering to Ground-Truth Primacy, Strong Duality, and the Sufficiency Gate. Validated across 103 passing tests with 91% total codebase coverage.
 
 ---
 

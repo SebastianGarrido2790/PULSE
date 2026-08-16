@@ -21,6 +21,8 @@ def test_load_params_default() -> None:
     assert params.models.point_win_classifier == "hierarchical_stratum_estimator"
     assert params.models.pressure_prior_min_players_per_bucket == 15
     assert params.models.pressure_leverage_buckets == [0.10, 0.25]
+    assert params.models.game_theory_anticipation_boost == 0.12
+    assert params.models.game_theory_positioning_penalty == 0.05
 
 
 def test_load_params_file_not_found(tmp_path: Path) -> None:

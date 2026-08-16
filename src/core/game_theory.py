@@ -50,6 +50,14 @@ class PayoffMatrix(BaseModel):
     returner_id: str = Field(..., description="Returning player identifier")
     surface: Literal["HARD", "CLAY", "GRASS"] = Field(..., description="Court surface type")
     serve_number: int = Field(..., ge=1, le=2, description="Serve attempt number (1 or 2)")
+    is_stylized_anticipation_model: bool = Field(
+        default=True,
+        description="True if column differentials represent a calibrated anticipation model.",
+    )
+    anticipation_delta: float = Field(
+        default=0.12,
+        description="Anticipation advantage parameter sourced from params.yaml.",
+    )
 
     @model_validator(mode="after")
     def validate_matrix_dimensions_and_probabilities(self) -> "PayoffMatrix":
@@ -104,6 +112,8 @@ class ExploitResult(BaseModel):
         delta: Exploitation deviation = expected_value_if_exploiting - equilibrium_value.
         n_opp_total: Observation count used (for confidence display in TacticalOutputNode).
         payoff_matrix: The PayoffMatrix input payload (carried for logging/traceability).
+        is_stylized_anticipation_model: True if underlying matrix column differentials represent
+            a calibrated anticipation model rather than direct optical tracking coordinates.
     """
 
     sufficient_data: bool = Field(..., description="True if N_opp and cell counts >= min threshold")
@@ -128,6 +138,10 @@ class ExploitResult(BaseModel):
     delta: float | None = Field(default=None, ge=0.0, description="Exploitation gain delta")
     n_opp_total: int = Field(..., ge=0, description="Total opponent observation count")
     payoff_matrix: PayoffMatrix = Field(..., description="Input PayoffMatrix payload")
+    is_stylized_anticipation_model: bool = Field(
+        default=True,
+        description="True if underlying matrix uses a calibrated anticipation model.",
+    )
 
 
 def _solve_2x2_analytical(
@@ -279,7 +293,14 @@ def _solve_mn_linprog(
 
     x_raw = res_primal.x[:m]
     y_raw = res_dual.x[:n]
-    v_raw = float(res_primal.x[m])
+    v_primal = float(res_primal.x[m])
+    v_dual = float(res_dual.x[n])
+
+    # Enforce Strong Duality Theorem invariant: V_primal == V_dual
+    if abs(v_primal - v_dual) > 1e-5:
+        raise GameTheorySolverException(
+            f"LP duality gap exceeded tolerance: |{v_primal:.6f} - {v_dual:.6f}| > 1e-5"
+        )
 
     # Normalize vectors to ensure exact simplex sum = 1.0
     x_sum = float(np.sum(x_raw))
@@ -292,7 +313,7 @@ def _solve_mn_linprog(
         [round(float(val) / y_sum, 6) for val in y_raw] if y_sum > 0 else [round(1.0 / n, 6)] * n
     )
 
-    v_val = round(float(np.clip(v_raw, 0.0, 1.0)), 6)
+    v_val = round(float(np.clip(v_primal, 0.0, 1.0)), 6)
 
     return x_opt, y_opt, v_val
 
@@ -376,6 +397,7 @@ def compute_exploit(
             sufficient_data=False,
             n_opp_total=n_opp_total,
             payoff_matrix=payoff_matrix,
+            is_stylized_anticipation_model=payoff_matrix.is_stylized_anticipation_model,
         )
 
     # Check per-cell observation counts
@@ -386,6 +408,7 @@ def compute_exploit(
                     sufficient_data=False,
                     n_opp_total=n_opp_total,
                     payoff_matrix=payoff_matrix,
+                    is_stylized_anticipation_model=payoff_matrix.is_stylized_anticipation_model,
                 )
 
     # 2. Solve Nash Equilibrium
@@ -432,6 +455,7 @@ def compute_exploit(
         delta=delta,
         n_opp_total=n_opp_total,
         payoff_matrix=payoff_matrix,
+        is_stylized_anticipation_model=payoff_matrix.is_stylized_anticipation_model,
     )
 
 

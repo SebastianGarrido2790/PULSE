@@ -111,6 +111,9 @@ def test_exploit_result_valid_instantiation():
     assert sufficient.sufficient_data is True
     assert sufficient.delta == 0.05
     assert sufficient.best_response_action == "Wide"
+    assert sufficient.is_stylized_anticipation_model is True
+    assert payoff.is_stylized_anticipation_model is True
+    assert payoff.anticipation_delta == 0.12
 
 
 def test_params_loader_game_theory_keys():
@@ -120,3 +123,5 @@ def test_params_loader_game_theory_keys():
     assert params.models.game_theory_prior_alpha == 2.0
     assert params.models.game_theory_prior_beta == 2.0
     assert params.models.game_theory_min_observations_per_cell == 5
+    assert params.models.game_theory_anticipation_boost == 0.12
+    assert params.models.game_theory_positioning_penalty == 0.05
