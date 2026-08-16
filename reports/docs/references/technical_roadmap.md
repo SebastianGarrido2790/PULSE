@@ -104,23 +104,24 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 5 — Game-Theoretic Exploit Module
+## Phase 5 — Game-Theoretic Exploit Module ✅ Complete
 
 **Goal:** Implement the Nash-equilibrium serve-direction solver and the opponent-specific best-response deviation calculation, with the sample-size gate as a hard, tested requirement.
 
 **Key Tasks:**
 
-- Implement minimax equilibrium solver via `scipy.optimize.linprog`
-- Implement opponent return-positioning bias estimation from historical charted data
-- Implement best-response deviation and expected-value gain calculation
-- Implement the sample-size gate: below threshold, the module returns an explicit "insufficient data" result, not a suppressed silent failure
-- Unit tests: equilibrium mix sums to 1 and is indifference-inducing; gate correctly suppresses output on synthetic sparse-data fixtures
+- Implement hybrid minimax equilibrium solver via $2\times 2$ analytical formulas and `scipy.optimize.linprog(method='highs')`
+- Build DVC data pipeline stage (`scripts/build_payoff_matrices.py`) extracting returner-positioning payoff matrices with Empirical-Bayes Beta shrinkage ($\alpha_0=29.314, \beta_0=15.145$)
+- Implement pure best-response deviation and expected-value gain calculation ($\delta \ge 0$)
+- Implement two-level sample-size sufficiency gate ($N_{\text{opp}} \ge 30$, cell counts $\ge 5$) with hierarchical stratum fallback
+- Unit tests & golden-value properties: simplex sums, indifference induction, non-negative $\delta$, closed-form vs LP agreement, symmetric uniform equilibrium
+- Wire `StrategyExploitNode` into LangGraph orchestration graph with zero-overhead in-process solving
 
-**Deliverables:** `core/game_theory.py`, `tests/test_game_theory.py`
+**Deliverables:** `src/core/game_theory.py`, `scripts/build_payoff_matrices.py`, `tests/unit/test_game_theory.py`, `artifacts/models/game_theory/payoff_matrices.json`, `reports/docs/evaluations/game_theory_report.md`
 
-**Exit Criteria:** Solver passes unit tests; sample-size gate verified via integration test (FR-6); `StrategyExploitNode` from Phase 4 wired to this module.
+**Exit Criteria:** Solver passes all 9 specification unit tests; sample-size gate verified via integration tests (FR-6); `StrategyExploitNode` wired and passing 102/102 test suite gates.
 
-**Dependencies:** Phase 1 (historical data), Phase 4 (node to wire into).
+**Dependencies:** Phase 2 (historical data), Phase 4 (node to wire into).
 
 **Est. Duration:** 2 days
 

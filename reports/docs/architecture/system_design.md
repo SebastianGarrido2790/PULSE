@@ -1,12 +1,22 @@
 # System Design & Architectural Decision Record, PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.4.0 | **Date:** 2026-08-11
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.5.0 | **Date:** 2026-08-15
 
 This document is a living record of the system's actual implemented state and the decisions that shaped it. During Phase 0, it reflects _planned_ state, the decisions made before any code exists. From Phase 1 onward, each phase's completion should update this document to reflect what was actually built, and any deviation from a prior ADR must be logged as an amendment, not silently changed.
 
 ---
 
 ## Current Implementation Status
+
+**Phase 5 — Minimax Exploitation & Tactical Game Theory Complete (2026-08-15).**  
+The Game-Theoretic Exploit Module (`src/core/game_theory.py`), offline DVC matrix construction pipeline (`scripts/build_payoff_matrices.py`), LangGraph node integration (`src/graph/strategy_exploit.py`), consolidated unit test suite (`tests/unit/test_game_theory.py`), and end-to-end integration tests (`tests/integration/test_conditional_graph.py`) are fully implemented, verified, and passing all quality gates (102/102 tests passing, 91% total coverage, 0 pyright/ruff errors, <1,000-line file ceiling).
+
+**Phase 5 Exit Criteria Validation Summary:**
+- **Deterministic Equilibrium Solver:** **PASSED** — Closed-form $2\times 2$ analytical formulas and HiGHS Linear Programming (`scipy.optimize.linprog(method='highs')`) solve mixed equilibria in $< 0.5\text{ms}$ with zero solver drift ($< 10^{-6}$ error).
+- **Two-Level Sufficiency Gating:** **PASSED** — Gating triggers when $N_{\text{opp}} < 30$ or any cell count $< 5$, setting `sufficient_data=False` and clearing all exploit metrics to `None`.
+- **Hierarchical Matrix Fallback:** **PASSED** — 3-tier lookup $(\text{Exact Stratum} \to \text{Aggregate Stratum} \to \text{Uncharted Opponent})$ provides seamless graceful degradation.
+- **Empirical-Bayes Beta Shrinkage:** **PASSED** — Fitted Beta priors ($\alpha_0=29.314, \beta_0=15.145$) prevent probability swings on sparse serve directions across 534,168 charted points.
+- **Pipeline Reproducibility:** **PASSED** — `uv run dvc repro` builds and validates 2,139 payoff matrix strata cleanly end to end.
 
 **Phase 4 — Event-Driven Orchestration (LangGraph) Complete (2026-08-11).**  
 The LangGraph StateGraph engine (`src/graph/pulse_graph.py`), Pydantic v2 graph state contracts (`src/graph/state.py`), always-on leverage monitor node (`src/graph/state_monitor.py`), empirical-Bayes pressure diagnostic node (`src/graph/pressure_diagnostic.py`), sample-size gated exploit node stub (`src/graph/strategy_exploit.py`), single-LLM narrative synthesis & deterministic fallback node (`src/graph/tactical_output.py`), DeepEval groundedness evaluation suite (`tests/evals/test_tactical_output_groundedness.py`), and end-to-end integration test suite (`tests/integration/test_conditional_graph.py`) are fully implemented, verified, and passing all quality gates (67/67 tests passing, 91% code coverage, 0 pyright/ruff errors, <1,000-line file ceiling).
@@ -268,6 +278,27 @@ Post-Phase 4 review identified that `route_after_state_monitor` and `route_after
 
 ---
 
+### ADR-011: Game-Theoretic Minimax Exploitation Architecture (Phase 5 — 2026-08-15)
+
+**Status:** Validated (Phase 5 — 2026-08-15)
+
+**Context:**
+Prior to Phase 5 reconciliation, D-1 evaluated three framing options for returner strategy modeling (continuous positioning distributions, discrete directional buckets, or directional margin approximations). Furthermore, the exploit module required an exact, low-latency (<1ms) game-theoretic solver to compute mixed-strategy Nash equilibria, best-response deviations, and empirical-Bayes cell shrinkage while respecting the Sufficiency Gate ($N_{\text{opp}} \ge 30$).
+
+**Decisions:**
+1. **2D Simultaneous Matrix Game Resolution (D-1):** D-1 was definitively resolved in favor of a full 2D zero-sum matrix game $\Pi \in \mathbb{R}^{m \times n}$ with discrete returner strategy columns $A_R = \{\text{"Cover Wide"}, \text{"Cover T"}\}$ (and server rows $A_S = \{\text{"Wide"}, \text{"T"}\}$, expanding to $3\times 2$ with $\text{"Body"}$ when body serve observations $N_{\text{body}} \ge 50$). *Note: This resolution supersedes the pre-reconciliation three-option framing.*
+2. **Hybrid Deterministic Solver (D-2, D-2a):** In-process analytical $2\times 2$ algebraic solver (`_solve_2x2_analytical`) as the sub-millisecond default, with automated dispatch to HiGHS linear programming (`scipy.optimize.linprog(method='highs')`) for $m \times n$ games.
+3. **Empirical-Bayes Beta Shrinkage (D-5):** Cell win probabilities $\pi_{ij}$ are smoothed using tour-level Beta priors ($\alpha_0=29.314, \beta_0=15.145$, fitted via Method of Moments across 471 returners and 534,168 charted points) to stabilize low-observation serve directions.
+4. **Two-Level Sufficiency Gate Ownership (D-4):** `core/game_theory.py` owns and enforces both sample-size conditions ($N_{\text{opp}} \ge 30$ and cell count $\ge 5$). When gated, the solver cleanly returns `sufficient_data=False` with all exploit fields set to `None`.
+5. **Hierarchical Matrix Lookup Fallback (D-9):** Resolves payoff matrices through a 3-tier fallback: Exact Stratum $(R, \text{surface}, N_{\text{serve}}) \to$ Aggregate Stratum $(R, \text{aggregate}) \to$ Uncharted Opponent ($N_{\text{opp}}=0$, `sufficient_data=False`).
+6. **Fail-Loud Solver Exceptions (D-6):** Degenerate or non-strictly-positive determinant games raise `GameTheorySolverException(SolverException)` rather than failing silently or returning arbitrary fallback mixes.
+7. **Offline DVC Pipeline & Live In-Process Solving (D-7, D-10):** Payoff matrix construction is managed as an offline DVC pipeline stage (`scripts/build_payoff_matrices.py` exporting `artifacts/models/game_theory/payoff_matrices.json`), while live equilibrium solving executes in-process in $< 0.5\text{ms}$ with zero added external dependencies.
+
+**Consequences:**
+Ensures zero-latency, leak-free game theoretic calculations adhering to Ground-Truth Primacy and the Sufficiency Gate. Validated across 102 passing tests with 91% total codebase coverage.
+
+---
+
 ## Component Inventory
 
 | Component                        | Module Path                         | Introduced In                                                                |
@@ -287,6 +318,7 @@ Post-Phase 4 review identified that `route_after_state_monitor` and `route_after
 | `PressureDiagnosticNode`         | `graph/pressure_diagnostic.py`      | Phase 4                                                                      |
 | `StrategyExploitNode`            | `graph/strategy_exploit.py`         | Phase 4 (node & sufficiency gate stub), Phase 5 (minimax module integration) |
 | Game theory solver               | `core/game_theory.py`               | Phase 5                                                                      |
+| Payoff Matrix DVC Stage          | `scripts/build_payoff_matrices.py`  | Phase 5                                                                      |
 | `TacticalOutputNode`             | `graph/tactical_output.py`          | Phase 4                                                                      |
 | FastAPI + streaming              | `api/main.py`, `api/streaming.py`   | Phase 6                                                                      |
 | Replay simulator                 | `simulator/replay.py`               | Phase 6                                                                      |
