@@ -97,6 +97,22 @@ class CIParams(BaseModel):
     min_coverage_pct: int = Field(..., ge=0, le=100)
 
 
+class ApiParams(BaseModel):
+    """FastAPI streaming server and escalation database parameters."""
+
+    host: str = Field(default="127.0.0.1")
+    port: int = Field(default=8000, ge=1024, le=65535)
+    sse_keep_alive_interval_s: float = Field(..., gt=0.0)
+    db_path: str = Field(default="artifacts/pulse_session.db")
+
+
+class SimulatorParams(BaseModel):
+    """Historical match replay simulator cadence and speed parameters."""
+
+    default_interval_s: float = Field(..., ge=0.0)
+    default_speed_multiplier: float = Field(default=1.0, ge=0.0)
+
+
 class Params(BaseModel):
     """Top-level configuration container for PULSE params.yaml."""
 
@@ -108,6 +124,9 @@ class Params(BaseModel):
     llm: LLMParams
     models: ModelsParams
     ci: CIParams
+    api: ApiParams
+    simulator: SimulatorParams
+
 
 
 def load_params(config_path: Path | None = None) -> Params:

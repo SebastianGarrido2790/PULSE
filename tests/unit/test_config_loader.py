@@ -23,6 +23,13 @@ def test_load_params_default() -> None:
     assert params.models.pressure_leverage_buckets == [0.10, 0.25]
     assert params.models.game_theory_anticipation_boost == 0.12
     assert params.models.game_theory_positioning_penalty == 0.05
+    assert params.api.host == "127.0.0.1"
+    assert params.api.port == 8000
+    assert params.api.sse_keep_alive_interval_s == 15.0
+    assert params.api.db_path == "artifacts/pulse_session.db"
+    assert params.simulator.default_interval_s == 2.0
+    assert params.simulator.default_speed_multiplier == 1.0
+
 
 
 def test_load_params_file_not_found(tmp_path: Path) -> None:

@@ -63,3 +63,13 @@ models:
 ci:
   line_ceiling: 1000              # Maximum allowed line count for any Python source file under src/ (§5.1)
   min_coverage_pct: 70            # Minimum required code coverage percentage for pytest
+
+api:
+  host: "127.0.0.1"               # Host address for FastAPI streaming server
+  port: 8000                      # Port for FastAPI streaming server
+  sse_keep_alive_interval_s: 15.0 # Periodic SSE keep-alive comment interval (D-5)
+  db_path: "artifacts/pulse_session.db" # SQLite escalation log persistence database path (D-4)
+
+simulator:
+  default_interval_s: 2.0         # Default synthetic inter-point interval in seconds (D-6)
+  default_speed_multiplier: 1.0   # Default playback speed multiplier (0.0 for instant replay)
