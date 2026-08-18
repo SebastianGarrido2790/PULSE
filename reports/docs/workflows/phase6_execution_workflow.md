@@ -1,8 +1,9 @@
 # Phase 6 — Execution Workflow
+
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** 🟡 Ready to execute — no code written yet
+**Status:** Stage 0 Completed - 1-4 steps implemented, gate 0 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -14,7 +15,7 @@
 
 ---
 
-## Stage 0 — Pre-Implementation Verification & Dependency Check
+## Stage 0 — Pre-Implementation Verification & Dependency Check ✅
 
 1. Confirm `src/api/`, `src/simulator/`, and `src/utils/persistence.py` don't yet exist — no Phase 6 file has been created.
 2. Confirm `fastapi` is present in `pyproject.toml` (Phase 1 baseline); confirm `uvicorn` (the ASGI server actually needed to run the app) and `websockets` (needed for FastAPI's native WebSocket support) are present — add either if missing.
@@ -81,7 +82,7 @@
 ## Stage 6 — Streaming Routes
 
 23. Create `src/api/streaming.py`: the SSE route (`GET /v1/matches/{match_id}/stream`) consuming Stage 4's generator, formatting each `StreamPointEvent` as an SSE `data:` frame, interleaving the configured heartbeat comment (D-5) on its own independent timer, not tied to point cadence. **[D-1, D-5]**
-24. Add the WebSocket route (`/v1/matches/{match_id}/ws`) consuming the *same* generator pattern — confirm during implementation that no event-formatting logic is duplicated between the two routes; they should differ only in framing. **[D-1]**
+24. Add the WebSocket route (`/v1/matches/{match_id}/ws`) consuming the _same_ generator pattern — confirm during implementation that no event-formatting logic is duplicated between the two routes; they should differ only in framing. **[D-1]**
 25. Wire D-8's concurrency model explicitly: confirm by code review, not assumption, that each incoming connection instantiates its own generator call, with no shared/global generator state across connections. **[D-8]**
 
 **Gate 6:** manual smoke test — two concurrent SSE connections to the same `match_id` produce independent, correctly-paced event sequences; the WebSocket route produces the same event content as the SSE route for the same match.
@@ -126,7 +127,7 @@
     - **D-4** — SQLite persistence layer for escalation-log traceability (FR-12), including the `aiosqlite` driver choice and why (event-loop blocking risk).
     - **D-6** — synthetic, deterministic replay cadence rather than reconstructed historical timing, and why (no real inter-point timestamps in the data; reproducibility NFR favors synthetic anyway).
     - **D-13** — fail-loud mid-stream error handling (explicit error event + connection close, never skip-and-continue) and the local-observability-for-now / Grafana-deferred call.
-    Logged as a new dated entry, not a silent edit — the same convention `ADR-010 Amendment 1` and `ADR-011` already established.
+      Logged as a new dated entry, not a silent edit — the same convention `ADR-010 Amendment 1` and `ADR-011` already established.
 37. Write a Phase 6 evaluation report mirroring the established pattern (`langgraph_orchestration_report.md`, `game_theory_report.md`): architecture summary, example `StreamPointEvent` payloads, verification results, exit-criteria sign-off table.
 38. Update `technical_roadmap.md`'s Phase 6 entry to ✅ Complete.
 39. Update `params.yaml`'s inline comments and any quickstart/README documentation referencing how to run the API and replay simulator — these become real, runnable commands for the first time in the project's history.

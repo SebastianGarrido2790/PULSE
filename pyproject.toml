@@ -26,6 +26,8 @@ dependencies = [
     "uvicorn>=0.27.0",
     "pyyaml>=6.0",
     "anthropic>=0.121.0",
+    "aiosqlite>=0.20.0",
+    "websockets>=12.0",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +40,7 @@ dev = [
     "deepeval>=1.0.0",
     "pre-commit>=3.6.0",
     "rich>=13.7.0",
+    "httpx>=0.27.0",
 ]
 
 [tool.ruff]
@@ -68,3 +71,4 @@ markers = [
     "integration: graph and system integration tests",
     "evals: deep-eval groundedness tests",
 ]
+
