@@ -7,9 +7,14 @@ This module provides the authoritative data schema contracts for PULSE point-lev
 """
 
 from enum import Enum, StrEnum
+from typing import TYPE_CHECKING
 
 import pandera.pandas as pa
 from pydantic import BaseModel, Field, field_validator
+
+if TYPE_CHECKING:
+    from src.graph.state import PointContext
+
 
 
 class Surface(StrEnum):
@@ -164,6 +169,55 @@ class PointRecord(BaseModel):
         """
         score = self.p2_score if self.server_is_p1 else self.p1_score
         return SCORE_TO_INT[score]
+
+    def get_server_games_int(self) -> int:
+        """Return the game count of the server in the current set."""
+        return self.p1_games if self.server_is_p1 else self.p2_games
+
+    def get_returner_games_int(self) -> int:
+        """Return the game count of the returner in the current set."""
+        return self.p2_games if self.server_is_p1 else self.p1_games
+
+    def get_server_sets_int(self) -> int:
+        """Return the set count of the server in the match."""
+        return self.p1_sets if self.server_is_p1 else self.p2_sets
+
+    def get_returner_sets_int(self) -> int:
+        """Return the set count of the returner in the match."""
+        return self.p2_sets if self.server_is_p1 else self.p1_sets
+
+    def to_point_context(self, point_index: int) -> "PointContext":
+        """Convert PointRecord domain model into a strongly typed PointContext.
+
+        Args:
+            point_index: 0-indexed chronological point sequence number (D-3b).
+
+        Returns:
+            PointContext: Graph input context formatted for LangGraph execution.
+
+        Note:
+            Per Phase 6 Decision D-3a, match replay simulation currently operates
+            under an explicit Best-of-3 (bo3) demo scope. Best-of-5 matches are out
+            of scope until tournament format inference is formalized in data ingestion.
+        """
+        from src.graph.state import PointContext
+
+        return PointContext(
+            match_id=self.match_id,
+            point_index=point_index,
+            server_id=self.server,
+            returner_id=self.returner,
+            surface=self.surface.value if isinstance(self.surface, Surface) else str(self.surface),
+            serve_number=self.serve_number,
+            point_score_server=self.get_server_score_int(),
+            point_score_returner=self.get_returner_score_int(),
+            game_score_server=self.get_server_games_int(),
+            game_score_returner=self.get_returner_games_int(),
+            set_score_server=self.get_server_sets_int(),
+            set_score_returner=self.get_returner_sets_int(),
+            match_format="bo3",
+        )
+
 
 
 class PointRecordSchema(pa.DataFrameModel):

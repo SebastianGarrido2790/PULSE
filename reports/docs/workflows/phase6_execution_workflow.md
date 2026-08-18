@@ -3,7 +3,7 @@
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 1 Completed - 5-8 steps implemented, gate 1 closed
+**Status:** Stage 2 Completed - 9-12 steps implemented, gate 2 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -37,7 +37,7 @@
 
 ---
 
-## Stage 2 — `PointRecord → PointContext` Conversion
+## Stage 2 — `PointRecord → PointContext` Conversion ✅
 
 9. Add `PointRecord.to_point_context(point_index: int) -> PointContext` to `schemas/point_record.py` (D-3) — `point_index` supplied explicitly by the caller per D-3b's row-order convention, never derived internally from a string field. **[D-3, D-3b]**
 10. Implement the `server_is_p1`-flip logic for games and sets, mirroring the pattern already established by `get_server_score_int()`/`get_returner_score_int()` for point scores.
