@@ -97,3 +97,8 @@ class IngestionException(BasePulseException):
 
 class ConfigException(BasePulseException):
     """Raised when params.yaml loading or schema validation fails."""
+
+
+class PersistenceException(BasePulseException):
+    """Raised when SQLite database operations fail during point event persistence."""
+

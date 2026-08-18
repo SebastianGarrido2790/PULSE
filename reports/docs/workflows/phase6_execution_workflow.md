@@ -3,7 +3,7 @@
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 2 Completed - 9-12 steps implemented, gate 2 closed
+**Status:** Stage 3 Completed - 13-15 steps implemented, gate 3 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -48,7 +48,7 @@
 
 ---
 
-## Stage 3 — Persistence Layer
+## Stage 3 — Persistence Layer ✅
 
 13. Create `src/utils/persistence.py`: a minimal SQLite schema (a `decision_log` table and a `tactical_output` table, or one combined table — sized to FR-12's traceability requirement, not over-built) using `aiosqlite` (Stage 0, step 3). **[D-4]**
 14. Implement `init_db()` (creates tables if missing; called once at FastAPI startup) and `persist_point_event(match_id, point_index, decision_log, tactical_output)` (one async write per point).
