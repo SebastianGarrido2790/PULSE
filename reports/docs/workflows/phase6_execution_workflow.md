@@ -3,7 +3,7 @@
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 0 Completed - 1-4 steps implemented, gate 0 closed
+**Status:** Stage 1 Completed - 5-8 steps implemented, gate 1 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -26,7 +26,7 @@
 
 ---
 
-## Stage 1 — Configuration & Schema Foundations
+## Stage 1 — Configuration & Schema Foundations ✅
 
 5. Add an `api:` section to `params.yaml`: host, port, `sse_keep_alive_interval_s: 15.0` (D-5), SQLite database path (D-4). **[D-4, D-5]**
 6. Add a `simulator:` section to `params.yaml`: `default_interval_s` and a default `speed_multiplier` (D-6). **[D-6]**
