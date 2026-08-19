@@ -3,7 +3,7 @@
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 3 Completed - 13-15 steps implemented, gate 3 closed
+**Status:** Stage 4 Completed - 16-19 steps implemented, gate 4 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -58,7 +58,7 @@
 
 ---
 
-## Stage 4 — Shared Event Generator
+## Stage 4 — Shared Event Generator ✅
 
 16. Create `generate_point_events(match_id, speed_multiplier)` as an async generator in `simulator/replay.py` — it's the component that actually drives replay, so it belongs where "replay" logic lives; `api/streaming.py` stays a thin transport-formatting layer, per D-1's own reasoning. **[D-1, D-2]**
 17. Inside the generator: read the match's `PointRecord` rows from `points.parquet` in row order (D-3b); convert each via Stage 2's method; call `graph.ainvoke(state)` (D-2) to get the resolved `PulseGraphState`; call Stage 3's `persist_point_event()` (D-4); `await asyncio.sleep()` for the D-6 cadence (base interval ÷ speed multiplier); `yield` a `StreamPointEvent` (Stage 1) per point.
