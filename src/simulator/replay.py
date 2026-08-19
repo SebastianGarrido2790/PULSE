@@ -230,12 +230,16 @@ async def generate_point_events(
 def run_cli() -> None:
     """CLI entrypoint for replaying a historical match via simulator.replay."""
     import argparse
+    import sys
 
-    parser = argparse.ArgumentParser(description="PULSE Historical Match Replay Simulator")
+    parser = argparse.ArgumentParser(
+        prog="simulator.replay",
+        description="PULSE Historical Match Replay Simulator CLI",
+    )
     parser.add_argument(
         "--match-id",
         type=str,
-        required=True,
+        default=None,
         help="Match ID to replay from points dataset",
     )
     parser.add_argument(
@@ -244,18 +248,51 @@ def run_cli() -> None:
         default=1.0,
         help="Playback speed multiplier (0 for instant replay)",
     )
+    parser.add_argument(
+        "--list-matches",
+        action="store_true",
+        help="List available match IDs and exit",
+    )
     args = parser.parse_args()
 
-    async def _run() -> None:
+    if args.list_matches:
+        matches = get_available_matches()
+        print(f"Available matches ({len(matches)}):")
+        for m in matches[:20]:
+            print(f"  - {m}")
+        if len(matches) > 20:
+            print(f"  ... and {len(matches) - 20} more.")
+        return
+
+    if not args.match_id:
+        parser.print_help()
+        sys.exit(1)
+
+    async def _run() -> int:
+        point_count = 0
+        error_encountered = False
         async for event in generate_point_events(
             match_id=args.match_id,
             speed_multiplier=args.speed_multiplier,
         ):
             print(event.model_dump_json(indent=2))
+            point_count += 1
+            if event.event_type == "error":
+                error_encountered = True
 
-    asyncio.run(_run())
+        logger.info(
+            "Replay CLI completed for match [%s]: %d events processed.",
+            args.match_id,
+            point_count,
+        )
+        return 1 if error_encountered else 0
+
+    exit_code = asyncio.run(_run())
+    if exit_code != 0:
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":
     run_cli()
+
 

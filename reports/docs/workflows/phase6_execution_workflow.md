@@ -3,7 +3,7 @@
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 6 Completed - 23-25 steps implemented, gate 6 closed
+**Status:** Stage 7 Completed - 26-27 steps implemented, gate 7 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -89,7 +89,7 @@
 
 ---
 
-## Stage 7 — Replay Simulator CLI
+## Stage 7 — Replay Simulator CLI ✅
 
 26. Build the CLI entry point in `simulator/replay.py` as a thin driver around Stage 4's generator — confirm no duplication between the "library" generator and the "CLI" entry point; the CLI drives the same generator and prints/logs its output, it doesn't reimplement replay logic. **[D-6, D-9]**
 27. Confirm runnable via `uv run simulator.replay --match-id <id> --speed-multiplier <n>`.
@@ -130,7 +130,8 @@
       Logged as a new dated entry, not a silent edit — the same convention `ADR-010 Amendment 1` and `ADR-011` already established.
 37. Write a Phase 6 evaluation report mirroring the established pattern (`langgraph_orchestration_report.md`, `game_theory_report.md`): architecture summary, example `StreamPointEvent` payloads, verification results, exit-criteria sign-off table.
 38. Update `technical_roadmap.md`'s Phase 6 entry to ✅ Complete.
-39. Update `params.yaml`'s inline comments and any quickstart/README documentation referencing how to run the API and replay simulator — these become real, runnable commands for the first time in the project's history.
+39. Update `../evaluations/test_suite_report.md` with the test results.
+40. Update `params.yaml`'s inline comments and any quickstart/README documentation referencing how to run the API and replay simulator — these become real, runnable commands for the first time in the project's history.
 
 **Gate 10 (final):** ADR logged as a new dated entry; evaluation report complete; roadmap updated.
 

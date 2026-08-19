@@ -47,6 +47,11 @@ dev = [
 "api.main" = "src.api.main:run_server"
 "simulator.replay" = "src.simulator.replay:run_cli"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+
 
 [tool.ruff]
 line-length = 100

@@ -16,6 +16,7 @@ from src.simulator.replay import (
     generate_point_events,
     get_available_matches,
     load_match_records,
+    run_cli,
 )
 from src.utils.persistence import get_decision_logs, init_db
 
@@ -221,3 +222,52 @@ async def test_generate_point_events_missing_match_error(
     assert len(events) == 1
     assert events[0].event_type == "error"
     assert "not found in points dataset" in str(events[0].error_message)
+
+
+def test_run_cli_list_matches(sample_parquet_file: Path, monkeypatch, capsys) -> None:
+    """Verify run_cli --list-matches prints available matches."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: sample_parquet_file,
+    )
+    monkeypatch.setattr("sys.argv", ["simulator.replay", "--list-matches"])
+
+    run_cli()
+    captured = capsys.readouterr()
+    assert "Available matches (1):" in captured.out
+    assert "test_replay_match_001" in captured.out
+
+
+def test_run_cli_replay_match(sample_parquet_file: Path, monkeypatch, capsys) -> None:
+    """Verify run_cli replaying a match outputs JSON event payloads."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: sample_parquet_file,
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "simulator.replay",
+            "--match-id",
+            "test_replay_match_001",
+            "--speed-multiplier",
+            "0",
+        ],
+    )
+
+    run_cli()
+    captured = capsys.readouterr()
+    assert "test_replay_match_001" in captured.out
+    assert '"point_index": 0' in captured.out
+    assert '"point_index": 1' in captured.out
+    assert '"point_index": 2' in captured.out
+
+
+def test_run_cli_missing_match_id(monkeypatch) -> None:
+    """Verify run_cli exits with error code when --match-id is omitted."""
+    monkeypatch.setattr("sys.argv", ["simulator.replay"])
+
+    with pytest.raises(SystemExit) as exc_info:
+        run_cli()
+    assert exc_info.value.code == 1
+
