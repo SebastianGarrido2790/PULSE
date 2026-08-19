@@ -225,3 +225,37 @@ async def generate_point_events(
                 error_message=f"Mid-stream execution error at point index {point_idx}: {e}",
             )
             return
+
+
+def run_cli() -> None:
+    """CLI entrypoint for replaying a historical match via simulator.replay."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="PULSE Historical Match Replay Simulator")
+    parser.add_argument(
+        "--match-id",
+        type=str,
+        required=True,
+        help="Match ID to replay from points dataset",
+    )
+    parser.add_argument(
+        "--speed-multiplier",
+        type=float,
+        default=1.0,
+        help="Playback speed multiplier (0 for instant replay)",
+    )
+    args = parser.parse_args()
+
+    async def _run() -> None:
+        async for event in generate_point_events(
+            match_id=args.match_id,
+            speed_multiplier=args.speed_multiplier,
+        ):
+            print(event.model_dump_json(indent=2))
+
+    asyncio.run(_run())
+
+
+if __name__ == "__main__":
+    run_cli()
+

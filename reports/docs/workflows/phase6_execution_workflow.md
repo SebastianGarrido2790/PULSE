@@ -3,7 +3,7 @@
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 4 Completed - 16-19 steps implemented, gate 4 closed
+**Status:** Stage 5 Completed - 20-22 steps implemented, gate 5 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -69,7 +69,7 @@
 
 ---
 
-## Stage 5 — FastAPI Application & Lifespan
+## Stage 5 — FastAPI Application & Lifespan ✅
 
 20. Create `src/api/main.py`: the FastAPI app instance and a `lifespan` context manager that calls `build_pulse_graph()` once and Stage 3's `init_db()` once, storing the compiled graph on `app.state.graph`. **[D-12]**
 21. Register `GET /health` (D-11) returning process readiness and whatever artifact-version info is realistically and cheaply available — confirm what that actually is before promising specific fields in the response schema. **[D-11]**
