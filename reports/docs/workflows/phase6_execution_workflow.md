@@ -3,7 +3,7 @@
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 7 Completed - 26-27 steps implemented, gate 7 closed
+**Status:** Stage 8 Completed - 30 steps implemented, gate 8 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -98,7 +98,7 @@
 
 ---
 
-## Stage 8 — Integration Tests
+## Stage 8 — Integration Tests ✅
 
 28. Write `tests/integration/test_api_streaming.py` using `TestClient`/`httpx.AsyncClient`: a full SSE stream for a short fixture match, asserting the event sequence matches what Stage 4's generator produces directly, and that persisted SQLite rows (Stage 3) match the streamed events one-to-one.
 29. Add a WebSocket integration test against the same fixture, confirming content parity with the SSE test — this is the test that actually proves D-1 was implemented correctly, not just claimed.
