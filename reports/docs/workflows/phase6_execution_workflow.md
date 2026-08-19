@@ -3,7 +3,7 @@
 **API & Streaming Interface — Ordered Implementation Steps**
 
 **Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 5 Completed - 20-22 steps implemented, gate 5 closed
+**Status:** Stage 6 Completed - 23-25 steps implemented, gate 6 closed
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -79,7 +79,7 @@
 
 ---
 
-## Stage 6 — Streaming Routes
+## Stage 6 — Streaming Routes ✅
 
 23. Create `src/api/streaming.py`: the SSE route (`GET /v1/matches/{match_id}/stream`) consuming Stage 4's generator, formatting each `StreamPointEvent` as an SSE `data:` frame, interleaving the configured heartbeat comment (D-5) on its own independent timer, not tied to point cadence. **[D-1, D-5]**
 24. Add the WebSocket route (`/v1/matches/{match_id}/ws`) consuming the _same_ generator pattern — confirm during implementation that no event-formatting logic is duplicated between the two routes; they should differ only in framing. **[D-1]**
