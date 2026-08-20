@@ -140,7 +140,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 - SQLite audit persistence layer (`src/utils/persistence.py`) for decision logs and tactical outputs (FR-12)
 - Unit and integration tests covering SSE/WebSocket parity, SQLite persistence, and fail-loud error handling
 
-**Deliverables:** `src/api/main.py`, `src/api/streaming.py`, `src/api/schemas.py`, `src/simulator/replay.py`, `src/utils/persistence.py`, `tests/integration/test_api_streaming.py`, `reports/docs/evaluations/streaming_api_evaluation_report.md`
+**Deliverables:** `src/api/main.py`, `src/api/streaming.py`, `src/api/schemas.py`, `src/simulator/replay.py`, `src/utils/persistence.py`, `tests/integration/test_api_streaming.py`, `reports/docs/architecture/phase6_api_and_streaming_architecture.md`, `reports/docs/evaluations/streaming_api_evaluation_report.md`
 
 **Exit Criteria:** A full historical match can be streamed end-to-end through the API and produces the expected sequence of leverage/escalation events; SSE and WebSocket both verified.
 
