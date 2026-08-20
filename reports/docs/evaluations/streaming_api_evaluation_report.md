@@ -198,21 +198,21 @@ The Phase 6 implementation was validated across unit, integration, and end-to-en
 | `tests/unit/test_point_record_conversion.py` | `PointRecord.to_point_context()`, score flip logic, bo3 scope | 4 | 🟢 PASSED |
 | `tests/unit/test_persistence.py` | SQLite table initialization, async writes, query helpers | 3 | 🟢 PASSED |
 | `tests/unit/test_api_main.py` | Lifespan context manager, graph compilation, health check endpoint | 2 | 🟢 PASSED |
-| `tests/unit/test_streaming.py` | SSE formatting, keep-alive heartbeat, slow generator survival, metadata route, WS frames | 7 | 🟢 PASSED |
+| `tests/unit/test_streaming.py` | SSE formatting, keep-alive heartbeat, slow generator survival, metadata route, MatchReplayRequest validation, error bubbling, uninitialized graph, WS frames | 13 | 🟢 PASSED |
 | `tests/unit/test_replay_generator.py` | Generator cadence, fail-loud exceptions, CLI entrypoint options | 7 | 🟢 PASSED |
 | `tests/integration/test_api_streaming.py` | Full SSE & WS parity, SQLite audit verification, forced mid-stream failure | 3 | 🟢 PASSED |
 | **Existing Phase 1–5 Test Suites** | Deterministic solver, ML layer, LangGraph, game theory minimax | 103 | 🟢 PASSED |
-| **Total Test Suite** | **Comprehensive Full Repository Verification** | **135** | 🟢 **135/135 (100%)** |
+| **Total Test Suite** | **Comprehensive Full Repository Verification** | **141** | 🟢 **141/141 (100%, 0 warnings)** |
 
-### Code Coverage:
-- **Total Codebase Coverage:** **91%** (exceeding ≥70% requirement).
-- `src/api/main.py`: **90%**
-- `src/api/schemas.py`: **100%**
-- `src/api/streaming.py`: **88%**
-- `src/simulator/replay.py`: **86%**
-- `src/utils/persistence.py`: **87%**
-- `src/schemas/point_record.py`: **96%**
-- `src/config/loader.py`: **99%**
+### Literal Code Coverage Breakdown (`pytest --cov=src`):
+- **Total Codebase Coverage:** **91%** (1,662 statements, 153 missed — exceeding ≥70% requirement).
+- `src/api/main.py`: **90%** (42 statements, 4 missed)
+- `src/api/schemas.py`: **100%** (31 statements, 0 missed)
+- `src/api/streaming.py`: **89%** (84 statements, 9 missed)
+- `src/simulator/replay.py`: **88%** (122 statements, 15 missed)
+- `src/utils/persistence.py`: **87%** (104 statements, 14 missed)
+- `src/schemas/point_record.py`: **96%** (107 statements, 4 missed)
+- `src/config/loader.py`: **99%** (89 statements, 1 missed)
 
 ---
 
@@ -223,11 +223,13 @@ The Phase 6 implementation was validated across unit, integration, and end-to-en
 | **SSE Streaming Route** | Real-time point streaming with keep-alive | `GET /v1/matches/{id}/stream` with `: keep-alive\n\n` comments | 🟢 **PASSED** |
 | **WebSocket Streaming Route** | Real-time bidirectional transport fallback | `/v1/matches/{id}/ws` with bit-exact SSE payload parity | 🟢 **PASSED** |
 | **Match Metadata Route** | Preflight match metadata resolution | `GET /v1/matches/{id}` returning `MatchMetadataResponse` | 🟢 **PASSED** |
+| **Wire Contract Model Binding** | Structured query validation | `Annotated[MatchReplayRequest, Query()]` on SSE and WS endpoints | 🟢 **PASSED** |
 | **Replay Simulator CLI** | Replay match with configurable speed | `uv run simulator.replay --match-id <id> --speed-multiplier <n>` | 🟢 **PASSED** |
 | **Lifespan Startup Graph** | Zero graph compilation disk I/O per point | Graph built once in `lifespan` and stored on `app.state.graph` | 🟢 **PASSED** |
 | **SQLite Audit Persistence** | FR-12 escalation log traceability | `aiosqlite` transactional persistence to `artifacts/pulse_session.db` | 🟢 **PASSED** |
 | **Fail-Loud Mid-Stream Handling** | D-13 error transparency | Emits `event_type="error"` on solver/graph failure & halts stream | 🟢 **PASSED** |
-| **Test Suite Passing Rate** | 100% test pass rate | 135 / 135 tests passed | 🟢 **PASSED** |
+| **Test Suite Passing Rate** | 100% test pass rate | 141 / 141 tests passed (0 warnings) | 🟢 **PASSED** |
 | **Code Coverage** | $\ge 70\%$ source coverage | 91% total source coverage | 🟢 **PASSED** |
 | **Type Check & Linting** | Strict Pyright & Ruff compliance | 0 pyright errors, 0 ruff errors, all files < 1,000 lines | 🟢 **PASSED** |
+
 

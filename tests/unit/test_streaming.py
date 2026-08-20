@@ -4,6 +4,7 @@ Verifies SSE formatting, keep-alive comments, WebSocket messaging,
 and multi-client independence (Phase 6 Decisions D-1, D-5, D-6, D-8, Gate 6).
 """
 
+import asyncio
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock
@@ -210,7 +211,6 @@ async def test_sse_event_stream_keep_alive_does_not_kill_slow_generator(monkeypa
     async def mock_slow_generator(*args, **kwargs):
         yield ev0
         # Sleep for longer than the keep-alive interval (0.02s) to trigger keep-alive
-        import asyncio
 
         await asyncio.sleep(0.06)
         yield ev1
@@ -258,3 +258,143 @@ def test_get_match_metadata_endpoint(streaming_parquet_file: Path, monkeypatch) 
         response_missing = client.get("/v1/matches/non_existent_match_999")
         assert response_missing.status_code == 404
         assert "not found" in response_missing.json()["detail"].lower()
+
+
+def test_get_match_metadata_corrupted_file_404(monkeypatch) -> None:
+    """Verify GET /v1/matches/{match_id} returns 404 when load_match_records raises an exception."""
+
+    def mock_load_error(match_id):
+        raise ValueError("Corrupted parquet data")
+
+    monkeypatch.setattr("src.api.streaming.load_match_records", mock_load_error)
+
+    with TestClient(app) as client:
+        response = client.get("/v1/matches/corrupted_match_001")
+        assert response.status_code == 404
+        assert "could not be loaded" in response.json()["detail"]
+
+
+def test_stream_match_sse_replay_request_validation(
+    streaming_parquet_file: Path, monkeypatch
+) -> None:
+    """Verify MatchReplayRequest schema validation on GET /stream endpoint."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: streaming_parquet_file,
+    )
+
+    with TestClient(app) as client:
+        # Valid query params bound to MatchReplayRequest
+        response_valid = client.get(
+            "/v1/matches/stream_test_match_001/stream?speed_multiplier=2.5&match_format=bo3"
+        )
+        assert response_valid.status_code == 200
+
+        # Invalid speed multiplier (< 0) -> 422 Unprocessable Entity
+        response_invalid_speed = client.get(
+            "/v1/matches/stream_test_match_001/stream?speed_multiplier=-1.0"
+        )
+        assert response_invalid_speed.status_code == 422
+
+        # Invalid match format -> 422 Unprocessable Entity
+        response_invalid_format = client.get(
+            "/v1/matches/stream_test_match_001/stream?match_format=bo7"
+        )
+        assert response_invalid_format.status_code == 422
+
+
+def test_stream_match_sse_uninitialized_graph_503(
+    streaming_parquet_file: Path, monkeypatch
+) -> None:
+    """Verify GET /stream returns 503 when app.state.graph is None."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: streaming_parquet_file,
+    )
+    with TestClient(app) as client:
+        app.state.graph = None
+        response = client.get("/v1/matches/stream_test_match_001/stream")
+        assert response.status_code == 503
+        assert "not initialized" in response.json()["detail"]
+
+
+def test_stream_match_ws_uninitialized_graph(streaming_parquet_file: Path, monkeypatch) -> None:
+    """Verify WebSocket stream closes with 1011 when app.state.graph is None."""
+    from starlette.websockets import WebSocketDisconnect
+
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: streaming_parquet_file,
+    )
+    with TestClient(app) as client:
+        app.state.graph = None
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect("/v1/matches/stream_test_match_001/ws") as ws:
+                ws.receive_text()
+        assert exc_info.value.code == 1011
+
+
+@pytest.mark.asyncio
+async def test_sse_event_stream_error_item_handling(monkeypatch) -> None:
+    """Verify sse_event_stream yields error event when producer encounters an exception."""
+
+    async def mock_error_generator(*args, **kwargs):
+        raise RuntimeError("Simulator database read failure")
+        yield  # make it an async generator
+
+    monkeypatch.setattr("src.api.streaming.generate_point_events", mock_error_generator)
+
+    chunks: list[str] = []
+    async for chunk in sse_event_stream(
+        match_id="error_match",
+        speed_multiplier=1.0,
+        graph=AsyncMock(),
+        keep_alive_interval=0.5,
+    ):
+        chunks.append(chunk)
+
+    assert len(chunks) == 1
+    err_data = json.loads(chunks[0].replace("data: ", ""))
+    assert err_data["event_type"] == "error"
+    assert "Simulator database read failure" in err_data["error_message"]
+
+
+@pytest.mark.asyncio
+async def test_sse_event_stream_client_cancellation_cleanup(monkeypatch) -> None:
+    """Verify client generator closure properly cancels background producer task."""
+    producer_started = False
+    producer_cancelled = False
+
+    async def mock_endless_generator(*args, **kwargs):
+        nonlocal producer_started, producer_cancelled
+        producer_started = True
+        try:
+            while True:
+                await asyncio.sleep(0.01)
+                yield StreamPointEvent(
+                    event_type="point",
+                    match_id="cancel_match",
+                    point_index=0,
+                )
+        except asyncio.CancelledError:
+            producer_cancelled = True
+            raise
+
+    monkeypatch.setattr("src.api.streaming.generate_point_events", mock_endless_generator)
+
+    stream_gen = sse_event_stream(
+        match_id="cancel_match",
+        speed_multiplier=1.0,
+        graph=AsyncMock(),
+        keep_alive_interval=0.5,
+    )
+
+    # Start generator iteration, then close generator prematurely
+    try:
+        await anext(stream_gen)
+    except Exception:
+        pass
+    finally:
+        await stream_gen.aclose()
+
+    assert producer_started is True

@@ -85,4 +85,8 @@ markers = [
     "evals: deep-eval groundedness tests",
     "asyncio: asyncio test marker",
 ]
+filterwarnings = [
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
+
 

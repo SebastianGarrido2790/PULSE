@@ -8,12 +8,13 @@ Authority: Phase 6 Decisions D-1, D-5, D-6, D-8, D-10.
 
 import asyncio
 from collections.abc import AsyncGenerator
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from langgraph.graph.state import CompiledStateGraph
 
-from src.api.schemas import MatchMetadataResponse, StreamPointEvent
+from src.api.schemas import MatchMetadataResponse, MatchReplayRequest, StreamPointEvent
 from src.config.loader import load_params
 from src.simulator.replay import generate_point_events, get_available_matches, load_match_records
 from src.utils.logger import get_logger
@@ -159,19 +160,15 @@ async def get_match_metadata(match_id: str) -> MatchMetadataResponse:
 async def stream_match_sse(
     match_id: str,
     request: Request,
-    speed_multiplier: float = Query(
-        default=1.0,
-        ge=0.0,
-        description="Playback speed multiplier (0 for instant replay)",
-    ),
+    replay_params: Annotated[MatchReplayRequest, Query()],
 ) -> StreamingResponse:
     """Stream point events for a match via Server-Sent Events (SSE).
 
     Each client connection instantiates an independent event generator (D-8)
-    consuming the compiled graph on app.state (D-12). Periodic ': keep-alive\\n\\n'
+    consuming the compiled graph on app.state (D-12). Periodic ': keep-alive\n\n'
     comments are interleaved during idle periods (D-5).
 
-    Authority: Phase 6 Decisions D-1, D-5, D-6, D-8.
+    Authority: Phase 6 Decisions D-1, D-5, D-6, D-8, D-10.
     """
     graph: CompiledStateGraph | None = getattr(request.app.state, "graph", None)
     if graph is None:
@@ -186,7 +183,7 @@ async def stream_match_sse(
     return StreamingResponse(
         sse_event_stream(
             match_id=match_id,
-            speed_multiplier=speed_multiplier,
+            speed_multiplier=replay_params.speed_multiplier,
             graph=graph,
             keep_alive_interval=keep_alive,
         ),
@@ -205,18 +202,14 @@ async def stream_match_sse(
 async def stream_match_ws(
     websocket: WebSocket,
     match_id: str,
-    speed_multiplier: float = Query(
-        default=1.0,
-        ge=0.0,
-        description="Playback speed multiplier (0 for instant replay)",
-    ),
+    replay_params: Annotated[MatchReplayRequest, Query()],
 ) -> None:
     """Stream point events for a match over a WebSocket connection.
 
     Consumes the exact same underlying event generator as the SSE route (D-1),
     transmitting raw JSON strings per point event (D-8).
 
-    Authority: Phase 6 Decisions D-1, D-6, D-8.
+    Authority: Phase 6 Decisions D-1, D-6, D-8, D-10.
     """
     await websocket.accept()
     graph: CompiledStateGraph | None = getattr(websocket.app.state, "graph", None)
@@ -230,7 +223,7 @@ async def stream_match_ws(
     try:
         async for event in generate_point_events(
             match_id=match_id,
-            speed_multiplier=speed_multiplier,
+            speed_multiplier=replay_params.speed_multiplier,
             graph=graph,
         ):
             await websocket.send_text(event.model_dump_json())
