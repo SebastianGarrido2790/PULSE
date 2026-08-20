@@ -2,7 +2,7 @@
 
 > **Version:** v0.6.0 — _Living Document_  
 > **Phase:** 6 — API & Streaming Interface  
-> **Status:** 🟢 145 / 145 Tests Passing (0 Warnings)  
+> **Status:** 🟢 146 / 146 Tests Passing (0 Warnings)  
 > **Coverage:** 91% Total Code Coverage (100% Graph Topology, Core Math, Schemas & Wire Contracts)  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
 > **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase6_execution_workflow.md](../workflows/phase6_execution_workflow.md), [streaming_api_evaluation_report.md](streaming_api_evaluation_report.md), [system_design.md](../architecture/system_design.md)
@@ -185,7 +185,7 @@ PULSE/
 | `tests/unit/test_streaming.py::test_stream_match_ws_uninitialized_graph` | WebSocket Guard | WebSocket handshake closes with code 1011 if graph is uninitialized. | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_sse_event_stream_error_item_handling` | Fail-Loud Error Bubbling | Producer exceptions emitted as `event_type="error"` stream events (D-13). | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_sse_event_stream_client_cancellation_cleanup` | Async Resource Cleanup | Premature client disconnect cleanly cancels background producer task. | 🟢 PASS |
-| `tests/unit/test_replay_generator.py` | Async Replay Generator & CLI | Replay pacing, fail-loud exceptions, CLI flags (`--match-id`, `--speed-multiplier`, `--match-format`). | 🟢 PASS |
+| `tests/unit/test_replay_generator.py` | Async Replay Generator & CLI | Replay pacing, bo5 fallback context, fail-loud exceptions, CLI flags (`--match-id`, `--speed-multiplier`, `--match-format`). | 🟢 PASS |
 | `tests/integration/test_api_streaming.py::test_sse_streaming_and_persistence_parity` | SSE & SQLite Parity | Full SSE stream matches generator events 1-to-1 and persists records in SQLite. | 🟢 PASS |
 | `tests/integration/test_api_streaming.py::test_websocket_and_sse_content_parity` | Transport Equivalence | Bit-for-bit content payload parity between WebSocket and SSE streams (D-1). | 🟢 PASS |
 | `tests/integration/test_api_streaming.py::test_mid_stream_failure_integration` | Fail-Loud Mid-Stream | Emits `event_type="error"` on forced exception and terminates cleanly (D-13). | 🟢 PASS |
@@ -227,7 +227,7 @@ Phase 5: Game Theory Exploitative Module (Complete — 103 Passes)
   ├── Two-Level Sufficiency Gating (Opponent N >= 30, Cell N >= 5) & Uncharted Fallback
   └── DVC Payoff Matrix Extraction Pipeline Stage (2,139 strata exported)
        │
-Phase 6: API, Simulation & Streaming Quality Suite (Complete — 145 Passes)
+Phase 6: API, Simulation & Streaming Quality Suite (Complete — 146 Passes)
   ├── FastAPI SSE/WebSocket Streaming Endpoint Integration
   ├── Match Metadata Resolution Endpoint & Decoupled Async Queue Stream
   ├── MatchReplayRequest Wire Schema Validation & Parameterized bo3/bo5 Threading
@@ -288,12 +288,12 @@ src\models\pressure_deviation.py       134      8    94%   90, 140, 189, 240-241
 src\schemas\__init__.py                  0      0   100%
 src\schemas\point_record.py            107      4    96%   135, 142, 151-152
 src\simulator\__init__.py                0      0   100%
-src\simulator\replay.py                123     15    88%   50-51, 76-78, 169-173, 181, 276, 294, 305, 309
+src\simulator\replay.py                123     15    88%   50-51, 76-78, 169-173, 181, 277, 295, 306, 310
 src\utils\__init__.py                    0      0   100%
 src\utils\exceptions.py                 37      5    86%   30-31, 37-40
 src\utils\logger.py                     37      9    76%   52-54, 65-70, 77-79
 src\utils\persistence.py               104     14    87%   35, 86-89, 129, 155-158, 178-181
 ------------------------------------------------------------------
 TOTAL                                 1663    153    91%
-============================ 145 passed in 20.59s =============================
+============================ 146 passed in 24.39s =============================
 ```

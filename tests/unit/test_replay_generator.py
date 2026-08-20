@@ -330,3 +330,37 @@ def test_run_cli_replay_match_bo5(sample_parquet_file: Path, monkeypatch, capsys
     run_cli()
     captured = capsys.readouterr()
     assert '"match_format": "bo5"' in captured.out
+
+
+@pytest.mark.asyncio
+async def test_generate_point_events_mid_stream_failure_bo5_fallback_ctx(
+    sample_parquet_file: Path,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Verify fallback PointContext on mid-stream conversion failure retains match_format='bo5'."""
+    db_file = tmp_path / "test_fallback_bo5.db"
+    await init_db(db_file)
+
+    def failing_to_point_context(self, *args, **kwargs):
+        raise ValueError("Simulated PointRecord conversion failure")
+
+    monkeypatch.setattr(
+        "src.schemas.point_record.PointRecord.to_point_context",
+        failing_to_point_context,
+    )
+
+    events: list[StreamPointEvent] = []
+    async for event in generate_point_events(
+        match_id="test_replay_match_001",
+        speed_multiplier=0.0,
+        match_format="bo5",
+        parquet_path=sample_parquet_file,
+        db_path=db_file,
+    ):
+        events.append(event)
+
+    assert len(events) == 1
+    assert events[0].event_type == "error"
+    assert events[0].point_context is not None
+    assert events[0].point_context.match_format == "bo5"

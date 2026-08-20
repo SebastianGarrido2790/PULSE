@@ -202,10 +202,10 @@ The Phase 6 implementation was validated across unit, integration, and end-to-en
 | `tests/unit/test_persistence.py` | SQLite table initialization, async writes, query helpers | 3 | 🟢 PASSED |
 | `tests/unit/test_api_main.py` | Lifespan context manager, graph compilation, health check endpoint | 2 | 🟢 PASSED |
 | `tests/unit/test_streaming.py` | SSE formatting, keep-alive heartbeat, slow generator survival, metadata route, MatchReplayRequest validation, bo5 parameter propagation, error bubbling, uninitialized graph, WS frames | 14 | 🟢 PASSED |
-| `tests/unit/test_replay_generator.py` | Generator cadence, bo5 propagation, fail-loud exceptions, CLI options | 9 | 🟢 PASSED |
+| `tests/unit/test_replay_generator.py` | Generator cadence, bo5 propagation, fallback context format, fail-loud exceptions, CLI options | 10 | 🟢 PASSED |
 | `tests/integration/test_api_streaming.py` | Full SSE & WS parity, SQLite audit verification, forced mid-stream failure | 3 | 🟢 PASSED |
 | **Existing Phase 1–5 Test Suites** | Deterministic solver, ML layer, LangGraph, game theory minimax | 103 | 🟢 PASSED |
-| **Total Test Suite** | **Comprehensive Full Repository Verification** | **145** | 🟢 **145/145 (100%, 0 warnings)** |
+| **Total Test Suite** | **Comprehensive Full Repository Verification** | **146** | 🟢 **146/146 (100%, 0 warnings)** |
 
 ### Literal Code Coverage Breakdown (`pytest --cov=src`):
 - **Total Codebase Coverage:** **91%** (1,663 statements, 153 missed — exceeding ≥70% requirement).
@@ -231,7 +231,7 @@ The Phase 6 implementation was validated across unit, integration, and end-to-en
 | **Lifespan Startup Graph** | Zero graph compilation disk I/O per point | Graph built once in `lifespan` and stored on `app.state.graph` | 🟢 **PASSED** |
 | **SQLite Audit Persistence** | FR-12 escalation log traceability | `aiosqlite` transactional persistence to `artifacts/pulse_session.db` | 🟢 **PASSED** |
 | **Fail-Loud Mid-Stream Handling** | D-13 error transparency | Emits `event_type="error"` on solver/graph failure & halts stream | 🟢 **PASSED** |
-| **Test Suite Passing Rate** | 100% test pass rate | 145 / 145 tests passed (0 warnings) | 🟢 **PASSED** |
+| **Test Suite Passing Rate** | 100% test pass rate | 146 / 146 tests passed (0 warnings) | 🟢 **PASSED** |
 | **Code Coverage** | $\ge 70\%$ source coverage | 91% total source coverage | 🟢 **PASSED** |
 | **Type Check & Linting** | Strict Pyright & Ruff compliance | 0 pyright errors, 0 ruff errors, all files < 1,000 lines | 🟢 **PASSED** |
 

@@ -221,6 +221,7 @@ async def generate_point_events(
                 returner_id=record.returner,
                 surface=record.surface.value,
                 serve_number=record.serve_number,
+                match_format=match_format,
             )
             yield StreamPointEvent(
                 event_type="error",
