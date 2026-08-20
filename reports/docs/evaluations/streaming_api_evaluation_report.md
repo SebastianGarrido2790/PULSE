@@ -179,8 +179,11 @@ The replay engine is executable via the console script entry point registered in
 # List available match IDs from the points dataset (3,337 matches)
 uv run simulator.replay --list-matches
 
-# Replay a specific match at 5x speed
+# Replay a specific match at 5x speed (bo3 default)
 uv run simulator.replay --match-id 20200103-M-ATP_Cup-RR-Alex_De_Minaur-Alexander_Zverev --speed-multiplier 5.0
+
+# Replay a specific match with bo5 format
+uv run simulator.replay --match-id 20200103-M-ATP_Cup-RR-Alex_De_Minaur-Alexander_Zverev --match-format bo5
 
 # Instant zero-delay execution (for benchmarks and CI)
 uv run simulator.replay --match-id 20200103-M-ATP_Cup-RR-Alex_De_Minaur-Alexander_Zverev --speed-multiplier 0
@@ -195,21 +198,21 @@ The Phase 6 implementation was validated across unit, integration, and end-to-en
 | Test Module | Test Focus | Tests | Status |
 | :--- | :--- | :---: | :---: |
 | `tests/unit/test_api_schemas.py` | Pydantic wire models, JSON schema validation, score bounds | 6 | 🟢 PASSED |
-| `tests/unit/test_point_record_conversion.py` | `PointRecord.to_point_context()`, score flip logic, bo3 scope | 4 | 🟢 PASSED |
+| `tests/unit/test_point_record_conversion.py` | `PointRecord.to_point_context()`, score flip logic, bo3 & bo5 scope | 5 | 🟢 PASSED |
 | `tests/unit/test_persistence.py` | SQLite table initialization, async writes, query helpers | 3 | 🟢 PASSED |
 | `tests/unit/test_api_main.py` | Lifespan context manager, graph compilation, health check endpoint | 2 | 🟢 PASSED |
-| `tests/unit/test_streaming.py` | SSE formatting, keep-alive heartbeat, slow generator survival, metadata route, MatchReplayRequest validation, error bubbling, uninitialized graph, WS frames | 13 | 🟢 PASSED |
-| `tests/unit/test_replay_generator.py` | Generator cadence, fail-loud exceptions, CLI entrypoint options | 7 | 🟢 PASSED |
+| `tests/unit/test_streaming.py` | SSE formatting, keep-alive heartbeat, slow generator survival, metadata route, MatchReplayRequest validation, bo5 parameter propagation, error bubbling, uninitialized graph, WS frames | 14 | 🟢 PASSED |
+| `tests/unit/test_replay_generator.py` | Generator cadence, bo5 propagation, fail-loud exceptions, CLI options | 9 | 🟢 PASSED |
 | `tests/integration/test_api_streaming.py` | Full SSE & WS parity, SQLite audit verification, forced mid-stream failure | 3 | 🟢 PASSED |
 | **Existing Phase 1–5 Test Suites** | Deterministic solver, ML layer, LangGraph, game theory minimax | 103 | 🟢 PASSED |
-| **Total Test Suite** | **Comprehensive Full Repository Verification** | **141** | 🟢 **141/141 (100%, 0 warnings)** |
+| **Total Test Suite** | **Comprehensive Full Repository Verification** | **145** | 🟢 **145/145 (100%, 0 warnings)** |
 
 ### Literal Code Coverage Breakdown (`pytest --cov=src`):
-- **Total Codebase Coverage:** **91%** (1,662 statements, 153 missed — exceeding ≥70% requirement).
+- **Total Codebase Coverage:** **91%** (1,663 statements, 153 missed — exceeding ≥70% requirement).
 - `src/api/main.py`: **90%** (42 statements, 4 missed)
 - `src/api/schemas.py`: **100%** (31 statements, 0 missed)
 - `src/api/streaming.py`: **89%** (84 statements, 9 missed)
-- `src/simulator/replay.py`: **88%** (122 statements, 15 missed)
+- `src/simulator/replay.py`: **88%** (123 statements, 15 missed)
 - `src/utils/persistence.py`: **87%** (104 statements, 14 missed)
 - `src/schemas/point_record.py`: **96%** (107 statements, 4 missed)
 - `src/config/loader.py`: **99%** (89 statements, 1 missed)
@@ -223,12 +226,12 @@ The Phase 6 implementation was validated across unit, integration, and end-to-en
 | **SSE Streaming Route** | Real-time point streaming with keep-alive | `GET /v1/matches/{id}/stream` with `: keep-alive\n\n` comments | 🟢 **PASSED** |
 | **WebSocket Streaming Route** | Real-time bidirectional transport fallback | `/v1/matches/{id}/ws` with bit-exact SSE payload parity | 🟢 **PASSED** |
 | **Match Metadata Route** | Preflight match metadata resolution | `GET /v1/matches/{id}` returning `MatchMetadataResponse` | 🟢 **PASSED** |
-| **Wire Contract Model Binding** | Structured query validation | `Annotated[MatchReplayRequest, Query()]` on SSE and WS endpoints | 🟢 **PASSED** |
-| **Replay Simulator CLI** | Replay match with configurable speed | `uv run simulator.replay --match-id <id> --speed-multiplier <n>` | 🟢 **PASSED** |
+| **Wire Contract Model Binding** | Structured query validation | `Annotated[MatchReplayRequest, Query()]` with bo3/bo5 parameterization | 🟢 **PASSED** |
+| **Replay Simulator CLI** | Replay match with configurable speed | `uv run simulator.replay --match-id <id> --speed-multiplier <n> --match-format <bo3\|bo5>` | 🟢 **PASSED** |
 | **Lifespan Startup Graph** | Zero graph compilation disk I/O per point | Graph built once in `lifespan` and stored on `app.state.graph` | 🟢 **PASSED** |
 | **SQLite Audit Persistence** | FR-12 escalation log traceability | `aiosqlite` transactional persistence to `artifacts/pulse_session.db` | 🟢 **PASSED** |
 | **Fail-Loud Mid-Stream Handling** | D-13 error transparency | Emits `event_type="error"` on solver/graph failure & halts stream | 🟢 **PASSED** |
-| **Test Suite Passing Rate** | 100% test pass rate | 141 / 141 tests passed (0 warnings) | 🟢 **PASSED** |
+| **Test Suite Passing Rate** | 100% test pass rate | 145 / 145 tests passed (0 warnings) | 🟢 **PASSED** |
 | **Code Coverage** | $\ge 70\%$ source coverage | 91% total source coverage | 🟢 **PASSED** |
 | **Type Check & Linting** | Strict Pyright & Ruff compliance | 0 pyright errors, 0 ruff errors, all files < 1,000 lines | 🟢 **PASSED** |
 

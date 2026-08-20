@@ -2,7 +2,7 @@
 
 > **Version:** v0.6.0 — _Living Document_  
 > **Phase:** 6 — API & Streaming Interface  
-> **Status:** 🟢 141 / 141 Tests Passing (0 Warnings)  
+> **Status:** 🟢 145 / 145 Tests Passing (0 Warnings)  
 > **Coverage:** 91% Total Code Coverage (100% Graph Topology, Core Math, Schemas & Wire Contracts)  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
 > **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase6_execution_workflow.md](../workflows/phase6_execution_workflow.md), [streaming_api_evaluation_report.md](streaming_api_evaluation_report.md), [system_design.md](../architecture/system_design.md)
@@ -173,18 +173,19 @@ PULSE/
 | Test File / Function | Verification Target | What Is Verified | Status |
 | :--- | :--- | :--- | :---: |
 | `tests/unit/test_api_schemas.py` | Pydantic v2 Wire Contracts | Field constraints, score bounds, timestamp formatting, JSON schema serialization. | 🟢 PASS |
-| `tests/unit/test_point_record_conversion.py` | Schema Bridge Conversion | `PointRecord.to_point_context()`, score flip logic, surface mapping, bo3 scope. | 🟢 PASS |
+| `tests/unit/test_point_record_conversion.py` | Schema Bridge Conversion | `PointRecord.to_point_context()`, score flip logic, surface mapping, bo3 & bo5 scope. | 🟢 PASS |
 | `tests/unit/test_persistence.py` | SQLite Audit Persistence | Async non-blocking write of `decision_logs` and `tactical_outputs` via `aiosqlite`. | 🟢 PASS |
 | `tests/unit/test_api_main.py` | FastAPI Application & Lifespan | Startup lifespan graph compilation (`app.state.graph`) and `/health` route response. | 🟢 PASS |
 | `tests/unit/test_streaming.py` | Streaming Transport Adapters | SSE route, periodic `: keep-alive\n\n` comments, WebSocket frames, match listing. | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_sse_event_stream_keep_alive_does_not_kill_slow_generator` | Keep-Alive Queue Decoupling | Long inter-point delay does not cancel in-flight generator task during heartbeat timeouts (D-5). | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_get_match_metadata_endpoint` | Match Metadata Route | `GET /v1/matches/{match_id}` returns accurate `MatchMetadataResponse` and handles 404s (D-10). | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_stream_match_sse_replay_request_validation` | Wire Schema Query Validation | `MatchReplayRequest` validation on SSE route (422 on negative speed or invalid format). | 🟢 PASS |
+| `tests/unit/test_streaming.py::test_stream_match_sse_bo5_parameter_propagation` | End-to-End Format Wiring | `?match_format=bo5` correctly propagates into emitted point events (D-3a). | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_stream_match_sse_uninitialized_graph_503` | Graph Readiness Guard | `GET /stream` returns 503 if graph is uninitialized. | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_stream_match_ws_uninitialized_graph` | WebSocket Guard | WebSocket handshake closes with code 1011 if graph is uninitialized. | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_sse_event_stream_error_item_handling` | Fail-Loud Error Bubbling | Producer exceptions emitted as `event_type="error"` stream events (D-13). | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_sse_event_stream_client_cancellation_cleanup` | Async Resource Cleanup | Premature client disconnect cleanly cancels background producer task. | 🟢 PASS |
-| `tests/unit/test_replay_generator.py` | Async Replay Generator & CLI | Replay pacing, fail-loud mid-stream exceptions, CLI flags (`--match-id`, `--speed-multiplier`). | 🟢 PASS |
+| `tests/unit/test_replay_generator.py` | Async Replay Generator & CLI | Replay pacing, fail-loud exceptions, CLI flags (`--match-id`, `--speed-multiplier`, `--match-format`). | 🟢 PASS |
 | `tests/integration/test_api_streaming.py::test_sse_streaming_and_persistence_parity` | SSE & SQLite Parity | Full SSE stream matches generator events 1-to-1 and persists records in SQLite. | 🟢 PASS |
 | `tests/integration/test_api_streaming.py::test_websocket_and_sse_content_parity` | Transport Equivalence | Bit-for-bit content payload parity between WebSocket and SSE streams (D-1). | 🟢 PASS |
 | `tests/integration/test_api_streaming.py::test_mid_stream_failure_integration` | Fail-Loud Mid-Stream | Emits `event_type="error"` on forced exception and terminates cleanly (D-13). | 🟢 PASS |
@@ -226,10 +227,10 @@ Phase 5: Game Theory Exploitative Module (Complete — 103 Passes)
   ├── Two-Level Sufficiency Gating (Opponent N >= 30, Cell N >= 5) & Uncharted Fallback
   └── DVC Payoff Matrix Extraction Pipeline Stage (2,139 strata exported)
        │
-Phase 6: API, Simulation & Streaming Quality Suite (Complete — 141 Passes)
+Phase 6: API, Simulation & Streaming Quality Suite (Complete — 145 Passes)
   ├── FastAPI SSE/WebSocket Streaming Endpoint Integration
   ├── Match Metadata Resolution Endpoint & Decoupled Async Queue Stream
-  ├── MatchReplayRequest Wire Schema Validation (Annotated Query Dependency)
+  ├── MatchReplayRequest Wire Schema Validation & Parameterized bo3/bo5 Threading
   ├── Match Replay Simulator Bit-Identical Reproducibility Tests
   ├── SQLite Audit Persistence Traceability (FR-12)
   └── Fail-Loud Error Transparency & Keep-Alive Heartbeat (D-5, D-13)
@@ -266,7 +267,7 @@ src\__init__.py                          0      0   100%
 src\api\__init__.py                      0      0   100%
 src\api\main.py                         42      4    90%   97-100, 109
 src\api\schemas.py                      31      0   100%
-src\api\streaming.py                    84      9    89%   135, 230-237
+src\api\streaming.py                    84      9    89%   138, 235-242
 src\config\__init__.py                   2      0   100%
 src\config\loader.py                    89      1    99%   156
 src\core\__init__.py                     0      0   100%
@@ -287,12 +288,12 @@ src\models\pressure_deviation.py       134      8    94%   90, 140, 189, 240-241
 src\schemas\__init__.py                  0      0   100%
 src\schemas\point_record.py            107      4    96%   135, 142, 151-152
 src\simulator\__init__.py                0      0   100%
-src\simulator\replay.py                122     15    88%   50-51, 76-78, 164-168, 176, 264, 281, 292, 296
+src\simulator\replay.py                123     15    88%   50-51, 76-78, 169-173, 181, 276, 294, 305, 309
 src\utils\__init__.py                    0      0   100%
 src\utils\exceptions.py                 37      5    86%   30-31, 37-40
 src\utils\logger.py                     37      9    76%   52-54, 65-70, 77-79
 src\utils\persistence.py               104     14    87%   35, 86-89, 129, 155-158, 178-181
 ------------------------------------------------------------------
-TOTAL                                 1662    153    91%
-============================ 141 passed in 22.16s =============================
+TOTAL                                 1663    153    91%
+============================ 145 passed in 20.59s =============================
 ```

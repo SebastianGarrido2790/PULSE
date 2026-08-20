@@ -116,8 +116,8 @@ The project's own stack conventions already flag the observability dashboard as 
 ### D-3a 🟢 Approved — `match_format` (bo3/bo5) Resolution Strategy
 
 > [!IMPORTANT]
-> **Approved Resolution: Option B (Explicit Best-of-3 Scope Disclosed in Documentation).**  
-> Replay simulation is explicitly scoped and documented for best-of-3 (`bo3`) matches. `PointRecord.to_point_context()` defaults to `match_format="bo3"`, and the API/Simulator schemas document this constraint transparently, avoiding silent miscalculation on unsupported format variations.
+> **Approved Resolution: Option B (Explicit Best-of-3 Default Scope with Full End-to-End Parameterized Wiring).**  
+> Replay simulation defaults to best-of-3 (`bo3`), matching the charted match scope. To prevent silent parameter discarding, `match_format: Literal["bo3", "bo5"] = "bo3"` is fully threaded across `MatchReplayRequest`, `sse_event_stream`, `generate_point_events`, `PointRecord.to_point_context()`, and `replay_match_cli` (`--match-format`), driving the Markov solver's 2-set vs 3-set target computation dynamically.
 
 #### Originally Proposed (v0.1.0)
 

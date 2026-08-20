@@ -86,7 +86,8 @@ markers = [
     "asyncio: asyncio test marker",
 ]
 filterwarnings = [
-    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+    "error",
+    "ignore:.*Using `httpx` with `starlette\\.testclient` is deprecated.*:starlette.exceptions.StarletteDeprecationWarning",
 ]
 
 

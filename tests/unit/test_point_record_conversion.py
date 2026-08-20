@@ -132,6 +132,33 @@ def test_point_record_to_point_context_match_state_roundtrip() -> None:
     assert match_state.match_format == "bo3"
 
 
+def test_point_record_to_point_context_bo5() -> None:
+    """Verify that PointContext correctly reflects match_format='bo5'."""
+    record = PointRecord(
+        match_id="test_match_bo5",
+        point_id="pt_001",
+        server="P1",
+        returner="P2",
+        server_is_p1=True,
+        surface=Surface.HARD,
+        serve_number=1,
+        p1_score=ValidPointScore.S0,
+        p2_score=ValidPointScore.S0,
+        p1_games=0,
+        p2_games=0,
+        p1_sets=2,
+        p2_sets=1,
+        point_winner=PointOutcome.SERVER,
+    )
+
+    ctx = record.to_point_context(point_index=0, match_format="bo5")
+    assert ctx.match_format == "bo5"
+    match_state = ctx.to_match_state()
+    assert match_state.match_format == "bo5"
+    assert match_state.set_score_server == 2
+    assert match_state.set_score_returner == 1
+
+
 def test_spot_check_real_parquet_records() -> None:
     """Spot-check conversion against real rows from artifacts/validated_data/points.parquet."""
     parquet_path = Path("artifacts/validated_data/points.parquet")

@@ -10,7 +10,7 @@ Authority: Phase 6 Decisions D-1, D-2, D-4, D-6, D-8, D-13.
 import asyncio
 from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 from langgraph.graph.state import CompiledStateGraph
@@ -94,6 +94,7 @@ def load_match_records(
 async def generate_point_events(
     match_id: str,
     speed_multiplier: float = 1.0,
+    match_format: Literal["bo3", "bo5"] = "bo3",
     graph: CompiledStateGraph | None = None,
     parquet_path: Path | str | None = None,
     db_path: Path | str | None = None,
@@ -108,6 +109,7 @@ async def generate_point_events(
     Args:
         match_id: Unique match identifier to replay.
         speed_multiplier: Playback speed multiplier (0.0 for instant zero-delay playback).
+        match_format: Match scoring structure ('bo3' or 'bo5', default 'bo3').
         graph: Optional pre-compiled LangGraph instance. Built automatically if None.
         parquet_path: Optional custom path to points.parquet dataset.
         db_path: Optional custom SQLite database path for persistence.
@@ -140,6 +142,7 @@ async def generate_point_events(
             returner_id="unknown",
             surface="HARD",
             serve_number=1,
+            match_format=match_format,
         )
         yield StreamPointEvent(
             event_type="error",
@@ -154,7 +157,9 @@ async def generate_point_events(
     for point_idx, record in enumerate(records):
         point_context: PointContext | None = None
         try:
-            point_context = record.to_point_context(point_index=point_idx)
+            point_context = record.to_point_context(
+                point_index=point_idx, match_format=match_format
+            )
             initial_state = PulseGraphState(point_context=point_context)
 
             # Invoke graph deterministically per point (D-2)
@@ -249,6 +254,13 @@ def run_cli() -> None:
         help="Playback speed multiplier (0 for instant replay)",
     )
     parser.add_argument(
+        "--match-format",
+        type=str,
+        choices=["bo3", "bo5"],
+        default="bo3",
+        help="Match scoring format ('bo3' or 'bo5', default 'bo3')",
+    )
+    parser.add_argument(
         "--list-matches",
         action="store_true",
         help="List available match IDs and exit",
@@ -274,6 +286,7 @@ def run_cli() -> None:
         async for event in generate_point_events(
             match_id=args.match_id,
             speed_multiplier=args.speed_multiplier,
+            match_format=args.match_format,
         ):
             print(event.model_dump_json(indent=2))
             point_count += 1

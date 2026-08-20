@@ -7,7 +7,7 @@ This module provides the authoritative data schema contracts for PULSE point-lev
 """
 
 from enum import Enum, StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import pandera.pandas as pa
 from pydantic import BaseModel, Field, field_validator
@@ -185,19 +185,19 @@ class PointRecord(BaseModel):
         """Return the set count of the returner in the match."""
         return self.p2_sets if self.server_is_p1 else self.p1_sets
 
-    def to_point_context(self, point_index: int) -> "PointContext":
+    def to_point_context(
+        self,
+        point_index: int,
+        match_format: Literal["bo3", "bo5"] = "bo3",
+    ) -> "PointContext":
         """Convert PointRecord domain model into a strongly typed PointContext.
 
         Args:
             point_index: 0-indexed chronological point sequence number (D-3b).
+            match_format: Match scoring structure ('bo3' or 'bo5', default 'bo3').
 
         Returns:
             PointContext: Graph input context formatted for LangGraph execution.
-
-        Note:
-            Per Phase 6 Decision D-3a, match replay simulation currently operates
-            under an explicit Best-of-3 (bo3) demo scope. Best-of-5 matches are out
-            of scope until tournament format inference is formalized in data ingestion.
         """
         from src.graph.state import PointContext
 
@@ -214,7 +214,7 @@ class PointRecord(BaseModel):
             game_score_returner=self.get_returner_games_int(),
             set_score_server=self.get_server_sets_int(),
             set_score_returner=self.get_returner_sets_int(),
-            match_format="bo3",
+            match_format=match_format,
         )
 
 

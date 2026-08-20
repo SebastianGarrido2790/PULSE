@@ -398,3 +398,27 @@ async def test_sse_event_stream_client_cancellation_cleanup(monkeypatch) -> None
         await stream_gen.aclose()
 
     assert producer_started is True
+
+
+def test_stream_match_sse_bo5_parameter_propagation(
+    streaming_parquet_file: Path, monkeypatch
+) -> None:
+    """Verify ?match_format=bo5 query parameter correctly flows into point context."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: streaming_parquet_file,
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/v1/matches/stream_test_match_001/stream?speed_multiplier=0.0&match_format=bo5"
+        )
+        assert response.status_code == 200
+        events = [
+            json.loads(line.replace("data: ", ""))
+            for line in response.text.split("\n\n")
+            if line.startswith("data: ")
+        ]
+        assert len(events) > 0
+        for ev in events:
+            assert ev["point_context"]["match_format"] == "bo5"

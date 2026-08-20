@@ -270,3 +270,63 @@ def test_run_cli_missing_match_id(monkeypatch) -> None:
     with pytest.raises(SystemExit) as exc_info:
         run_cli()
     assert exc_info.value.code == 1
+
+
+@pytest.mark.asyncio
+async def test_generate_point_events_bo5(
+    sample_parquet_file: Path,
+    tmp_path: Path,
+) -> None:
+    """Verify generate_point_events forwards match_format='bo5' into point_context."""
+    db_file = tmp_path / "test_bo5.db"
+    await init_db(db_file)
+
+    mock_graph = AsyncMock()
+
+    async def mock_ainvoke(state: PulseGraphState) -> dict:
+        return {
+            "point_context": state.point_context,
+            "decision_log": [],
+        }
+
+    mock_graph.ainvoke.side_effect = mock_ainvoke
+
+    events: list[StreamPointEvent] = []
+    async for event in generate_point_events(
+        match_id="test_replay_match_001",
+        speed_multiplier=0.0,
+        match_format="bo5",
+        graph=mock_graph,
+        parquet_path=sample_parquet_file,
+        db_path=db_file,
+    ):
+        events.append(event)
+
+    assert len(events) == 3
+    for ev in events:
+        assert ev.point_context is not None
+        assert ev.point_context.match_format == "bo5"
+
+
+def test_run_cli_replay_match_bo5(sample_parquet_file: Path, monkeypatch, capsys) -> None:
+    """Verify run_cli accepts --match-format bo5."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: sample_parquet_file,
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "simulator.replay",
+            "--match-id",
+            "test_replay_match_001",
+            "--speed-multiplier",
+            "0",
+            "--match-format",
+            "bo5",
+        ],
+    )
+
+    run_cli()
+    captured = capsys.readouterr()
+    assert '"match_format": "bo5"' in captured.out

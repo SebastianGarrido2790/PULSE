@@ -8,7 +8,7 @@ Authority: Phase 6 Decisions D-1, D-5, D-6, D-8, D-10.
 
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
@@ -41,6 +41,7 @@ async def sse_event_stream(
     speed_multiplier: float,
     graph: CompiledStateGraph,
     keep_alive_interval: float,
+    match_format: Literal["bo3", "bo5"] = "bo3",
 ) -> AsyncGenerator[str, None]:
     """Yield formatted SSE event frames with interleaved keep-alive comments.
 
@@ -53,6 +54,7 @@ async def sse_event_stream(
         speed_multiplier: Playback speed multiplier (0 for instant zero-delay replay).
         graph: In-memory compiled LangGraph application.
         keep_alive_interval: Interval in seconds between keep-alive heartbeat comments.
+        match_format: Match scoring structure ('bo3' or 'bo5', default 'bo3').
 
     Yields:
         str: SSE data frames or keep-alive comments.
@@ -66,6 +68,7 @@ async def sse_event_stream(
             async for event in generate_point_events(
                 match_id=match_id,
                 speed_multiplier=speed_multiplier,
+                match_format=match_format,
                 graph=graph,
             ):
                 await queue.put(event)
@@ -186,6 +189,7 @@ async def stream_match_sse(
             speed_multiplier=replay_params.speed_multiplier,
             graph=graph,
             keep_alive_interval=keep_alive,
+            match_format=replay_params.match_format,
         ),
         media_type="text/event-stream",
         headers={
@@ -224,6 +228,7 @@ async def stream_match_ws(
         async for event in generate_point_events(
             match_id=match_id,
             speed_multiplier=replay_params.speed_multiplier,
+            match_format=replay_params.match_format,
             graph=graph,
         ):
             await websocket.send_text(event.model_dump_json())
