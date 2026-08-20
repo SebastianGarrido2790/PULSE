@@ -333,8 +333,9 @@ Phase 6 connects the in-process LangGraph orchestration engine to external consu
 3. **SQLite Escalation Audit Persistence via `aiosqlite` (D-4):**
    - Implemented `src/utils/persistence.py` creating `decision_logs` and `tactical_outputs` tables in SQLite (`artifacts/pulse_session.db`), indexed by `(match_id, point_index)`.
    - Uses `aiosqlite` for asynchronous non-blocking writes per point, satisfying Critical requirement FR-12 without event loop contention.
-4. **Periodic SSE Keep-Alive Comments (D-5):**
-   - Interleaves `: keep-alive\n\n` comments on an independent timer sourced from `params.yaml` (`api.sse_keep_alive_interval_s: 15.0`) when no point event is due, preventing idle proxy connection drops without polluting client `EventSource` message listeners.
+4. **Periodic SSE Keep-Alive Comments via Async Queue (D-5):**
+   - Implements a decoupled producer-consumer `asyncio.Queue` architecture in `sse_event_stream`. A background task runs `generate_point_events()` while the stream consumer races `asyncio.wait_for(queue.get(), timeout=keep_alive_interval)`.
+   - Interleaves `: keep-alive\n\n` comments on an independent timer sourced from `params.yaml` (`api.sse_keep_alive_interval_s: 15.0`) when no point event is due. This prevents idle proxy connection drops and guarantees heartbeat timeouts never cancel in-flight generator tasks during long inter-point delays.
 5. **Synthetic Deterministic Playback Cadence (D-6):**
    - Replay pacing uses a parameterized base interval (`simulator.default_interval_s: 2.0`) divided by a configurable `speed_multiplier` (`--speed-multiplier <n>`, with `0.0` for instant replay).
    - This directly satisfies the NFR for bit-identical reproducibility under fixed seeds without guessing unrecorded inter-point historical timestamps.
@@ -342,11 +343,14 @@ Phase 6 connects the in-process LangGraph orchestration engine to external consu
    - Because `CompiledStateGraph.ainvoke()` is strictly stateless and thread-safe, each incoming client connection instantiates its own async generator instance without shared mutable task state.
 7. **Fail-Loud Mid-Stream Error Handling (D-13):**
    - On graph or solver exception, the generator logs the error, emits a structured `StreamPointEvent(event_type="error", ...)` payload to the client, and cleanly terminates the stream without silently skipping points.
-8. **Dedicated Wire Schemas Contract (D-10):**
+8. **Dedicated Wire Schemas & Match Metadata Route (D-10):**
    - Standardized wire contracts (`StreamPointEvent`, `HealthCheckResponse`, `MatchReplayRequest`, `MatchMetadataResponse`) isolated in `src/api/schemas.py`.
+   - Implemented `GET /v1/matches/{match_id}` returning `MatchMetadataResponse` (surface, players, total points) for UI/dashboard pre-flight resolution before stream initiation.
+9. **CORS Specification Compliance (D-7):**
+   - FastAPI `CORSMiddleware` configured with `allow_origins=["*"]` and `allow_credentials=False`, strictly satisfying WHATWG/W3C specifications for public, unauthenticated streaming interfaces.
 
 **Consequences:**
-Enables real-time and simulated historical match streaming over HTTP SSE and WebSockets with bit-exact parity, zero-latency graph execution, robust audit logging, and 100% fail-loud exception guarantees. Validated across 133 passing tests with 90% total codebase coverage.
+Enables real-time and simulated historical match streaming over HTTP SSE and WebSockets with bit-exact parity, zero-latency graph execution, robust audit logging, and 100% fail-loud exception guarantees. Validated across 135 passing tests with 91% total codebase coverage.
 
 ---
 

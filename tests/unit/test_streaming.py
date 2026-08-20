@@ -181,3 +181,80 @@ def test_websocket_stream_endpoint(streaming_parquet_file: Path, monkeypatch) ->
             assert data_1["event_type"] == "point"
             assert data_1["match_id"] == "stream_test_match_001"
             assert data_1["point_index"] == 1
+
+
+@pytest.mark.asyncio
+async def test_sse_event_stream_keep_alive_does_not_kill_slow_generator(monkeypatch) -> None:
+    """Verify keep-alive timeout does not terminate a slow-running event generator (D-5)."""
+    context = PointContext(
+        match_id="slow_match",
+        point_index=0,
+        server_id="Player A",
+        returner_id="Player B",
+        surface="HARD",
+        serve_number=1,
+    )
+    ev0 = StreamPointEvent(
+        event_type="point",
+        match_id="slow_match",
+        point_index=0,
+        point_context=context,
+    )
+    ev1 = StreamPointEvent(
+        event_type="point",
+        match_id="slow_match",
+        point_index=1,
+        point_context=context,
+    )
+
+    async def mock_slow_generator(*args, **kwargs):
+        yield ev0
+        # Sleep for longer than the keep-alive interval (0.02s) to trigger keep-alive
+        import asyncio
+
+        await asyncio.sleep(0.06)
+        yield ev1
+
+    monkeypatch.setattr("src.api.streaming.generate_point_events", mock_slow_generator)
+
+    chunks: list[str] = []
+    async for chunk in sse_event_stream(
+        match_id="slow_match",
+        speed_multiplier=1.0,
+        graph=AsyncMock(),
+        keep_alive_interval=0.02,
+    ):
+        chunks.append(chunk)
+
+    # Confirm keep-alive comments occurred
+    assert ": keep-alive\n\n" in chunks
+    # Confirm BOTH point events were yielded successfully despite keep-alive timeouts
+    data_chunks = [c for c in chunks if c.startswith("data: ")]
+    assert len(data_chunks) == 2
+    assert json.loads(data_chunks[0].replace("data: ", ""))["point_index"] == 0
+    assert json.loads(data_chunks[1].replace("data: ", ""))["point_index"] == 1
+
+
+def test_get_match_metadata_endpoint(streaming_parquet_file: Path, monkeypatch) -> None:
+    """Verify GET /v1/matches/{match_id} returns accurate MatchMetadataResponse (D-10)."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: streaming_parquet_file,
+    )
+
+    with TestClient(app) as client:
+        # Existing match
+        response = client.get("/v1/matches/stream_test_match_001")
+        assert response.status_code == 200
+        meta = response.json()
+        assert meta["match_id"] == "stream_test_match_001"
+        assert meta["surface"] == "HARD"
+        assert meta["server_p1"] == "Carlos Alcaraz"
+        assert meta["returner_p2"] == "Novak Djokovic"
+        assert meta["total_points"] == 2
+        assert meta["match_format"] == "bo3"
+
+        # Missing match
+        response_missing = client.get("/v1/matches/non_existent_match_999")
+        assert response_missing.status_code == 404
+        assert "not found" in response_missing.json()["detail"].lower()

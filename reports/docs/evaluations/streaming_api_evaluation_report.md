@@ -144,9 +144,34 @@ All public HTTP and streaming contracts are strictly defined in `src/api/schemas
 }
 ```
 
+### 3.3 Match Metadata Payload (`MatchMetadataResponse`)
+
+```json
+{
+  "match_id": "20200103-M-ATP_Cup-RR-Alex_De_Minaur-Alexander_Zverev",
+  "total_points": 207,
+  "server_p1": "Alex De Minaur",
+  "returner_p2": "Alexander Zverev",
+  "surface": "HARD",
+  "match_format": "bo3"
+}
+```
+
 ---
 
-## 4. Replay Simulator CLI Usage
+## 4. Route Inventory & Transport Table
+
+| HTTP Method / Protocol | Path | Handler | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/health` | `health_check()` | Service health, readiness flag, and loaded artifact keys (D-11). |
+| `GET` | `/v1/matches` | `list_available_matches()` | Returns all available match IDs in dataset. |
+| `GET` | `/v1/matches/{match_id}` | `get_match_metadata()` | Returns metadata summary (`MatchMetadataResponse`) for UI preflight (D-10). |
+| `GET` (SSE) | `/v1/matches/{match_id}/stream` | `stream_match_sse()` | Streams `StreamPointEvent` frames with `: keep-alive\n\n` comments (D-1, D-5). |
+| `WebSocket` | `/v1/matches/{match_id}/ws` | `stream_match_ws()` | Bi-directional transport streaming raw JSON event strings (D-1, D-8). |
+
+---
+
+## 5. Replay Simulator CLI Usage
 
 The replay engine is executable via the console script entry point registered in `pyproject.toml`:
 
@@ -163,7 +188,7 @@ uv run simulator.replay --match-id 20200103-M-ATP_Cup-RR-Alex_De_Minaur-Alexande
 
 ---
 
-## 5. Verification & Test Suite Summary
+## 6. Verification & Test Suite Summary
 
 The Phase 6 implementation was validated across unit, integration, and end-to-end evaluation suites:
 
@@ -173,17 +198,17 @@ The Phase 6 implementation was validated across unit, integration, and end-to-en
 | `tests/unit/test_point_record_conversion.py` | `PointRecord.to_point_context()`, score flip logic, bo3 scope | 4 | 🟢 PASSED |
 | `tests/unit/test_persistence.py` | SQLite table initialization, async writes, query helpers | 3 | 🟢 PASSED |
 | `tests/unit/test_api_main.py` | Lifespan context manager, graph compilation, health check endpoint | 2 | 🟢 PASSED |
-| `tests/unit/test_streaming.py` | SSE formatting, keep-alive heartbeat, WebSocket frames, match listing | 5 | 🟢 PASSED |
+| `tests/unit/test_streaming.py` | SSE formatting, keep-alive heartbeat, slow generator survival, metadata route, WS frames | 7 | 🟢 PASSED |
 | `tests/unit/test_replay_generator.py` | Generator cadence, fail-loud exceptions, CLI entrypoint options | 7 | 🟢 PASSED |
 | `tests/integration/test_api_streaming.py` | Full SSE & WS parity, SQLite audit verification, forced mid-stream failure | 3 | 🟢 PASSED |
 | **Existing Phase 1–5 Test Suites** | Deterministic solver, ML layer, LangGraph, game theory minimax | 103 | 🟢 PASSED |
-| **Total Test Suite** | **Comprehensive Full Repository Verification** | **133** | 🟢 **133/133 (100%)** |
+| **Total Test Suite** | **Comprehensive Full Repository Verification** | **135** | 🟢 **135/135 (100%)** |
 
 ### Code Coverage:
-- **Total Codebase Coverage:** **90%** (exceeding ≥70% requirement).
+- **Total Codebase Coverage:** **91%** (exceeding ≥70% requirement).
 - `src/api/main.py`: **90%**
 - `src/api/schemas.py`: **100%**
-- `src/api/streaming.py`: **77%**
+- `src/api/streaming.py`: **88%**
 - `src/simulator/replay.py`: **86%**
 - `src/utils/persistence.py`: **87%**
 - `src/schemas/point_record.py`: **96%**
@@ -191,16 +216,18 @@ The Phase 6 implementation was validated across unit, integration, and end-to-en
 
 ---
 
-## 6. Exit Criteria Sign-Off Table
+## 7. Exit Criteria Sign-Off Table
 
 | Exit Criterion | Target / Requirement | Implemented Result | Status |
 | :--- | :--- | :--- | :---: |
 | **SSE Streaming Route** | Real-time point streaming with keep-alive | `GET /v1/matches/{id}/stream` with `: keep-alive\n\n` comments | 🟢 **PASSED** |
 | **WebSocket Streaming Route** | Real-time bidirectional transport fallback | `/v1/matches/{id}/ws` with bit-exact SSE payload parity | 🟢 **PASSED** |
+| **Match Metadata Route** | Preflight match metadata resolution | `GET /v1/matches/{id}` returning `MatchMetadataResponse` | 🟢 **PASSED** |
 | **Replay Simulator CLI** | Replay match with configurable speed | `uv run simulator.replay --match-id <id> --speed-multiplier <n>` | 🟢 **PASSED** |
 | **Lifespan Startup Graph** | Zero graph compilation disk I/O per point | Graph built once in `lifespan` and stored on `app.state.graph` | 🟢 **PASSED** |
 | **SQLite Audit Persistence** | FR-12 escalation log traceability | `aiosqlite` transactional persistence to `artifacts/pulse_session.db` | 🟢 **PASSED** |
 | **Fail-Loud Mid-Stream Handling** | D-13 error transparency | Emits `event_type="error"` on solver/graph failure & halts stream | 🟢 **PASSED** |
-| **Test Suite Passing Rate** | 100% test pass rate | 133 / 133 tests passed | 🟢 **PASSED** |
-| **Code Coverage** | $\ge 70\%$ source coverage | 90% total source coverage | 🟢 **PASSED** |
+| **Test Suite Passing Rate** | 100% test pass rate | 135 / 135 tests passed | 🟢 **PASSED** |
+| **Code Coverage** | $\ge 70\%$ source coverage | 91% total source coverage | 🟢 **PASSED** |
 | **Type Check & Linting** | Strict Pyright & Ruff compliance | 0 pyright errors, 0 ruff errors, all files < 1,000 lines | 🟢 **PASSED** |
+

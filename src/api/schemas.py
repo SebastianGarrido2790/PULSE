@@ -36,9 +36,9 @@ class StreamPointEvent(BaseModel):
         ge=0,
         description="0-indexed chronological point sequence number within the match",
     )
-    point_context: PointContext = Field(
-        ...,
-        description="Contextual point score and player metadata",
+    point_context: PointContext | None = Field(
+        default=None,
+        description="Contextual point score and player metadata (None on error events)",
     )
     tactical_output: TacticalOutputResult | None = Field(
         default=None,
