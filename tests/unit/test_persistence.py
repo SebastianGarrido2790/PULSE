@@ -82,9 +82,7 @@ async def test_persist_point_event_roundtrip(tmp_path: Path) -> None:
     assert "12 < 30" in logs[2]["reason"]
 
     # Retrieve tactical outputs
-    tactical_records = await get_tactical_outputs(
-        "test_match_001", point_index=0, db_path=db_file
-    )
+    tactical_records = await get_tactical_outputs("test_match_001", point_index=0, db_path=db_file)
     assert len(tactical_records) == 1
     rec = tactical_records[0]
     assert rec["match_id"] == "test_match_001"

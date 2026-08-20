@@ -1,11 +1,11 @@
 # PULSE — Test Suite Report
 
-> **Version:** v0.5.0 — _Living Document_  
-> **Phase:** 5 — Game-Theoretic Exploit Module  
-> **Status:** 🟢 103 / 103 Tests Passing  
-> **Coverage:** 91% Total Code Coverage (100% Graph Topology, Core Math & Schemas)  
+> **Version:** v0.6.0 — _Living Document_  
+> **Phase:** 6 — API & Streaming Interface  
+> **Status:** 🟢 133 / 133 Tests Passing  
+> **Coverage:** 90% Total Code Coverage (100% Graph Topology, Core Math, Schemas & Wire Contracts)  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
-> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase5_execution_workflow.md](../workflows/phase5_execution_workflow.md), [game_theory_report.md](game_theory_report.md), [system_design.md](../architecture/system_design.md)
+> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase6_execution_workflow.md](../workflows/phase6_execution_workflow.md), [streaming_api_evaluation_report.md](streaming_api_evaluation_report.md), [system_design.md](../architecture/system_design.md)
 
 ---
 
@@ -15,7 +15,7 @@ The **PULSE (Point-Level Understanding & Strategic Leverage Engine)** test suite
 
 - **Ground-Truth Mathematical Primacy:** Closed-form combinatorial probability theory and exact minimax linear programming are the ground truths. From Phase 2 onward, the Markov solver must match theoretical win-probabilities within a $1 \times 10^{-9}$ tolerance. Solver divergence is a CI-blocking build failure.
 - **Determinism:** Every test must produce identical results under a fixed seed. Replayed matches, payoff matrix compilation, and solver evaluations are 100% reproducible across local and CI environments.
-- **Fail-Loud Policy:** Validation errors raise explicit custom exceptions (`SolverException`, `GameTheorySolverException`, `SufficiencyGateException`, `InvalidMatchStateError`, `ModelInferenceError`, `SanitizationError`) rather than falling back silently.
+- **Fail-Loud Policy:** Validation errors raise explicit custom exceptions (`SolverException`, `GameTheorySolverException`, `SufficiencyGateException`, `PersistenceException`, `InvalidMatchStateError`, `ModelInferenceError`, `SanitizationError`) rather than falling back silently.
 - **File-Size Ceiling Gate:** No Python source file under `src/` may exceed 1,000 lines (§5.1 of project constitution). Enforced via `scripts/check_file_size.py` as a hard CI gate.
 - **Strict Static Typing:** Python 3.11+ code targeting 80%+ Pyright type-check coverage with zero tolerated errors or missing import warnings.
 - **Advisory-Only Governance:** Tactical recommendations emit explicit confidence bands (Wilson intervals) and sample-size sufficiency checks. Tests verify that insufficient data triggers explicit suppression rather than speculative advice.
@@ -34,13 +34,20 @@ PULSE/
 ├── tests/
 │   ├── __init__.py                      # Package docstring stub
 │   ├── unit/
+│   │   ├── test_api_schemas.py          # Pydantic v2 wire models & validation tests (Phase 6)
+│   │   ├── test_point_record_conversion.py # PointRecord -> PointContext conversion tests (Phase 6)
+│   │   ├── test_persistence.py          # SQLite audit persistence & query tests (Phase 6)
+│   │   ├── test_api_main.py             # FastAPI lifespan & health route tests (Phase 6)
+│   │   ├── test_streaming.py            # SSE, keep-alive comments & WS tests (Phase 6)
+│   │   ├── test_replay_generator.py     # Async generator & CLI tests (Phase 6)
 │   │   ├── test_game_theory.py          # Consolidated §8 validation properties (Phase 5)
 │   │   ├── test_game_theory_solver.py   # Analytical & HiGHS LP equilibrium solver tests
 │   │   ├── test_game_theory_exploit.py  # Best response & empirical-Bayes shrinkage tests
 │   │   ├── test_game_theory_contracts.py# PayoffMatrix & ExploitResult Pydantic tests
 │   │   ├── test_build_payoff_matrices.py# DVC stage matrix extraction unit tests
-│   │   └── ...                          # Prior unit test suites
+│   │   └── ...                          # Prior unit test suites (Phases 1-4)
 │   ├── integration/
+│   │   ├── test_api_streaming.py        # SSE/WS parity & SQLite persistence integration (Phase 6)
 │   │   └── test_conditional_graph.py    # LangGraph conditional edge & state tests (Phases 4-5)
 │   └── evals/
 │       └── test_tactical_output_groundedness.py # DeepEval narrative hallucination checks
@@ -156,11 +163,24 @@ PULSE/
 | `test_game_theory.py::test_delta_non_negative` | Exploitation Guarantee | $\delta = \max_i (\Pi \hat{y})_i - V \ge 0.0$ always holds. | 🟢 PASS |
 | `test_game_theory.py::test_lp_matches_closed_form_on_2x2` | Solver Agreement | HiGHS Linear Programming matches analytical $2\times 2$ closed form within $10^{-4}$. | 🟢 PASS |
 | `test_game_theory_solver.py::test_linprog_strong_duality_verified` | Strong Duality Gate | Primal and Dual LPs converge to identical value ($|V_P - V_D| \le 10^{-5}$). | 🟢 PASS |
-| `test_game_theory.py::test_sufficiency_gate_fires_below_threshold` | Opponent Sample Gate | `sufficient_data=False` when total opponent observations $N_{\text{opp}} < 30$. | 🟢 PASS |
-| `test_game_theory.py::test_cell_level_gate` | Cell-Level Sample Gate | `sufficient_data=False` when any individual cell observation count $< 5$. | 🟢 PASS |
-| `test_game_theory.py::test_symmetric_game_has_uniform_equilibrium` | Symmetry Invariant | Symmetric payoff matrix produces exact 50/50 uniform mixed strategy. | 🟢 PASS |
-| `test_game_theory.py::test_exploit_result_all_none_when_gate_fires` | Null Value Contract | All exploit fields (`equilibrium_value`, `best_response_action`, `delta`) are `None` when gated. | 🟢 PASS |
+| `test_game_theory.py::test_sufficiency_gate_fires_below_threshold` | Opponent Sample Gate | `sufficient_data=False` when total opponent observations $N_{\text{opp}}| `test_game_theory.py::test_exploit_result_all_none_when_gate_fires` | Null Value Contract | All exploit fields (`equilibrium_value`, `best_response_action`, `delta`) are `None` when gated. | 🟢 PASS |
 | `tests/unit/test_build_payoff_matrices.py` | DVC Matrix Compilation | Validates 534,168 point extraction, Beta prior fitting, and JSON artifact compilation. | 🟢 PASS |
+
+---
+
+### 3.11 API, Replay Simulation & Streaming Interface (`src/api/`, `src/simulator/`, `src/utils/persistence.py`)
+
+| Test File / Function | Verification Target | What Is Verified | Status |
+| :--- | :--- | :--- | :---: |
+| `tests/unit/test_api_schemas.py` | Pydantic v2 Wire Contracts | Field constraints, score bounds, timestamp formatting, JSON schema serialization. | 🟢 PASS |
+| `tests/unit/test_point_record_conversion.py` | Schema Bridge Conversion | `PointRecord.to_point_context()`, score flip logic, surface mapping, bo3 scope. | 🟢 PASS |
+| `tests/unit/test_persistence.py` | SQLite Audit Persistence | Async non-blocking write of `decision_logs` and `tactical_outputs` via `aiosqlite`. | 🟢 PASS |
+| `tests/unit/test_api_main.py` | FastAPI Application & Lifespan | Startup lifespan graph compilation (`app.state.graph`) and `/health` route response. | 🟢 PASS |
+| `tests/unit/test_streaming.py` | Streaming Transport Adapters | SSE route, periodic `: keep-alive\n\n` comments, WebSocket frames, match listing. | 🟢 PASS |
+| `tests/unit/test_replay_generator.py` | Async Replay Generator & CLI | Replay pacing, fail-loud mid-stream exceptions, CLI flags (`--match-id`, `--speed-multiplier`). | 🟢 PASS |
+| `tests/integration/test_api_streaming.py::test_sse_streaming_and_persistence_parity` | SSE & SQLite Parity | Full SSE stream matches generator events 1-to-1 and persists records in SQLite. | 🟢 PASS |
+| `tests/integration/test_api_streaming.py::test_websocket_and_sse_content_parity` | Transport Equivalence | Bit-for-bit content payload parity between WebSocket and SSE streams (D-1). | 🟢 PASS |
+| `tests/integration/test_api_streaming.py::test_mid_stream_failure_integration` | Fail-Loud Mid-Stream | Emits `event_type="error"` on forced exception and terminates cleanly (D-13). | 🟢 PASS |
 
 ---
 
@@ -199,9 +219,16 @@ Phase 5: Game Theory Exploitative Module (Complete — 103 Passes)
   ├── Two-Level Sufficiency Gating (Opponent N >= 30, Cell N >= 5) & Uncharted Fallback
   └── DVC Payoff Matrix Extraction Pipeline Stage (2,139 strata exported)
        │
-Phase 6: API, Simulation & Streaming Quality Suite (Scheduled Next)
+Phase 6: API, Simulation & Streaming Quality Suite (Complete — 133 Passes)
   ├── FastAPI SSE/WebSocket Streaming Endpoint Integration
-  └── Match Replay Simulator Bit-Identical Reproducibility Tests
+  ├── Match Replay Simulator Bit-Identical Reproducibility Tests
+  ├── SQLite Audit Persistence Traceability (FR-12)
+  └── Fail-Loud Error Transparency & Keep-Alive Heartbeat (D-5, D-13)
+       │
+Phase 7: Observability, CI/CD, Shadow-Mode Acceptance (Scheduled Next)
+  ├── OpenTelemetry Instrumentation Spans
+  ├── GitHub Actions Full Coverage Gate (>= 70%) & Trivy Security Scan
+  └── Multi-Stage Docker Container Verification
 ```
 
 ---
@@ -218,7 +245,7 @@ Phase 6: API, Simulation & Streaming Quality Suite (Scheduled Next)
 | **Run Linter Checks**          | `uv run ruff check .`                               | Imports, syntax, and style rules enforcement                |
 | **Run Formatter Checks**       | `uv run ruff format --check .`                      | Verifies 100-character line length compliance               |
 
-**Live Output (Phase 5 Complete — 2026-08-15):**
+**Live Output (Phase 6 Complete — 2026-08-19):**
 
 ```text
 =============================== tests coverage ================================
@@ -228,10 +255,13 @@ Name                                 Stmts   Miss  Cover   Missing
 ------------------------------------------------------------------
 src\__init__.py                          0      0   100%
 src\api\__init__.py                      0      0   100%
+src\api\main.py                         42      4    90%   97-100, 109
+src\api\schemas.py                      31      0   100%
+src\api\streaming.py                    53     12    77%   70, 108, 154-158, 167-174
 src\config\__init__.py                   2      0   100%
-src\config\loader.py                    77      1    99%   136
+src\config\loader.py                    89      1    99%   156
 src\core\__init__.py                     0      0   100%
-src\core\game_theory.py                173     12    93%   66, 78, 243, 276, 302, 334, 338, 345, 420, 464, 468, 471-474
+src\core\game_theory.py                175     13    93%   74, 86, 257, 290, 301, 341, 345, 352, 429, 474, 478, 481-484
 src\core\leverage_uncertainty.py        48      0   100%
 src\core\markov_solver.py              228     46    80%   62, 67, 115, 140, 183, 251-272, 318, 325, 376-406, 424-425, 429, 431-432, 442, 444-445, 450-451, 469, 526
 src\graph\__init__.py                    0      0   100%
@@ -246,12 +276,14 @@ src\models\__init__.py                   0      0   100%
 src\models\point_win_classifier.py     126      5    96%   43, 137-138, 324-325
 src\models\pressure_deviation.py       134      8    94%   90, 140, 189, 240-241, 294, 350-351
 src\schemas\__init__.py                  0      0   100%
-src\schemas\point_record.py             95      5    95%   131, 138, 144, 147-148
+src\schemas\point_record.py            107      4    96%   135, 142, 151-152
 src\simulator\__init__.py                0      0   100%
+src\simulator\replay.py                122     17    86%   50-51, 76-78, 129, 164-168, 176, 200, 264, 281, 292, 296
 src\utils\__init__.py                    0      0   100%
-src\utils\exceptions.py                 36      5    86%   30-31, 37-40
+src\utils\exceptions.py                 37      5    86%   30-31, 37-40
 src\utils\logger.py                     37      9    76%   52-54, 65-70, 77-79
+src\utils\persistence.py               104     14    87%   35, 86-89, 129, 155-158, 178-181
 ------------------------------------------------------------------
-TOTAL                                 1252    111    91%
-============================ 103 passed in 12.50s =============================
+TOTAL                                 1631    158    90%
+======================= 133 passed, 1 warning in 25.74s =======================
 ```

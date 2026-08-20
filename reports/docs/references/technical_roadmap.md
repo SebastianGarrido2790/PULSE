@@ -127,7 +127,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 6 — API & Streaming Interface
+## Phase 6 — API & Streaming Interface ✅ Complete
 
 **Goal:** Expose PULSE via FastAPI with SSE/WebSocket streaming, and build the historical-match replay simulator that stands in for a live feed (Charter §6).
 
@@ -135,14 +135,16 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 - FastAPI app with `/v1/matches/{match_id}/stream` (SSE) and WebSocket fallback
 - Replay simulator: reads a historical match's `PointRecord` sequence and emits it at real-time cadence (configurable speed multiplier for testing)
-- Wire the LangGraph pipeline to the streaming endpoint
-- Request/response Pydantic schemas for all endpoints
+- Wire the LangGraph pipeline to the streaming endpoint via process-startup lifespan compilation
+- Request/response Pydantic schemas for all endpoints (`src/api/schemas.py`)
+- SQLite audit persistence layer (`src/utils/persistence.py`) for decision logs and tactical outputs (FR-12)
+- Unit and integration tests covering SSE/WebSocket parity, SQLite persistence, and fail-loud error handling
 
-**Deliverables:** `api/main.py`, `api/streaming.py`, `simulator/replay.py`
+**Deliverables:** `src/api/main.py`, `src/api/streaming.py`, `src/api/schemas.py`, `src/simulator/replay.py`, `src/utils/persistence.py`, `tests/integration/test_api_streaming.py`, `reports/docs/evaluations/streaming_api_evaluation_report.md`
 
 **Exit Criteria:** A full historical match can be streamed end-to-end through the API and produces the expected sequence of leverage/escalation events; SSE and WebSocket both verified.
 
-**Dependencies:** Phase 3, Phase 4.
+**Dependencies:** Phase 3, Phase 4, Phase 5.
 
 **Est. Duration:** 2 days
 

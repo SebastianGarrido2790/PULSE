@@ -270,4 +270,3 @@ def test_run_cli_missing_match_id(monkeypatch) -> None:
     with pytest.raises(SystemExit) as exc_info:
         run_cli()
     assert exc_info.value.code == 1
-

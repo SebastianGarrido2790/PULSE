@@ -31,7 +31,6 @@ def test_load_params_default() -> None:
     assert params.simulator.default_speed_multiplier == 1.0
 
 
-
 def test_load_params_file_not_found(tmp_path: Path) -> None:
     """Verify loading a non-existent file path raises ConfigException."""
     non_existent = tmp_path / "missing_params.yaml"

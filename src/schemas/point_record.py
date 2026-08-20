@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from src.graph.state import PointContext
 
 
-
 class Surface(StrEnum):
     """Tennis court surface type."""
 
@@ -217,7 +216,6 @@ class PointRecord(BaseModel):
             set_score_returner=self.get_returner_sets_int(),
             match_format="bo3",
         )
-
 
 
 class PointRecordSchema(pa.DataFrameModel):

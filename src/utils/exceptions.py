@@ -101,4 +101,3 @@ class ConfigException(BasePulseException):
 
 class PersistenceException(BasePulseException):
     """Raised when SQLite database operations fail during point event persistence."""
-

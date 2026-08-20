@@ -2,8 +2,8 @@
 
 **API & Streaming Interface — Ordered Implementation Steps**
 
-**Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-17
-**Status:** Stage 8 Completed - 30 steps implemented, gate 8 closed
+**Product:** PULSE | **Phase:** 6 of 7 | **Version:** 1.0.0 | **Date:** 2026-08-19
+**Status:** All Stages (0–10) Completed — 40 steps implemented, all gates closed ✅
 **Authority:** `phase6_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
 **Scope of this document:** sequencing only, no code.
 
@@ -108,7 +108,7 @@
 
 ---
 
-## Stage 9 — Full Phase 6 Verification
+## Stage 9 — Full Phase 6 Verification ✅
 
 31. `uv run ruff check .` and `uv run ruff format --check .` — 0 errors.
 32. `uv run pyright` — 0 errors.
@@ -120,7 +120,7 @@
 
 ---
 
-## Stage 10 — ADR Logging & Documentation Closeout
+## Stage 10 — ADR Logging & Documentation Closeout ✅
 
 36. Log a new ADR (e.g., ADR-012, continuing the ADR-010/ADR-011 numbering) into `system_design.md`, scoped to the decisions with real, lasting architectural weight — not every 🟢-recorded item:
     - **D-1** — shared async event generator with thin SSE/WebSocket transport adapters, not two independent implementations.

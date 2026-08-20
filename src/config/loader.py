@@ -128,7 +128,6 @@ class Params(BaseModel):
     simulator: SimulatorParams
 
 
-
 def load_params(config_path: Path | None = None) -> Params:
     """Load and validate params.yaml into a strongly typed Params Pydantic model.
 

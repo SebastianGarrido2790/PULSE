@@ -202,9 +202,7 @@ def test_websocket_and_sse_content_parity(
 
         # 2. Collect WebSocket events
         ws_payloads: list[dict] = []
-        with client.websocket_connect(
-            "/v1/matches/integ_match_2026/ws?speed_multiplier=0"
-        ) as ws:
+        with client.websocket_connect("/v1/matches/integ_match_2026/ws?speed_multiplier=0") as ws:
             while len(ws_payloads) < len(sse_payloads):
                 msg = ws.receive_text()
                 ws_payloads.append(json.loads(msg))
