@@ -1,10 +1,10 @@
 # Phase 7 — Implementation Plan & Decisions
 **Observability, CI/CD, Shadow-Mode Acceptance**
 
-**Product:** PULSE | **Phase:** 7 of 7 (final) | **Version:** 0.1.0 (Draft — Pending Approval) | **Date:** 2026-08-20
-**Status:** 🟡 Planning — no code written
-**Authority:** `technical_roadmap.md` (Phase 7), `prd.md` (FR-8, FR-9, FR-10, FR-12, NFR table, §7 Success Metrics)
-**Approval required from:** Sebastian, before any implementation begins
+**Product:** PULSE | **Phase:** 7 of 7 (final) | **Version:** 1.0.0 (Approved) | **Date:** 2026-08-20  
+**Status:** 🟢 Approved — Ready for Implementation  
+**Authority:** `technical_roadmap.md` (Phase 7), `prd.md` (FR-8, FR-9, FR-10, FR-12, NFR table, §7 Success Metrics)  
+**Approved by:** Sebastian (2026-08-20)
 
 ---
 
@@ -13,8 +13,9 @@
 Same conventions as every prior phase's decisions document:
 
 - **Section 1** is the mandatory current-state audit. It drives Section 2.
-- **Section 2** holds one entry per decision, tagged 🔴 **Decision required** or 🟢 **No input required** (recorded for traceability only).
+- **Section 2** holds one entry per decision. All originally proposed options, trade-offs, and recommendations are preserved in full for the historical record, alongside the approved resolution.
 - Sub-decisions are nested under the primary decision they branch from.
+- **Section 3** provides the reconciled decision summary matrix.
 
 ---
 
@@ -50,7 +51,13 @@ Same conventions as every prior phase's decisions document:
 
 ## 2. Decisions
 
-### D-1 🔴 What "Shadow-Mode Acceptance" Means for a System With No Live Feed to Shadow
+### D-1 🟢 Approved — What "Shadow-Mode Acceptance" Means for a System With No Live Feed to Shadow
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A (Held-out-match replay through the full API/Docker stack).**  
+> Start the containerized service, drive a set of historical matches through the real `GET /v1/matches/{id}/stream` endpoint (not internal function calls), and confirm the full deployed system behaves correctly end-to-end. This validates the Docker build and API layer in the same pass as the graph/solver logic.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** "Shadow mode" conventionally means running a new system alongside a live production one, observing without acting. `prd.md`'s own Non-Goals explicitly rule out live data-feed integration for this project — there's nothing to run alongside. The term needs a concrete, honest definition for what this project actually has.
 
@@ -63,7 +70,13 @@ Same conventions as every prior phase's decisions document:
 
 ---
 
-### D-2 🔴 "Held-Out" Means Different Things for the Two Bundled Evaluations (Finding B)
+### D-2 🟢 Approved — "Held-Out" Means Different Things for the Two Bundled Evaluations (Finding B)
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A (Treat "held-out" as a genuine statistical holdout for the precision evaluation only).**  
+> The escalation-precision evaluation (`ml_canvas.md` §8) evaluates matches not specifically used for manual calibration/debugging, with the limitation stated plainly in the evaluation report. The shadow-mode acceptance run operates as an operational/integration confirmation across full matches.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** neither the roadmap nor `prd.md` distinguishes these two evaluations' data requirements explicitly.
 
@@ -76,7 +89,13 @@ Same conventions as every prior phase's decisions document:
 
 ---
 
-### D-3 🔴 CI Pipeline Update Scope & Trivy Scan Target
+### D-3 🟢 Approved — CI Pipeline Update Scope & Trivy Scan Target
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A (Scan the final built Docker image).**  
+> Trivy runs against the built container in the pipeline's build stage. This validates both OS-layer base-image CVEs and Python dependency CVEs baked into the deployable artifact, enforcing the "no CRITICAL CVEs" NFR.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** per 1.1, the existing `ci.yml` needs to catch up to the already-stated target pipeline order (Lint → type-check → file-size check → unit tests → integration tests → eval suite → build) and add a coverage gate and a Trivy scan. The one open question the roadmap's wording doesn't settle: what does Trivy actually scan.
 
@@ -89,7 +108,13 @@ Same conventions as every prior phase's decisions document:
 
 ---
 
-### D-4 🔴 Docker Build Shape — Single Image, Runtime Entrypoint Override (Resolves Finding A)
+### D-4 🟢 Approved — Docker Build Shape — Single Image, Runtime Entrypoint Override (Resolves Finding A)
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A (One image, API as default `CMD`, CLI reachable via runtime override; add `docker-compose.yml`).**  
+> A single Dockerfile and image with `api.main` as the default `CMD`. CLI commands (e.g. `uv run simulator.replay --match-id <id>`) are executed via runtime entrypoint override. `docker-compose.yml` is added as an explicit deliverable to support the project's standard `docker compose up --build` one-click orchestration.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** two runnable entry points exist (`api.main`, `simulator.replay`), sharing one dependency closure, and `docker-compose.yml` needs to exist for the established one-click command to actually work.
 
@@ -102,13 +127,25 @@ Same conventions as every prior phase's decisions document:
 
 ---
 
-### D-5 🟢 Non-Root, Digest-Pinned Base Image
+### D-5 🟢 Recorded — Non-Root, Digest-Pinned Base Image
+
+> [!NOTE]
+> **Recorded Resolution: Non-Root, Digest-Pinned Base Image.**  
+> Already dictated as an unequivocal requirement by the project's established Docker convention — multi-stage build with non-root user execution and SHA256 digest-pinned Python base image.
+
+#### Originally Proposed (v0.1.0)
 
 Already dictated as an unequivocal requirement by the project's established Docker convention — not a fresh choice, an implementation requirement to satisfy. Recorded for completeness.
 
 ---
 
-### D-6 🔴 SQLite Persistence Across Container Restarts
+### D-6 🟢 Approved — SQLite Persistence Across Container Restarts
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A (Volume-mount `artifacts/` / SQLite path in `docker-compose.yml`).**  
+> Volume-mount the SQLite database path in `docker-compose.yml` so that session-level escalation logs and audit trails survive container restarts, satisfying FR-12 (Critical) under containerized deployment.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** `artifacts/pulse_session.db` is written by the Phase 6 persistence layer to satisfy FR-12 (Critical). If the container's filesystem is ephemeral, every `docker compose down`/restart silently wipes the audit trail — undermining FR-12's "persisted" guarantee specifically in the containerized deployment path, even though it already works correctly for bare-metal `uv run api.main`.
 
@@ -121,7 +158,13 @@ Already dictated as an unequivocal requirement by the project's established Dock
 
 ---
 
-### D-7 🔴 Model/Data Artifacts — Baked Into the Image or Mounted at Runtime
+### D-7 🟢 Approved — Model/Data Artifacts — Baked Into the Image or Mounted at Runtime
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A (Bake artifacts into the image at build time).**  
+> `COPY artifacts/ ...` during the Docker build so that the container image is a fully self-contained, reproducible, versioned deployable unit conforming to the project's bit-identical replay and reproducibility standards.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** `build_pulse_graph()` needs `stratum_table.json`, the pressure artifact, and `payoff_matrices.json` at startup; the replay simulator needs `points.parquet`. These are DVC-tracked, versioned artifacts already sitting in the repo's `artifacts/` directory.
 
@@ -134,7 +177,13 @@ Already dictated as an unequivocal requirement by the project's established Dock
 
 ---
 
-### D-8 🔴 Coverage Gate Scope, and the `llm_client.py` Gap It Would Currently Miss (Finding C)
+### D-8 🟢 Approved — Coverage Gate Scope, and the `llm_client.py` Gap It Would Currently Miss (Finding C)
+
+> [!IMPORTANT]
+> **Approved Resolution: Option C (Aggregate gate unchanged, plus close the specific `llm_client.py` gap now).**  
+> Keep the aggregate CI coverage gate (`ci.min_coverage_pct: 70`), while specifically targeting and closing the 31% coverage gap in `src/graph/llm_client.py` with dedicated mock tests (network errors, missing API keys, fail-loud / deterministic passthrough) prior to shadow-mode acceptance sign-off.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** the project-wide aggregate (consistently 90–91% across every phase report reviewed) comfortably clears the 70% NFR target — while `llm_client.py` sits at 31%, per Phase 6's own literal coverage output.
 
@@ -148,7 +197,13 @@ Already dictated as an unequivocal requirement by the project's established Dock
 
 ---
 
-### D-9 🔴 Retrospective Escalation-Precision Evaluation — Scaffolding Only, Pending VERIFY
+### D-9 🟢 Approved — Retrospective Escalation-Precision Evaluation Scaffolding
+
+> [!IMPORTANT]
+> **Approved Resolution: Scaffolding via `scripts/evaluate_escalation_precision.py` & Report.**  
+> Create `scripts/evaluate_escalation_precision.py` (mirroring the established `scripts/build_payoff_matrices.py`-style offline pipeline pattern) and a corresponding `reports/docs/evaluations/escalation_precision_report.md` (matching the format every other phase's evaluation report has already used). The precision/recall computation logic is governed by `pulse_ml_canvas.md` §8 (resolved in VERIFY-1).
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** per VERIFY item 1, `pulse_ml_canvas.md` §8's actual methodology isn't available in this conversation. This decision can only settle *where* this evaluation lives, not *how* it computes precision.
 
@@ -156,7 +211,13 @@ Already dictated as an unequivocal requirement by the project's established Dock
 
 ---
 
-### D-10 🔴 OTel Span Granularity for Solver & Model Calls
+### D-10 🟢 Approved — OTel Span Granularity for Solver & Model Calls
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A (Per-call child spans, nested under existing node spans).**  
+> Each solver/model function (`compute_leverage()`, `resolve_point_win_probability()`, `compute_exploit()`, etc.) opens its own span at entry; OTel's context propagation automatically nests it under whatever node-level span is already open. Produces a full per-point call tree for precise latency profiling against the <1s budget.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** graph-node-level spans already exist (Phase 4). The roadmap asks for solver- and model-level spans too.
 
@@ -169,7 +230,13 @@ Already dictated as an unequivocal requirement by the project's established Dock
 
 ---
 
-### D-11 🔴 `structlog` "Finalization" Scope — Pending VERIFY
+### D-11 🟢 Approved — Structured Logging Finalization & Audit Scope
+
+> [!IMPORTANT]
+> **Approved Resolution: Audit & Verification Pass.**  
+> Perform a codebase-wide audit pass confirming all logger calls route through `src/utils/logger.py`'s structured JSON output without stray `print()` statements or unformatted stdlib `logging` calls bypassing the shared logger.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** per VERIFY item 3, whether `src/utils/logger.py` is already `structlog`-backed with JSON output is unconfirmed.
 
@@ -177,36 +244,49 @@ Already dictated as an unequivocal requirement by the project's established Dock
 
 ---
 
-### D-12 🟢 Dockerfile `HEALTHCHECK` via the Existing `/health` Endpoint
+### D-12 🟢 Recorded — Dockerfile `HEALTHCHECK` via the Existing `/health` Endpoint
+
+> [!NOTE]
+> **Recorded Resolution: Dockerfile `HEALTHCHECK` via `/health`.**  
+> The Phase 6 `/health` endpoint already exists specifically for this purpose. A `HEALTHCHECK` instruction pointing at it is a natural, low-controversy addition, not a fresh design choice. Recorded for completeness.
+
+#### Originally Proposed (v0.1.0)
 
 The Phase 6 `/health` endpoint already exists specifically for this purpose. A `HEALTHCHECK` instruction pointing at it is a natural, low-controversy addition, not a fresh design choice. Recorded for completeness.
 
 ---
 
-### D-13 🟢 Final Evaluation Report Format
+### D-13 🟢 Recorded — Final Evaluation Report Format
+
+> [!NOTE]
+> **Recorded Resolution: Standard Exit-Criteria Sign-off Format.**  
+> Mirror the exit-criteria sign-off table format every prior phase's evaluation report has already used (`langgraph_orchestration_report.md`, `game_theory_report.md`, `streaming_api_evaluation_report.md`), checked directly against `project_charter.md` §5 Definition of Done items.
+
+#### Originally Proposed (v0.1.0)
 
 Recommendation: mirror the exit-criteria sign-off table format every prior phase's evaluation report has already used (`langgraph_orchestration_report.md`, `game_theory_report.md`, `streaming_api_evaluation_report.md`), checked directly against `project_charter.md` §5's Definition of Done items once VERIFY item 2 is resolved — not a new format invented for this phase. Recorded for completeness.
 
 ---
 
-## 3. Decision Summary
+## 3. Reconciled Decision Summary
 
-| ID | Title | Status |
-|---|---|---|
-| D-1 | Shadow-mode = held-out replay through the real API/Docker stack, not internal calls | 🔴 Pending |
-| D-2 | "Held-out" means different things for the precision eval vs. the shadow-mode run — state the limitation, don't conflate them | 🔴 Pending |
-| D-3 | Trivy scans the final built image, not just the dependency lockfile | 🔴 Pending |
-| D-4 | Single image, API as default CMD, CLI via runtime override; add `docker-compose.yml` | 🔴 Pending |
-| D-5 | Non-root, digest-pinned base | 🟢 Recorded |
-| D-6 | Volume-mount the SQLite audit DB so FR-12 holds under `docker compose` too | 🔴 Pending |
-| D-7 | Bake DVC artifacts into the image for a self-contained, reproducible deployable unit | 🔴 Pending |
-| D-8 | Aggregate coverage gate unchanged; close `llm_client.py`'s 31% as a named, specific fix | 🔴 Pending |
-| D-9 | Scaffold the precision-evaluation script/report location; methodology deferred to `ml_canvas.md` §8 | 🔴 Pending — VERIFY first |
-| D-10 | Per-call child spans for solver/model functions, nested under existing node spans | 🔴 Pending |
-| D-11 | Logging "finalization" scope depends on `logger.py`'s actual current state | 🔴 Pending — VERIFY first |
-| D-12 | Dockerfile `HEALTHCHECK` against `/health` | 🟢 Recorded |
-| D-13 | Final report mirrors the established exit-criteria sign-off format | 🟢 Recorded |
+| ID | Title | Status | Approved Choice |
+|---|---|:---:|---|
+| **D-1** | Shadow-Mode Acceptance Definition | ✅ Approved | **Option A** — Held-out replay through real API/Docker stack (`/v1/matches/{id}/stream`) |
+| **D-2** | "Held-Out" Evaluation Semantics | ✅ Approved | **Option A** — Statistical holdout for precision eval; operational check for shadow mode |
+| **D-3** | CI Pipeline & Security Scan Target | ✅ Approved | **Option A** — Trivy scans final built Docker container image |
+| **D-4** | Docker Build Shape & Compose | ✅ Approved | **Option A** — Single image (API CMD, CLI override) + `docker-compose.yml` service |
+| **D-5** | Base Image Hardening | 🟢 Recorded | Multi-stage build, non-root user, SHA256 digest-pinned Python base |
+| **D-6** | SQLite Persistence in Docker | ✅ Approved | **Option A** — Volume-mount `artifacts/` DB in `docker-compose.yml` (FR-12) |
+| **D-7** | Model & Data Artifact Packaging | ✅ Approved | **Option A** — Bake artifacts into Docker image for self-contained reproducibility |
+| **D-8** | Coverage Gate & Coverage Gap Fix | ✅ Approved | **Option C** — Aggregate gate unchanged; close `llm_client.py` 31% gap directly |
+| **D-9** | Escalation-Precision Evaluation Scaffolding | ✅ Approved | **Recommendation** — `scripts/evaluate_escalation_precision.py` & evaluation report |
+| **D-10** | OTel Span Granularity | ✅ Approved | **Option A** — Per-call child spans for solver/model calls nested under node spans |
+| **D-11** | Structured Logging Finalization Scope | ✅ Approved | **Recommendation** — Codebase-wide audit pass confirming consistent JSON logging |
+| **D-12** | Container Health Checking | 🟢 Recorded | `HEALTHCHECK` instruction probing `GET /health` |
+| **D-13** | Final Evaluation Report Format | 🟢 Recorded | Standard exit-criteria sign-off table vs. `project_charter.md` §5 DoD |
 
-**Before any implementation:** all three VERIFY items in §1.3 need to be read directly — `project_charter.md` §5 in particular, since it's Phase 7's literal, stated exit criteria and nothing in this document can substitute for actually reading it.
+---
 
-No implementation begins until the 🔴 items above are resolved.
+All 13 decisions are fully reconciled and approved. Phase 7 is ready for VERIFY resolution and execution workflow planning.
+
