@@ -1,10 +1,10 @@
 # Phase 6.5 — Implementation Plan & Decisions
 **Interactive Presentation Layer (Tactical Cockpit)**
 
-**Product:** PULSE | **Phase:** 6.5 of 7 | **Version:** 0.1.0 (Draft — Pending Approval) | **Date:** 2026-08-23  
-**Status:** 🟡 Planning — no UI code written  
+**Product:** PULSE | **Phase:** 6.5 of 7 | **Version:** 1.0.0 (Approved) | **Date:** 2026-08-23  
+**Status:** 🟢 Approved — Ready for Implementation  
 **Authority:** `technical_roadmap.md` (Phase 6.5), `prd.md` (FR-13, NFR Frontend Assets), `system_design.md` (ADR-013), `ui_assessment.md`  
-**Approval required from:** Sebastian, before any implementation begins
+**Approved by:** Sebastian (2026-08-23)
 
 ---
 
@@ -13,9 +13,9 @@
 Same conventions as every prior phase's decisions document:
 
 - **Section 1** is the mandatory current-state audit. It drives Section 2.
-- **Section 2** holds one entry per decision, tagged 🔴 **Decision required** or 🟢 **No input required** (recorded for completeness of the decision record).
+- **Section 2** holds one entry per decision. All originally proposed options, trade-offs, and recommendations are preserved in full for the historical record, alongside the approved resolution.
 - Sub-decisions are nested under the primary decision they branch from.
-- **Section 3** provides the decision summary matrix.
+- **Section 3** provides the reconciled decision summary matrix.
 
 ---
 
@@ -53,13 +53,19 @@ The backend `GET /v1/matches/{match_id}/stream` endpoint accepts `speed_multipli
 
 ## 2. Decisions
 
-### D-1 🔴 Static Asset Architecture — Single Flat Directory vs. Modular Subdirectories
+### D-1 🟢 Approved — Static Asset Architecture — Flat Modular Directory (`src/api/static/`)
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A.**  
+> Place static assets in a flat modular directory: `src/api/static/index.html`, `src/api/static/style.css`, and `src/api/static/app.js`. Clear separation of HTML layout, CSS design system, and ES6 module logic with 0 build steps.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** Phase 6.5 introduces static web assets into `src/api/static/`. We must establish a clean, maintainable structure that complies with the repo's file organization conventions without adding build steps.
 
 | Option | Description | Trade-off |
 |---|---|---|
-| **A — Clean Modular Structure (`src/api/static/`)** | `src/api/static/index.html`, `src/api/static/css/style.css`, `src/api/static/js/app.js` (or flat `src/api/static/` root with 3 dedicated files: `index.html`, `style.css`, `app.js`). | **Simplest and cleanest:** Clear separation of HTML structure, CSS design tokens, and JS event-handling logic; zero build steps; direct 1:1 mapping for FastAPI static mounting. |
+| **A — Clean Modular Structure (`src/api/static/`)** | `src/api/static/index.html`, `src/api/static/style.css`, `src/api/static/app.js`. | **Simplest and cleanest:** Clear separation of HTML structure, CSS design tokens, and JS event-handling logic; zero build steps; direct 1:1 mapping for FastAPI static mounting. |
 | **B — Monolithic Inlined `index.html`** | All HTML, CSS in `<style>`, and JavaScript in `<script>` packed into a single `index.html`. | Eliminates extra HTTP asset requests, but creates an unwieldy, unmodular 600+ line file violating separation of concerns and making code review harder. |
 | **C — Full Multi-Module JS Hierarchy** | Separate JS modules: `api.js`, `chart.js`, `state.js`, `scoreboard.js`, `topology.js`. | High modularity, but introduces multiple ES6 module imports across browser script tags for what is fundamentally a single-view event cockpit (~300 lines of JS). |
 
@@ -67,7 +73,13 @@ The backend `GET /v1/matches/{match_id}/stream` endpoint accepts `speed_multipli
 
 ---
 
-### D-2 🔴 Data Visualization & Charting Engine — Pure HTML5 Canvas vs. Vendored/CDN Charting
+### D-2 🟢 Approved — Data Visualization & Charting Engine — Bespoke HTML5 Canvas 2D Engine
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A.**  
+> Implement a bespoke HTML5 Canvas 2D rendering function in `app.js` to draw continuous leverage oscillations $\Delta L$, shaded Wilson 95% confidence bands $[L_{\text{low}}, L_{\text{high}}]$, escalation threshold lines ($\tau = 5\%$), and hover cursor tooltips. 100% offline, 0 KB external library weight, zero CDN dependencies.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** The tactical cockpit requires a real-time **Leverage & Momentum Oscillogram** plotting point-by-point leverage $\Delta L$, shaded Wilson confidence bands $[L_{\text{low}}, L_{\text{high}}]$, and the configured escalation threshold line ($\tau = 0.05$).
 
@@ -81,7 +93,13 @@ The backend `GET /v1/matches/{match_id}/stream` endpoint accepts `speed_multipli
 
 ---
 
-### D-3 🔴 FastAPI Static Mount & Route Delivery Strategy (Resolves Finding A)
+### D-3 🟢 Approved — FastAPI Static Mount & Route Delivery Strategy
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A.**  
+> Mount `/static` via `app.mount("/static", StaticFiles(directory=static_dir), name="static")` in `src/api/main.py` and register explicit route handlers `@app.get("/", response_class=HTMLResponse)` and `@app.get("/ui", response_class=HTMLResponse)` returning `FileResponse("src/api/static/index.html")`. Preserves OpenAPI routes (`/docs`, `/health`, `/v1/...`) without catch-all routing collisions.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** FastAPI must serve the static frontend assets while preserving `/docs` (Swagger UI), `/openapi.json`, `/health`, and `/v1/matches/...`.
 
@@ -94,7 +112,13 @@ The backend `GET /v1/matches/{match_id}/stream` endpoint accepts `speed_multipli
 
 ---
 
-### D-4 🔴 Stream Consumption, Playback Controls & Connection Lifecycle (Resolves Finding C)
+### D-4 🟢 Approved — Stream Consumption & Playback Controls
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A.**  
+> Connect directly to `GET /v1/matches/{match_id}/stream?speed_multiplier={speed}` via browser-native `EventSource`. Manage connection lifecycle dynamically on match select, play, pause, and speed change, buffering point history locally in JS state.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** The UI must manage SSE connections to `GET /v1/matches/{match_id}/stream`, allowing users to switch matches, adjust playback speed, and pause/resume streams.
 
@@ -107,7 +131,7 @@ The backend `GET /v1/matches/{match_id}/stream` endpoint accepts `speed_multipli
 
 ---
 
-### D-5 🟢 Design System Aesthetic & Dark-Mode Glassmorphism Standards
+### D-5 🟢 Recorded — Design System Aesthetic & Dark-Mode Glassmorphism Standards
 
 > [!NOTE]
 > **Design Standard: Dark-Mode Tactical Glassmorphism.**  
@@ -120,7 +144,7 @@ Recorded for completeness of the design record.
 
 ---
 
-### D-6 🟢 Offline Font & Vector Icon Strategy (Resolves Finding B)
+### D-6 🟢 Recorded — Offline Font & Vector Icon Strategy
 
 > [!NOTE]
 > **Asset Standard: 100% Inline SVGs & System Fonts.**  
@@ -130,7 +154,13 @@ Recorded for completeness.
 
 ---
 
-### D-7 🔴 Component Decomposition & Tactical Dashboard Blueprint
+### D-7 🟢 Approved — Component Decomposition & Tactical Dashboard Blueprint
+
+> [!IMPORTANT]
+> **Approved Resolution: Sub-Component Blueprint.**  
+> Implement the 6 core visual sub-components: Header & Live Scoreboard, Canvas 2D Oscillogram, LangGraph Conditional Topology Inspector, Game-Theoretic Matrix & Exploit Panel, Real-Time Coach Advisory Feed, and Stream Control Bar.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** The cockpit UI must visually present the 4 core mathematical and architectural pillars of PULSE simultaneously without clutter.
 
@@ -178,7 +208,13 @@ Recorded for completeness.
 
 ---
 
-### D-8 🔴 Automated Integration Testing Strategy for Static Assets
+### D-8 🟢 Approved — Automated Integration Testing Strategy for Static Assets
+
+> [!IMPORTANT]
+> **Approved Resolution: Option A.**  
+> Build `tests/integration/test_static_ui.py` using FastAPI `httpx.AsyncClient` to verify static file routes (`GET /`, `GET /ui`, `GET /static/style.css`, `GET /static/app.js`), Content-Type headers, structural DOM element IDs, and match dropdown API integration in <150ms.
+
+#### Originally Proposed (v0.1.0)
 
 **Context:** We must ensure automated CI verification of the static frontend without introducing Node.js or browser driver dependencies (e.g. Playwright/Selenium).
 
@@ -193,17 +229,17 @@ Recorded for completeness.
 
 ## 3. Reconciled Decision Summary Matrix
 
-| ID | Title | Status | Recommended Choice |
+| ID | Title | Status | Approved Choice |
 |---|---|:---:|---|
-| **D-1** | Static Asset Directory Structure | 🔴 Pending | **Option A** — Flat modular directory (`index.html`, `style.css`, `app.js`) in `src/api/static/` |
-| **D-2** | Charting & Data Visualization Engine | 🔴 Pending | **Option A** — Bespoke HTML5 Canvas 2D engine (100% offline, zero dependencies) |
-| **D-3** | FastAPI Static Mount & Route Delivery | 🔴 Pending | **Option A** — Dedicated `/static` mount + explicit `GET /` and `GET /ui` route handlers |
-| **D-4** | Stream Consumption & Playback Controls | 🔴 Pending | **Option A** — Dynamic `EventSource` (SSE) with query parameter speed and connection controls |
+| **D-1** | Static Asset Directory Structure | ✅ Approved | **Option A** — Flat modular directory (`index.html`, `style.css`, `app.js`) in `src/api/static/` |
+| **D-2** | Charting & Data Visualization Engine | ✅ Approved | **Option A** — Bespoke HTML5 Canvas 2D engine (100% offline, zero dependencies) |
+| **D-3** | FastAPI Static Mount & Route Delivery | ✅ Approved | **Option A** — Dedicated `/static` mount + explicit `GET /` and `GET /ui` route handlers |
+| **D-4** | Stream Consumption & Playback Controls | ✅ Approved | **Option A** — Dynamic `EventSource` (SSE) with query parameter speed and connection controls |
 | **D-5** | Design System & Dark-Mode Aesthetics | 🟢 Recorded | Dark-mode glassmorphism theme (`#0B0F19`, glass cards, glowing node accents) |
 | **D-6** | Offline Font & Vector Icon Strategy | 🟢 Recorded | 100% inline SVGs and system font stack (zero external CDN requests) |
-| **D-7** | Component Decomposition Blueprint | 🔴 Pending | 6 core sub-components: Scoreboard, Canvas Oscillogram, Topology, Game Theory, Coach Feed, Controls |
-| **D-8** | Automated Testing Strategy | 🔴 Pending | **Option A** — FastAPI/HTTPX integration & DOM verification in `test_static_ui.py` |
+| **D-7** | Component Decomposition Blueprint | ✅ Approved | Sub-Component Blueprint (Scoreboard, Canvas Oscillogram, Topology, Game Theory, Coach Feed, Controls) |
+| **D-8** | Automated Testing Strategy | ✅ Approved | **Option A** — FastAPI/HTTPX integration & DOM verification in `test_static_ui.py` |
 
 ---
 
-**Before any implementation begins:** Explicit approval from Sebastian is required on decisions **D-1, D-2, D-3, D-4, D-7, and D-8**.
+**Approval Status:** All 8 decisions are fully reconciled and approved by Sebastian (2026-08-23). Phase 6.5 implementation may proceed.
