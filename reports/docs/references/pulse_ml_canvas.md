@@ -1,6 +1,6 @@
 # Machine Learning Canvas — PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.2.0 | **Date:** 2026-08-03 | **Status:** Phase 2 — Complete (Data Layer & Deterministic Core)
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.6.5 | **Date:** 2026-08-22 | **Status:** Phase 6.5 — Interactive Presentation Layer (Tactical Cockpit)
 
 ---
 
@@ -35,6 +35,7 @@ The closed-form Markov solver was validated against the standard game/set win-pr
 - **Coach / Performance Analyst:** a continuously running, mathematically justified signal for _when_ a point matters and _why_, plus a concrete serve/return adjustment grounded in this specific opponent's tendencies, not generic advice.
 - **Broadcast / Content Producer:** automatic, defensible identification of true turning points for commentary and highlight curation, replacing manual post-hoc review.
 - **Player Development Analyst:** a data-backed way to separate genuine technical/tactical weakness from ordinary point-to-point variance, focusing training time correctly.
+- **Portfolio & Technical Evaluators:** an interactive, real-time tactical cockpit served directly in the browser to visually observe the live streaming engine, Wilson leverage confidence bounds, conditional LangGraph node states, and game-theoretic payoff matrices.
 
 **Anti-patterns eliminated:**
 
@@ -76,6 +77,7 @@ The closed-form Markov solver was validated against the standard game/set win-pr
 6. **API:** FastAPI + SSE/WebSocket streaming, leverage values and escalation events pushed per point, not polled.
 7. **Observability:** MLflow lineage for model training; OpenTelemetry spans per node; `structlog` JSON logs for every escalation decision (including _why_ a node did or didn't fire).
 8. **CI/CD:** GitHub Actions; the Markov-solver-vs-closed-form equality test is a hard, non-negotiable gate, a build breaks if the simulation diverges from probability theory.
+9. **Interactive Presentation Layer (Tactical Cockpit):** Zero-dependency static Single-Page Application (`src/api/static/index.html`, `app.js`, `style.css`) mounted natively inside FastAPI and served at `/` and `/ui`. Connects directly to `/v1/matches/{id}/stream` (SSE) to render live leverage curves with Wilson confidence bounds, dynamic LangGraph conditional state badges, game-theoretic payoff matrices, and LLM tactical notes in real time without introducing Node.js/npm dependencies.
 
 **Out of scope (v1):** live official data-feed integration (cost-prohibitive at portfolio stage, see Project Charter §6), doubles matches, video/vision-based state extraction, betting-market integration, autonomous coaching actions (advisory only).
 

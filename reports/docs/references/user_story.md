@@ -1,6 +1,6 @@
 # User Story & Problem Framing — PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.1.0 | **Date:** 2026-07-20
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.6.5 | **Date:** 2026-08-22
 
 ---
 
@@ -23,6 +23,12 @@
 **Story 3.1:** As an analyst reviewing a player's season, I want to know whether their high-leverage point performance is systematically below their own baseline or just ordinary variance, so that I direct training time at a real issue instead of a statistical artifact.
 
 **Story 3.2:** As an analyst with limited data on an emerging player, I want the system to tell me plainly when it doesn't have enough data to draw a conclusion, so that I don't act on a false-confidence signal.
+
+### Persona 4: Technical Evaluator & Portfolio Manager
+
+**Story 4.1:** As a technical evaluator or hiring manager reviewing the repository, I want an interactive real-time browser cockpit streaming match points, so that I can immediately inspect the live leverage curve, Wilson confidence bounds, LangGraph node execution states, and game-theoretic payoff matrices in action without setting up custom curl or SSE clients.
+
+**Story 4.2:** As a portfolio manager or product evaluator, I want an intuitive visual dashboard with match playback controls, live scoreboard, and tactical coach cards, so that I can evaluate the product's UX, market viability, and domain translation in under 60 seconds.
 
 ---
 

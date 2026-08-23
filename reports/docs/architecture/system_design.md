@@ -1,12 +1,15 @@
 # System Design & Architectural Decision Record, PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.6.0 | **Date:** 2026-08-19
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.6.5 | **Date:** 2026-08-22
 
 This document is a living record of the system's actual implemented state and the decisions that shaped it. During Phase 0, it reflects _planned_ state, the decisions made before any code exists. From Phase 1 onward, each phase's completion should update this document to reflect what was actually built, and any deviation from a prior ADR must be logged as an amendment, not silently changed.
 
 ---
 
 ## Current Implementation Status
+
+**Phase 6.5 — Interactive Presentation Layer Approved (2026-08-22).**  
+An embedded, zero-dependency real-time tactical cockpit (`src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`) is approved (ADR-013) to serve natively via FastAPI at `/` and `/ui`, providing interactive SSE visualization for evaluators without adding Node/npm build dependencies.
 
 **Phase 6 — API & Streaming Interface Complete (2026-08-19).**  
 The Streaming API (`src/api/main.py`, `src/api/streaming.py`), shared async replay event generator (`src/simulator/replay.py`), SQLite audit persistence layer (`src/utils/persistence.py`), strongly validated wire contracts (`src/api/schemas.py`), unit test suite (`tests/unit/test_api_main.py`, `tests/unit/test_api_schemas.py`, `tests/unit/test_streaming.py`, `tests/unit/test_replay_generator.py`, `tests/unit/test_persistence.py`), and end-to-end integration tests (`tests/integration/test_api_streaming.py`) are fully implemented, verified, and passing all quality gates (133/133 tests passing, 90% total codebase coverage, 0 pyright/ruff errors, <1,000-line file ceiling).
@@ -349,8 +352,28 @@ Phase 6 connects the in-process LangGraph orchestration engine to external consu
 9. **CORS Specification Compliance (D-7):**
    - FastAPI `CORSMiddleware` configured with `allow_origins=["*"]` and `allow_credentials=False`, strictly satisfying WHATWG/W3C specifications for public, unauthenticated streaming interfaces.
 
+### ADR-013: Embedded Lightweight Real-Time Tactical Cockpit (Phase 6.5 — 2026-08-22)
+
+**Status:** Accepted & Approved (Option A — 2026-08-22)
+
+**Context:**
+While PULSE is fundamentally an MLOps/agentic streaming backend, stakeholders (recruitment managers, technical evaluators, and portfolio managers) require an interactive presentation layer to observe live SSE streams, Wilson confidence intervals, LangGraph node execution transitions, and game-theoretic payoff matrices in real time. We evaluated 4 architectural approaches (Embedded Vanilla SPA, Standalone React/Vite Microservice, Streamlit/Gradio Python UI, Headless Status Quo).
+
+**Decisions:**
+1. **Embedded Single-Page Application (Option A):**
+   - Implement an embedded, zero-dependency real-time tactical cockpit in `src/api/static/` (`index.html`, `app.js`, `style.css`).
+   - Built with Vanilla HTML5, modern CSS (dark-mode, glassmorphism design system), ES6 modules, and Chart.js/Canvas for leverage oscillation and confidence band rendering.
+2. **Direct SSE Stream Ingestion:**
+   - The browser application connects natively to `GET /v1/matches/{match_id}/stream` using browser-native `EventSource`.
+   - Renders live point progression, leverage oscillations with shaded Wilson confidence bands $[L_{\text{low}}, L_{\text{high}}]$, LangGraph conditional execution badges (`StateMonitorNode` $\to$ `PressureDiagnosticNode` $\to$ `StrategyExploitNode` $\to$ `TacticalOutputNode`), game-theoretic minimax $2\times 2$ payoff matrices, and LLM narrative coach cards.
+3. **Native FastAPI Static Mount:**
+   - Mounted in `src/api/main.py` via FastAPI `StaticFiles` at `/` and `/ui` using `StaticFiles(directory=static_dir, html=True)`.
+   - Exposes match selection and speed controls (`0.5x`, `1x`, `2x`, `instant`), enabling immediate zero-configuration visual demonstrations upon running `uv run api.main` or `docker compose up --build`.
+
 **Consequences:**
-Enables real-time and simulated historical match streaming over HTTP SSE and WebSockets with bit-exact parity, zero-latency graph execution, robust audit logging, and 100% fail-loud exception guarantees. Validated across 135 passing tests with 91% total codebase coverage.
+- **Zero Toolchain Overhead:** Introduces 0 Node.js, `npm`, or JavaScript build steps into the repository, CI pipeline, or Dockerfile.
+- **Single-Stage Container Cleanliness:** Preserves the lean, single-stage Python Docker image without requiring multi-stage Node compilation or multi-container frontend/backend orchestration.
+- **Sub-Millisecond Asset Delivery:** Total static asset footprint < 100 KB, delivered instantly from memory/disk with zero CORS or proxy complexity.
 
 ---
 
@@ -380,6 +403,7 @@ Enables real-time and simulated historical match streaming over HTTP SSE and Web
 | FastAPI Application & Lifespan   | `src/api/main.py`                   | Phase 6                                                                      |
 | SSE & WebSocket Streaming Routes | `src/api/streaming.py`              | Phase 6                                                                      |
 | Replay Simulator & Event Engine  | `src/simulator/replay.py`           | Phase 6                                                                      |
+| Interactive Tactical Cockpit     | `src/api/static/`                   | Phase 6.5 (ADR-013)                                                          |
 
 ---
 
@@ -390,4 +414,5 @@ At the end of each phase in `technical_roadmap.md`:
 1. Update "Current Implementation Status" to reflect what was actually built.
 2. Mark each relevant ADR's status as **Validated** (implementation matched the decision) or **Amended** (implementation diverged, the amendment must be logged as a new dated entry under the original ADR, not a silent edit).
 3. Add new ADRs for any architecturally significant decision made during implementation that wasn't anticipated in Phase 0.
+
 

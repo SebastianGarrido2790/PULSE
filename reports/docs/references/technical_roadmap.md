@@ -1,6 +1,6 @@
 # Technical Roadmap — PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.1.0 | **Date:** 2026-07-20
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.6.5 | **Date:** 2026-08-22
 
 This roadmap sequences implementation so that the deterministic ground truth (Phase 1) exists and is verified before any ML or agentic layer is built on top of it, consistent with the principle that PULSE's mathematical core, not its models, is the system's source of truth.
 
@@ -150,24 +150,45 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
+## Phase 6.5 — Interactive Presentation Layer (Tactical Cockpit) 🟡 In Progress / Approved
+
+**Goal:** Build and integrate an embedded, zero-dependency real-time web dashboard (`src/api/static/`) directly within FastAPI to visually showcase the streaming leverage engine, Wilson confidence intervals, conditional LangGraph node executions, and game-theoretic payoff matrices for technical evaluators, recruitment managers, and coaches (ADR-013).
+
+**Key Tasks:**
+
+- Develop single-page tactical cockpit (`src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`) using Vanilla HTML5/ES6/CSS with dark-mode glassmorphism styling and Chart.js/Canvas timeline plotting.
+- Connect UI to native `GET /v1/matches/{match_id}/stream` (SSE) with dynamic DOM updates, real-time match controls (play, pause, speed multiplier), and match selector dropdown.
+- Mount static assets in `src/api/main.py` via FastAPI `StaticFiles` at `/` and `/ui`.
+- Implement automated integration and smoke tests verifying static asset delivery, MIME types, and SSE browser client compatibility.
+
+**Deliverables:** `src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`, static file mount in `src/api/main.py`, unit/integration tests in `tests/integration/test_static_ui.py`.
+
+**Exit Criteria:** Navigating to `http://localhost:8000/` loads the tactical cockpit in <100ms with 0 npm/Node dependencies; match replay streams and animates live leverage curves and LangGraph node states in real time.
+
+**Dependencies:** Phase 6 complete.
+
+**Est. Duration:** 1 day
+
+---
+
 ## Phase 7 — Observability, CI/CD, Shadow-Mode Acceptance
 
-**Goal:** Production-harden the system and run the full shadow-mode acceptance evaluation.
+**Goal:** Production-harden the system, bake the unified API and UI into a production container, and run the full shadow-mode acceptance evaluation.
 
 **Key Tasks:**
 
 - OpenTelemetry spans across solver, models, and graph nodes
 - `structlog` JSON logging finalized across all components
 - GitHub Actions: coverage gate (≥70%), solver-correctness gate, Trivy scan
-- Multi-stage Docker build, non-root, digest-pinned base
-- Run the retrospective escalation-precision evaluation (`ml_canvas.md` §8) across the full historical match set
-- Shadow-mode acceptance run: replay a held-out set of matches end-to-end and confirm all Definition of Done criteria (`project_charter.md` §5)
+- Multi-stage Docker build, non-root, digest-pinned base, packaging `src/api/static/` and `docker-compose.yml`
+- Run the retrospective escalation-precision evaluation (`pulse_ml_canvas.md` §8) across the full historical match set
+- Shadow-mode acceptance run: replay a held-out set of matches end-to-end through the deployed container and confirm all Definition of Done criteria (`pulse_project_charter.md` §5)
 
-**Deliverables:** `.github/workflows/ci.yml`, `Dockerfile`, final evaluation report
+**Deliverables:** `.github/workflows/ci.yml`, `Dockerfile`, `docker-compose.yml`, final evaluation report
 
-**Exit Criteria:** All items in `project_charter.md` §5 Definition of Done are checked off.
+**Exit Criteria:** All items in `pulse_project_charter.md` §5 Definition of Done are checked off.
 
-**Dependencies:** Phases 1–5 complete.
+**Dependencies:** Phases 1–6.5 complete.
 
 **Est. Duration:** 1–2 days
 
@@ -175,8 +196,6 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ## Sequential Action Plan (Immediate Next Steps)
 
-1. Scaffold the repository structure and `pyproject.toml` with `uv`
-2. Define `PointRecord` schema and `pandera` gates
-3. Implement the closed-form Markov solver and its golden-value test suite, **this must be green before any other work begins**, since every downstream component depends on it as ground truth
-4. Source and stage historical point-by-point match data; set up the DVC pipeline for ingestion
-5. Proceed to Phase 2 only once Phase 1's exit criteria are met
+1. Implement Phase 6.5 embedded UI cockpit (`src/api/static/`) and mount in FastAPI `src/api/main.py`
+2. Validate UI responsiveness, SSE stream event consumption, and browser compatibility
+3. Proceed to Phase 7 CI/CD, Dockerization, and Shadow-Mode Acceptance with full visual dashboard verification

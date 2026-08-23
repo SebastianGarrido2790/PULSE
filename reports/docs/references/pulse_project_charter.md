@@ -1,6 +1,6 @@
 # Project Charter — PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.1.0 | **Date:** 2026-07-20 | **Status:** Phase 0 — Draft
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.6.5 | **Date:** 2026-08-22 | **Status:** Phase 6.5 — Interactive Presentation Layer (Tactical Cockpit)
 
 ---
 
@@ -8,7 +8,7 @@
 
 A production-grade, event-driven tactical intelligence system that ingests a tennis match point-by-point, computes exact leverage through a closed-form Markov chain solver validated bit-for-bit against combinatorial probability theory, and only when leverage and data-sufficiency thresholds are crossed triggers a game-theoretic exploit calculation identifying where a specific opponent's return tendencies deviate from Nash equilibrium.
 
-The system is finished when a complete historical match can be replayed point-by-point through the live pipeline, producing leverage alerts, pressure diagnostics, and tactical exploit recommendations that are each independently traceable to a persisted, versioned artifact, and when the Markov solver, the escalation logic, and the full replay are all bit-for-bit reproducible under a fixed seed from a clean checkout.
+The system is finished when a complete historical match can be replayed point-by-point through the live pipeline (accessible via both SSE/WebSocket streaming APIs and an embedded real-time browser cockpit), producing leverage alerts, pressure diagnostics, and tactical exploit recommendations that are each independently traceable to a persisted, versioned artifact, and when the Markov solver, the escalation logic, and the full replay are all bit-for-bit reproducible under a fixed seed from a clean checkout.
 
 ---
 
@@ -18,16 +18,18 @@ The system is finished when a complete historical match can be replayed point-by
 
 | Persona                          | Role                             | How they interact                                                                                   |
 | -------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **Coach / Performance Analyst**  | In-match tactical decision-maker | Watches the live leverage stream; receives triggered pressure and exploit alerts during changeovers |
-| **Broadcast / Content Producer** | Editorial decision-maker         | Uses leverage spikes to auto-flag turning points for commentary and highlight packages              |
+| **Coach / Performance Analyst**  | In-match tactical decision-maker | Watches the live leverage stream or tactical cockpit; receives triggered pressure and exploit alerts |
+| **Broadcast / Content Producer** | Editorial decision-maker         | Uses leverage spikes and visual cockpit to auto-flag turning points for commentary and highlight packages |
 
-### Secondary Users
+### Secondary Users & Evaluators
 
 | Persona                        | Role                          | How they interact                                                                          |
 | ------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------ |
+| **Portfolio & Hiring Managers** | Technical/Product Evaluator   | Interacts with the real-time visual cockpit to assess product completeness, latency, and UX |
+| **Technical Evaluator / MLOps** | Systems/Architecture Assessor | Audits SSE streaming performance, Wilson confidence bounds, OTel spans, and graph topology |
 | **Player Development Analyst** | Training-focus decision-maker | Reviews post-match pressure-deviation reports to separate genuine weaknesses from variance |
 | **Sports Data Engineer**       | Pipeline owner                | Maintains ingestion, DVC pipeline, and the historical-match replay simulator               |
-| **MLOps Engineer**             | Production owner              | Maintains CI/CD, observability, and the Markov-solver correctness gate                     |
+| **MLOps Engineer**             | Production owner              | Maintains CI/CD, observability, container builds, and the Markov-solver correctness gate   |
 
 ---
 
@@ -79,6 +81,7 @@ The system is **done** when all of the following are simultaneously true:
 - [ ] Retrospective escalation-precision evaluation (§ML Canvas, Evaluation) meets or exceeds 0.75 on held-out historical matches
 - [ ] A full historical match replayed point-by-point produces bit-identical leverage and escalation sequences across two runs with the same seed
 - [ ] The exploit module correctly suppresses its output and falls back to a leverage-only alert when opponent sample size is below the configured threshold, verified by an integration test, not just documented behavior
+- [ ] The embedded real-time web dashboard (`src/api/static/`) serves at `/` and `/ui`, connects to live SSE streams, and visualizes leverage curves, node firing states, and exploit matrices without external build tools
 - [ ] GitHub Actions CI is green on `main` with the solver-correctness gate, coverage gate, and Trivy scan (zero CRITICAL CVEs) all passing
 - [ ] A new escalation threshold can be changed in `params.yaml` and take effect via `dvc repro` without modifying Python code
 

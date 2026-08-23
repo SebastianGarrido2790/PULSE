@@ -1,6 +1,6 @@
 # Product Requirements Document — PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.1.0 | **Date:** 2026-07-20 | **Status:** Phase 0 — Draft
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.6.5 | **Date:** 2026-08-22 | **Status:** Phase 6.5 — Interactive Presentation Layer (Tactical Cockpit)
 
 ---
 
@@ -51,6 +51,8 @@ Full stories and journey maps are in `user_story.md`. Summary:
 | **Coach / Performance Analyst**  | A trustworthy, real-time signal for when a point matters and what to do about it |
 | **Broadcast / Content Producer** | Automatic, defensible identification of true turning points                      |
 | **Player Development Analyst**   | Separating genuine weakness from ordinary variance in post-match review          |
+| **Portfolio & Hiring Managers**  | Interactive visual evaluation of streaming performance, UX, and product viability |
+| **Technical Evaluators & MLOps** | Validating architectural separation, SSE streaming, OTel spans, and graph states |
 
 ---
 
@@ -70,6 +72,7 @@ Full stories and journey maps are in `user_story.md`. Summary:
 | FR-10 | Every escalation decision (fire or suppress) is logged with its triggering condition                                                      | High     | O7                       |
 | FR-11 | Historical matches can be replayed point-by-point at real-time cadence to simulate a live feed                                            | High     | Feasibility (Charter §6) |
 | FR-12 | Every numeric output is traceable to a persisted, versioned artifact                                                                      | Critical | End State (Charter §1)   |
+| FR-13 | System provides an embedded, zero-dependency real-time web cockpit (`src/api/static/`) served at `/` and `/ui` streaming live events       | High     | End State & ADR-013      |
 
 ---
 
@@ -84,6 +87,7 @@ Full stories and journey maps are in `user_story.md`. Summary:
 | **Configurability** | Every threshold changeable via `params.yaml` without a code change or redeploy                                               |
 | **Test Coverage**   | ≥70% line coverage, CI-enforced                                                                                              |
 | **Security**        | No CRITICAL CVEs (Trivy-scanned); no secrets in code                                                                         |
+| **Frontend Assets** | Embedded SPA total footprint < 100KB, sub-millisecond static delivery, zero Node.js/npm dependencies, native SSE consumption |
 
 ---
 
