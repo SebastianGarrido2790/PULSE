@@ -55,7 +55,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 ---
 
-## Stage 2 — Design System Tokens & Dark-Mode Glassmorphism Styling (`src/api/static/style.css`)
+## Stage 2 — Design System Tokens & Dark-Mode Glassmorphism Styling (`src/api/static/style.css`) ✅
 
 9. Create `src/api/static/style.css` defining CSS Custom Properties and design tokens: **[D-1, D-5]**
    - Palette tokens: `--bg-base: #0B0F19`, `--bg-surface: rgba(17, 24, 39, 0.75)`, `--border-glass: rgba(255, 255, 255, 0.08)`, `--accent-emerald: #10B981`, `--accent-cyan: #06B6D4`, `--accent-violet: #8B5CF6`, `--accent-amber: #F59E0B`, `--accent-crimson: #EF4444`, `--text-main: #F9FAFB`, `--text-muted: #9CA3AF`.
@@ -65,7 +65,8 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 12. Define dynamic node execution animations and status pill classes (`.status-active`, `.status-fired`, `.status-suppressed`, `.status-insufficient-data`) with glowing border transitions. **[D-5, D-7]**
 13. Style the 2x2 Payoff Matrix grid and probability distribution progress bars with high-contrast tactical accents. **[D-5, D-7]**
 
-**Gate 2:** `src/api/static/style.css` created; glassmorphism styles and grid layouts complete; 0 external `@import` rules; clean token hierarchy.
+**Gate 2:** `src/api/static/style.css` created; glassmorphism styles and grid layouts complete; 0 external `@import` rules; clean token hierarchy. ✅ **PASSED (2026-08-23)**
+
 
 ---
 
@@ -158,8 +159,9 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 |:---:|---|---|:---:|
 | **Stage 0** | Pre-Flight Audit | Workspace clean, baseline tests (146/146) green | 🟢 **Closed & Passed** |
 | **Stage 1** | HTML5 Skeleton | `src/api/static/index.html` with all 6 sub-component IDs, 0 external scripts | 🟢 **Closed & Passed** |
-| **Stage 2** | CSS Design System | `src/api/static/style.css` dark-mode glassmorphism styling complete | 🟡 Pending |
+| **Stage 2** | CSS Design System | `src/api/static/style.css` dark-mode glassmorphism styling complete | 🟢 **Closed & Passed** |
 | **Stage 3** | Canvas 2D Engine | Bespoke leverage & Wilson CI rendering engine implemented in `app.js` | 🟡 Pending |
+
 | **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟡 Pending |
 | **Stage 5** | FastAPI Route Mount | `app.mount("/static", ...)` and explicit `GET /`, `GET /ui` handlers in `main.py` | 🟡 Pending |
 | **Stage 6** | Integration Tests | `test_static_ui.py` passes all asset, MIME, and DOM contract assertions | 🟡 Pending |

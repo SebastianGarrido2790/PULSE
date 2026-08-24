@@ -1,0 +1,984 @@
+/* ==========================================================================
+   PULSE — Point-Level Understanding & Strategic Leverage Engine
+   Tactical Cockpit Design System — Dark Glassmorphism Theme
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. DESIGN SYSTEM TOKENS & CSS VARIABLES
+   -------------------------------------------------------------------------- */
+:root {
+  /* Color Palette — Slate Deep Dark */
+  --bg-base: #0B0F19;
+  --bg-surface: rgba(17, 24, 39, 0.78);
+  --bg-surface-elevated: rgba(31, 41, 55, 0.72);
+  --bg-surface-subtle: rgba(255, 255, 255, 0.03);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-highlight: rgba(255, 255, 255, 0.16);
+
+  /* Functional Tactical Accents */
+  --accent-emerald: #10B981;
+  --accent-emerald-glow: rgba(16, 185, 129, 0.25);
+  --accent-cyan: #06B6D4;
+  --accent-cyan-glow: rgba(6, 182, 212, 0.25);
+  --accent-violet: #8B5CF6;
+  --accent-violet-glow: rgba(139, 92, 246, 0.25);
+  --accent-amber: #F59E0B;
+  --accent-amber-glow: rgba(245, 158, 11, 0.25);
+  --accent-crimson: #EF4444;
+  --accent-crimson-glow: rgba(239, 68, 68, 0.25);
+
+  /* Typography Colors */
+  --text-main: #F9FAFB;
+  --text-muted: #9CA3AF;
+  --text-dim: #6B7280;
+
+  /* Typography Font Families */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Spacing & Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  /* Shadows & Glass Filter */
+  --glass-blur: blur(14px);
+  --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-glow-emerald: 0 0 15px rgba(16, 185, 129, 0.3);
+  --shadow-glow-amber: 0 0 15px rgba(245, 158, 11, 0.35);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
+/* --------------------------------------------------------------------------
+   1. RESET & BASE STYLES
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Background Atmospheric Gradient Mesh */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: 
+    radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(6, 182, 212, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cockpit-container {
+  position: relative;
+  z-index: 1;
+  max-width: 1540px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100vh;
+}
+
+/* Tabular numbers for clean numeric alignment */
+.tabular-nums, .score-box, .stat-pill strong, .delta-leverage-display strong, .data-cell {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* SVG Icon Base */
+.icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. TOP NAVIGATION & HEADER
+   -------------------------------------------------------------------------- */
+.cockpit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-surface);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-subtle);
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2));
+  border: 1px solid var(--accent-emerald);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-emerald);
+  box-shadow: var(--shadow-glow-emerald);
+}
+
+.brand-logo .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.brand-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #FFFFFF, var(--accent-emerald));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.header-status-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.badge-surface {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-glass);
+  color: var(--text-main);
+}
+
+.badge-live {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: var(--accent-emerald);
+}
+
+.badge-live.streaming {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: var(--accent-emerald);
+  box-shadow: var(--shadow-glow-emerald);
+}
+
+.badge-live.paused {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: var(--accent-amber);
+}
+
+.badge-live.error {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--accent-crimson);
+  color: var(--accent-crimson);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.badge-otel {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-glass);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+}
+
+/* --------------------------------------------------------------------------
+   3. DASHBOARD GRID LAYOUT
+   -------------------------------------------------------------------------- */
+.cockpit-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-areas:
+    "scoreboard  oscillogram"
+    "topology    gametheory"
+    "tactical    gametheory";
+  gap: 16px;
+  flex: 1;
+}
+
+/* Glassmorphism Panel Base */
+.panel {
+  background: var(--bg-surface);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color var(--transition-normal);
+}
+
+.panel:hover {
+  border-color: var(--border-glass-highlight);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-glass);
+  padding-bottom: 10px;
+}
+
+.panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+}
+
+.panel-title-wrap .icon {
+  color: var(--accent-cyan);
+}
+
+.panel-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Grid Area Assignments */
+.panel-scoreboard  { grid-area: scoreboard; }
+.panel-oscillogram { grid-area: oscillogram; }
+.panel-topology    { grid-area: topology; }
+.panel-gametheory  { grid-area: gametheory; }
+.panel-tactical    { grid-area: tactical; }
+
+/* --------------------------------------------------------------------------
+   4. SUB-COMPONENT 1: SCOREBOARD
+   -------------------------------------------------------------------------- */
+.match-meta-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta-icon {
+  color: var(--accent-amber);
+}
+
+.match-heading {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.badge-leverage {
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  transition: all var(--transition-normal);
+}
+
+.badge-leverage.elevated {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+  box-shadow: var(--shadow-glow-amber);
+}
+
+.badge-leverage.critical {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: var(--accent-crimson);
+  color: var(--accent-crimson);
+  animation: pulse-border 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+}
+
+.scoreboard-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scoreboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.server-ball {
+  color: #FACC15;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity var(--transition-fast);
+}
+
+.server-ball.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.player-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.score-boxes {
+  display: flex;
+  gap: 6px;
+}
+
+.score-box {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.score-box.set-box {
+  color: var(--accent-cyan);
+}
+
+.score-box.game-box {
+  color: var(--text-main);
+}
+
+.score-box.point-box {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--accent-emerald);
+  font-size: 1.15rem;
+}
+
+.scoreboard-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 6px;
+}
+
+.stat-pill {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.stat-pill strong {
+  color: var(--text-main);
+}
+
+/* --------------------------------------------------------------------------
+   5. SUB-COMPONENT 2: LEVERAGE OSCILLOGRAM
+   -------------------------------------------------------------------------- */
+.oscillogram-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.84rem;
+}
+
+.delta-leverage-display strong {
+  color: var(--accent-emerald);
+  font-size: 0.95rem;
+}
+
+.wilson-display {
+  color: var(--text-muted);
+}
+
+.canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+#leverage-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.canvas-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--accent-emerald);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 0.76rem;
+  color: var(--text-main);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -120%);
+  white-space: nowrap;
+  z-index: 10;
+  transition: opacity var(--transition-fast);
+}
+
+.canvas-tooltip.hidden {
+  display: none;
+}
+
+.legend-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.swatch-leverage { background: var(--accent-emerald); }
+.swatch-wilson { background: rgba(16, 185, 129, 0.25); border: 1px solid rgba(16, 185, 129, 0.5); }
+.swatch-threshold { background: var(--accent-amber); border-top: 2px dashed var(--accent-amber); height: 2px; }
+.swatch-fired { background: var(--accent-crimson); border-radius: 50%; width: 8px; height: 8px; }
+
+/* --------------------------------------------------------------------------
+   6. SUB-COMPONENT 3: TOPOLOGY INSPECTOR
+   -------------------------------------------------------------------------- */
+.topology-type-pill {
+  font-size: 0.74rem;
+  padding: 2px 8px;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: var(--accent-violet);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+}
+
+.topology-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.topology-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all var(--transition-normal);
+}
+
+.topology-card.node-active {
+  border-color: var(--accent-emerald);
+  box-shadow: var(--shadow-glow-emerald);
+}
+
+.topology-card.node-fired {
+  border-color: var(--accent-amber);
+  box-shadow: var(--shadow-glow-amber);
+}
+
+.node-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.node-icon {
+  color: var(--text-muted);
+}
+
+.node-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  flex: 1;
+  margin-left: 6px;
+}
+
+.node-status-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.04em;
+}
+
+.status-idle { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
+.status-active { background: rgba(16, 185, 129, 0.18); color: var(--accent-emerald); border: 1px solid var(--accent-emerald); }
+.status-fired { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+.status-suppressed { background: rgba(107, 114, 128, 0.15); color: var(--text-dim); border: 1px dashed rgba(107, 114, 128, 0.4); }
+.status-insufficient { background: rgba(239, 68, 68, 0.15); color: var(--accent-crimson); }
+
+.node-desc {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.node-metrics {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 4px;
+}
+
+.node-metrics strong {
+  color: var(--text-main);
+  font-family: var(--font-mono);
+}
+
+.type-deterministic {
+  color: var(--accent-cyan) !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. SUB-COMPONENT 4: GAME-THEORETIC EXPLOIT
+   -------------------------------------------------------------------------- */
+.exploit-callout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid var(--accent-cyan);
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+}
+
+.exploit-callout.hidden {
+  display: none;
+}
+
+.exploit-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
+  letter-spacing: 0.03em;
+}
+
+.exploit-text {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+}
+
+.matrix-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.payoff-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.grid-cell {
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.header-cell {
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.72rem;
+}
+
+.row-header {
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: left;
+  justify-content: flex-start;
+  padding-left: 8px;
+}
+
+.data-cell {
+  background: var(--bg-surface-elevated);
+  font-weight: 700;
+  color: var(--text-main);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.data-cell.highlight-best {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--accent-cyan);
+  color: #FFFFFF;
+}
+
+.strategy-distribution-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dist-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dist-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.dist-header span:last-child {
+  font-family: var(--font-mono);
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+.bar-nash {
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-emerald));
+}
+
+.bar-bias {
+  background: linear-gradient(90deg, var(--accent-amber), var(--accent-crimson));
+}
+
+/* --------------------------------------------------------------------------
+   8. SUB-COMPONENT 5: TACTICAL ADVISORY FEED
+   -------------------------------------------------------------------------- */
+.advisory-pill {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  color: var(--accent-violet);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+}
+
+.advisory-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.advisory-headline {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.35;
+}
+
+.advisory-narrative {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.recs-heading {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-emerald);
+  margin-bottom: 4px;
+}
+
+.recs-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recs-list li {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  position: relative;
+  padding-left: 14px;
+  line-height: 1.35;
+}
+
+.recs-list li::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: var(--accent-emerald);
+  font-weight: 900;
+  font-size: 1rem;
+  line-height: 0.9;
+}
+
+.advisory-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 8px;
+  line-height: 1.35;
+}
+
+.advisory-disclaimer .icon {
+  margin-top: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   9. SUB-COMPONENT 6: STREAM CONTROLS FOOTER
+   -------------------------------------------------------------------------- */
+.cockpit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-surface);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-subtle);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.controls-left, .controls-center, .controls-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-select {
+  background: var(--bg-surface-elevated);
+  color: var(--text-main);
+  border: 1px solid var(--border-glass-highlight);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.84rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  max-width: 320px;
+  transition: border-color var(--transition-fast);
+}
+
+.control-select:focus {
+  border-color: var(--accent-emerald);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent-emerald);
+  color: #064E3B;
+  box-shadow: var(--shadow-glow-emerald);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: #059669;
+  color: #FFFFFF;
+}
+
+.btn-secondary {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-glass);
+  color: var(--text-main);
+}
+
+.btn-secondary:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-glass-highlight);
+}
+
+.speed-selector {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.speed-option {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.speed-option input {
+  display: none;
+}
+
+.speed-option span {
+  padding: 3px 8px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.speed-option input:checked + span {
+  background: var(--accent-emerald);
+  color: #064E3B;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   10. RESPONSIVE BREAKPOINTS
+   -------------------------------------------------------------------------- */
+@media (max-width: 1180px) {
+  .cockpit-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "scoreboard"
+      "oscillogram"
+      "topology"
+      "gametheory"
+      "tactical";
+  }
+  .cockpit-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .controls-left, .controls-center, .controls-right {
+    justify-content: center;
+  }
+}
