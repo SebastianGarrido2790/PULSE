@@ -37,7 +37,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 ---
 
-## Stage 1 — HTML5 Semantic Layout & Sub-Component Skeleton (`src/api/static/index.html`)
+## Stage 1 — HTML5 Semantic Layout & Sub-Component Skeleton (`src/api/static/index.html`) ✅
 
 5. Create `src/api/static/` directory. **[D-1]**
 6. Build semantic HTML5 single-page structure in `src/api/static/index.html` containing the 6 core sub-components: **[D-1, D-5, D-7]**
@@ -50,7 +50,8 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 7. Embed 100% inline SVG vector icons for Play, Pause, Reset, Tennis Ball `🎾`, Activity/Graph, Brain/LLM, Server, and Alert icons. **[D-6]**
 8. Link stylesheet `<link rel="stylesheet" href="/static/style.css">` and module script `<script type="module" src="/static/app.js"></script>` with zero external CDN dependencies. **[D-1, D-6]**
 
-**Gate 1:** `src/api/static/index.html` created; all structural element IDs from the approved blueprint present; 0 external `<link>` or `<script>` tags.
+**Gate 1:** `src/api/static/index.html` created; all structural element IDs from the approved blueprint present; 0 external `<link>` or `<script>` tags. ✅ **PASSED (2026-08-23)**
+
 
 ---
 
@@ -156,8 +157,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 | Stage | Focus Area | Closing Gate Condition | Status |
 |:---:|---|---|:---:|
 | **Stage 0** | Pre-Flight Audit | Workspace clean, baseline tests (146/146) green | 🟢 **Closed & Passed** |
-| **Stage 1** | HTML5 Skeleton | `src/api/static/index.html` with all 6 sub-component IDs, 0 external scripts | 🟡 Pending |
-
+| **Stage 1** | HTML5 Skeleton | `src/api/static/index.html` with all 6 sub-component IDs, 0 external scripts | 🟢 **Closed & Passed** |
 | **Stage 2** | CSS Design System | `src/api/static/style.css` dark-mode glassmorphism styling complete | 🟡 Pending |
 | **Stage 3** | Canvas 2D Engine | Bespoke leverage & Wilson CI rendering engine implemented in `app.js` | 🟡 Pending |
 | **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟡 Pending |

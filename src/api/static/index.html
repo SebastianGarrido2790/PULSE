@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PULSE — Point-Level Understanding & Strategic Leverage Engine</title>
+  <meta name="description" content="Real-time event-driven tactical intelligence cockpit for tennis leverage analysis, pressure diagnostics, and game-theoretic exploitation.">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="pulse-app">
+  <div class="cockpit-container">
+    
+    <!-- TOP NAVIGATION & BRANDING -->
+    <header class="cockpit-header">
+      <div class="brand-group">
+        <div class="brand-logo" aria-hidden="true">
+          <svg class="icon icon-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <h1 class="brand-name">PULSE</h1>
+          <span class="brand-sub">Point-Level Understanding & Strategic Leverage Engine</span>
+        </div>
+      </div>
+
+      <div class="header-status-group">
+        <div class="badge badge-surface" id="match-surface-badge">Surface: Hard</div>
+        <div class="badge badge-live" id="stream-status-badge">
+          <span class="status-dot"></span>
+          <span id="stream-status-text">Standby</span>
+        </div>
+        <div class="badge badge-otel" id="otel-trace-badge" title="OpenTelemetry Distributed Trace Context">
+          <svg class="icon icon-trace" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M3 12h3m12 0h3M12 3v3m0 12v3"></path>
+          </svg>
+          <span id="trace-id-val">trace: idle</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN DASHBOARD GRID -->
+    <main class="cockpit-grid">
+      
+      <!-- SUB-COMPONENT 1: MATCH HEADER & LIVE SCOREBOARD -->
+      <section class="panel panel-scoreboard" id="scoreboard" aria-label="Match Scoreboard">
+        <div class="panel-header">
+          <div class="match-meta-title">
+            <span class="meta-icon" aria-hidden="true">
+              <svg class="icon icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                <path d="M4 22h16"></path>
+                <path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34"></path>
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path>
+              </svg>
+            </span>
+            <h2 class="match-heading" id="match-title">Loading match data...</h2>
+          </div>
+          <div class="leverage-indicator-wrap">
+            <div class="badge badge-leverage" id="high-leverage-badge">Standard Leverage</div>
+          </div>
+        </div>
+
+        <div class="scoreboard-table">
+          <div class="scoreboard-row player-p1-row" id="row-player-p1">
+            <div class="player-info">
+              <span class="server-ball" id="server-indicator-p1" title="Server">
+                <svg class="icon icon-tennis" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20M12 2a14.5 14.5 0 0 1 0 20"></path>
+                </svg>
+              </span>
+              <span class="player-name" id="name-player-p1">Player 1</span>
+            </div>
+            <div class="score-boxes">
+              <div class="score-box set-box" id="score-sets-p1">0</div>
+              <div class="score-box game-box" id="score-games-p1">0</div>
+              <div class="score-box point-box" id="score-points-p1">0</div>
+            </div>
+          </div>
+
+          <div class="scoreboard-row player-p2-row" id="row-player-p2">
+            <div class="player-info">
+              <span class="server-ball hidden" id="server-indicator-p2" title="Server">
+                <svg class="icon icon-tennis" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20M12 2a14.5 14.5 0 0 1 0 20"></path>
+                </svg>
+              </span>
+              <span class="player-name" id="name-player-p2">Player 2</span>
+            </div>
+            <div class="score-boxes">
+              <div class="score-box set-box" id="score-sets-p2">0</div>
+              <div class="score-box game-box" id="score-games-p2">0</div>
+              <div class="score-box point-box" id="score-points-p2">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scoreboard-footer">
+          <div class="stat-pill"><span class="stat-label">Point:</span> <strong id="current-point-idx">0</strong> / <span id="total-points-count">0</span></div>
+          <div class="stat-pill"><span class="stat-label">Server P1 Win Prob:</span> <strong id="cur-p-win">50.0%</strong></div>
+          <div class="stat-pill"><span class="stat-label">Markov Win (M):</span> <strong id="cur-markov-m">50.0%</strong></div>
+        </div>
+      </section>
+
+      <!-- SUB-COMPONENT 2: LIVE LEVERAGE & MOMENTUM OSCILLOGRAM -->
+      <section class="panel panel-oscillogram" id="oscillogram-container" aria-label="Leverage Oscillogram">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <svg class="icon icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <h3 class="panel-title">Leverage & Momentum Oscillogram</h3>
+          </div>
+          <div class="oscillogram-stats" id="oscillogram-live-stats">
+            <span class="delta-leverage-display">ΔL: <strong id="stat-delta-leverage">0.00%</strong></span>
+            <span class="wilson-display">95% CI: <span id="stat-wilson-ci">[0.00%, 0.00%]</span></span>
+          </div>
+        </div>
+
+        <div class="canvas-wrapper">
+          <canvas id="leverage-canvas" width="800" height="240" aria-label="Leverage timeline plot"></canvas>
+          <div class="canvas-tooltip hidden" id="canvas-tooltip" role="tooltip"></div>
+        </div>
+
+        <div class="legend-container" id="legend-container">
+          <div class="legend-item"><span class="legend-swatch swatch-leverage"></span> <strong>Point Leverage (ΔL)</strong></div>
+          <div class="legend-item"><span class="legend-swatch swatch-wilson"></span> <strong>Wilson 95% Confidence Band</strong></div>
+          <div class="legend-item"><span class="legend-swatch swatch-threshold"></span> <strong>Escalation Threshold (τ = 5.0%)</strong></div>
+          <div class="legend-item"><span class="legend-swatch swatch-fired"></span> <strong>Escalated Point</strong></div>
+        </div>
+      </section>
+
+      <!-- SUB-COMPONENT 3: LANGGRAPH CONDITIONAL TOPOLOGY INSPECTOR -->
+      <section class="panel panel-topology" id="topology-inspector" aria-label="LangGraph Topology Inspector">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <svg class="icon icon-git" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="18" r="3"></circle>
+              <circle cx="6" cy="6" r="3"></circle>
+              <path d="M18 6a9 9 0 0 1-9 9"></path>
+              <polyline points="6 15 6 9 12 9"></polyline>
+            </svg>
+            <h3 class="panel-title">LangGraph Conditional Topology</h3>
+          </div>
+          <span class="topology-type-pill">Event-Driven Graph</span>
+        </div>
+
+        <div class="topology-cards-grid">
+          
+          <!-- Node 1: StateMonitorNode -->
+          <div class="topology-card" id="node-state-monitor">
+            <div class="node-top">
+              <span class="node-icon">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </span>
+              <span class="node-name">StateMonitorNode</span>
+              <span class="node-status-pill status-idle" id="badge-state-monitor">IDLE</span>
+            </div>
+            <div class="node-body">
+              <p class="node-desc">Always-on Markov leverage solver & Wilson uncertainty bounds.</p>
+              <div class="node-metrics">
+                <span>Latency: <strong id="latency-state-monitor">--</strong></span>
+                <span>Type: <strong class="type-deterministic">Deterministic Core</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Node 2: PressureDiagnosticNode -->
+          <div class="topology-card" id="node-pressure-diagnostic">
+            <div class="node-top">
+              <span class="node-icon">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </span>
+              <span class="node-name">PressureDiagnosticNode</span>
+              <span class="node-status-pill status-idle" id="badge-pressure-diagnostic">IDLE</span>
+            </div>
+            <div class="node-body">
+              <p class="node-desc">Triggered when ΔL &gt; τ. Computes empirical-Bayes shrinkage deviation.</p>
+              <div class="node-metrics">
+                <span>Δp: <strong id="metric-delta-p">--</strong></span>
+                <span>Shrinkage: <strong id="metric-shrinkage">--</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Node 3: StrategyExploitNode -->
+          <div class="topology-card" id="node-strategy-exploit">
+            <div class="node-top">
+              <span class="node-icon">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </span>
+              <span class="node-name">StrategyExploitNode</span>
+              <span class="node-status-pill status-idle" id="badge-strategy-exploit">IDLE</span>
+            </div>
+            <div class="node-body">
+              <p class="node-desc">Minimax game-theory solver. Gated by sample sufficiency.</p>
+              <div class="node-metrics">
+                <span>Sufficiency: <strong id="metric-sufficiency-gate">N/A</strong></span>
+                <span>EV Gain: <strong id="metric-ev-gain">--</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Node 4: TacticalOutputNode -->
+          <div class="topology-card" id="node-tactical-output">
+            <div class="node-top">
+              <span class="node-icon">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </span>
+              <span class="node-name">TacticalOutputNode</span>
+              <span class="node-status-pill status-idle" id="badge-tactical-output">IDLE</span>
+            </div>
+            <div class="node-body">
+              <p class="node-desc">Faithful narrative synthesis of fired diagnostic & exploit signals.</p>
+              <div class="node-metrics">
+                <span>Mode: <strong id="metric-tactical-mode">Passthrough</strong></span>
+                <span>Groundedness: <strong id="metric-groundedness">100%</strong></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SUB-COMPONENT 4: GAME-THEORETIC EXPLOIT PANEL -->
+      <section class="panel panel-gametheory" id="game-theory-panel" aria-label="Game-Theoretic Payoff Matrix">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <svg class="icon icon-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="12" y1="3" x2="12" y2="21"></line>
+            </svg>
+            <h3 class="panel-title">Game-Theoretic Minimax Payoff (2×2)</h3>
+          </div>
+          <div class="exploit-callout hidden" id="exploit-callout">
+            <span class="exploit-badge">EXPLOIT READY</span>
+            <span class="exploit-text" id="exploit-recommendation-text">+0.0% EV</span>
+          </div>
+        </div>
+
+        <div class="matrix-container">
+          <div class="payoff-grid" id="payoff-grid">
+            <div class="grid-cell header-cell corner-cell">Serve \ Return</div>
+            <div class="grid-cell header-cell col-header">Cover Wide</div>
+            <div class="grid-cell header-cell col-header">Cover T / Body</div>
+            
+            <div class="grid-cell row-header">Serve Wide</div>
+            <div class="grid-cell data-cell" id="cell-wide-wide">0.00</div>
+            <div class="grid-cell data-cell" id="cell-wide-t">0.00</div>
+
+            <div class="grid-cell row-header">Serve T</div>
+            <div class="grid-cell data-cell" id="cell-t-wide">0.00</div>
+            <div class="grid-cell data-cell" id="cell-t-t">0.00</div>
+          </div>
+
+          <div class="strategy-distribution-bars">
+            <div class="dist-group">
+              <div class="dist-header">
+                <span>Nash Equilibrium Serve Mix</span>
+                <span id="nash-ratio-label">50% Wide / 50% T</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar bar-nash" id="bar-nash" style="width: 50%;"></div>
+              </div>
+            </div>
+
+            <div class="dist-group">
+              <div class="dist-header">
+                <span>Observed Returner Bias</span>
+                <span id="bias-ratio-label">50% Wide / 50% T</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar bar-bias" id="bar-bias" style="width: 50%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUB-COMPONENT 5: TACTICAL ADVISORY FEED -->
+      <section class="panel panel-tactical" id="tactical-feed" aria-label="Tactical Advisory Feed">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <svg class="icon icon-feather" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+              <line x1="16" y1="8" x2="2" y2="22"></line>
+              <line x1="17.5" y1="15" x2="9" y2="15"></line>
+            </svg>
+            <h3 class="panel-title">Tactical Advisory Feed</h3>
+          </div>
+          <span class="advisory-pill">Coach & Broadcast Signal</span>
+        </div>
+
+        <div class="advisory-content">
+          <div class="advisory-headline-wrap">
+            <h4 class="advisory-headline" id="tactical-headline">Awaiting match stream initialization...</h4>
+          </div>
+
+          <div class="advisory-narrative-wrap">
+            <p class="advisory-narrative" id="tactical-narrative">Select a historical match below and click "Start Replay" to observe continuous point leverage tracking and conditional agent execution.</p>
+          </div>
+
+          <div class="advisory-recs-wrap">
+            <h5 class="recs-heading">Tactical Guidance:</h5>
+            <ul class="recs-list" id="tactical-recommendation-list">
+              <li>System is in standby mode. Ready to receive point stream.</li>
+            </ul>
+          </div>
+
+          <div class="advisory-disclaimer" id="advisory-disclaimer">
+            <svg class="icon icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>PULSE is an advisory tactical engine. Signals carry calibrated confidence bands; the human coach or analyst remains the sole decision-maker.</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- SUB-COMPONENT 6: STREAM CONTROL BAR -->
+    <footer class="cockpit-footer" id="stream-controls" aria-label="Replay Controls">
+      <div class="controls-left">
+        <label for="match-select" class="control-label">
+          <svg class="icon icon-disc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          Match Replay:
+        </label>
+        <select id="match-select" class="control-select" aria-label="Select Match">
+          <option value="" disabled selected>Loading available matches...</option>
+        </select>
+      </div>
+
+      <div class="controls-center">
+        <button id="btn-play" class="btn btn-primary" title="Start / Resume Stream">
+          <svg class="icon icon-play" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span id="btn-play-text">Start Replay</span>
+        </button>
+
+        <button id="btn-pause" class="btn btn-secondary" title="Pause Stream" disabled>
+          <svg class="icon icon-pause" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+          <span>Pause</span>
+        </button>
+
+        <button id="btn-reset" class="btn btn-secondary" title="Reset to Start" disabled>
+          <svg class="icon icon-reset" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span>Reset</span>
+        </button>
+      </div>
+
+      <div class="controls-right">
+        <span class="control-label">Speed Multiplier:</span>
+        <div class="speed-selector" id="speed-select">
+          <label class="speed-option"><input type="radio" name="speed" value="0.5"> <span>0.5x</span></label>
+          <label class="speed-option"><input type="radio" name="speed" value="1.0" checked> <span>1.0x</span></label>
+          <label class="speed-option"><input type="radio" name="speed" value="2.0"> <span>2.0x</span></label>
+          <label class="speed-option"><input type="radio" name="speed" value="0.0"> <span>Instant</span></label>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>
