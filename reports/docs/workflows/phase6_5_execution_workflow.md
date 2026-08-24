@@ -108,7 +108,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 ---
 
-## Stage 5 — FastAPI Static Asset Mounting & Route Delivery (`src/api/main.py`)
+## Stage 5 — FastAPI Static Asset Mounting & Route Delivery (`src/api/main.py`) ✅
 
 20. Update `src/api/main.py` with static asset delivery: **[D-3, ADR-013]**
     - Import `StaticFiles` from `fastapi.staticfiles` and `FileResponse, HTMLResponse` from `fastapi.responses`.
@@ -126,7 +126,8 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
       ```
 21. Verify OpenAPI routes: ensure `/docs`, `/openapi.json`, and `/health` retain highest route precedence. **[D-3]**
 
-**Gate 5:** `uv run api.main` launches cleanly; `GET /` and `GET /ui` return the HTML dashboard; `/static/style.css` and `/static/app.js` resolve with HTTP 200; `/health` returns healthy.
+**Gate 5:** `uv run api.main` launches cleanly; `GET /` and `GET /ui` return the HTML dashboard; `/static/style.css` and `/static/app.js` resolve with HTTP 200; `/health` returns healthy. ✅ **PASSED (2026-08-24)**
+
 
 ---
 
@@ -164,8 +165,9 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 | **Stage 2** | CSS Design System | `src/api/static/style.css` dark-mode glassmorphism styling complete | 🟢 **Closed & Passed** |
 | **Stage 3** | Canvas 2D Engine | Bespoke leverage & Wilson CI rendering engine implemented in `app.js` | 🟢 **Closed & Passed** |
 | **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟢 **Closed & Passed** |
-| **Stage 5** | FastAPI Route Mount | `app.mount("/static", ...)` and explicit `GET /`, `GET /ui` handlers in `main.py` | 🟡 Pending |
+| **Stage 5** | FastAPI Route Mount | `app.mount("/static", ...)` and explicit `GET /`, `GET /ui` handlers in `main.py` | 🟢 **Closed & Passed** |
 | **Stage 6** | Integration Tests | `test_static_ui.py` passes all asset, MIME, and DOM contract assertions | 🟡 Pending |
+
 | **Stage 7** | Quality Gate Audit | Full suite green (`pytest`, `pyright`, `ruff`, `check_file_size.py`) | 🟡 Pending |
 
 ---
