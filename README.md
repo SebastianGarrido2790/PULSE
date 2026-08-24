@@ -107,11 +107,13 @@ uv sync
 
 | Action | Command | Purpose |
 | :--- | :--- | :--- |
+| **One-Click Cockpit Launch** | `.\launch_app.bat` | Syncs env, verifies artifacts, opens browser, and starts FastAPI app |
 | **Start Tactical Cockpit & API** | `uv run api.main` | Starts FastAPI service locally at `http://localhost:8000/` |
 | **Replay Match in Terminal** | `uv run simulator.replay --match-id <id>` | Replays historical match point-by-point to simulate live feed |
 | **Run Full Test Suite** | `uv run pytest` | Runs all 152 unit, integration, and groundedness eval tests |
 | **Lint & Type Check** | `uv run ruff check . && uv run pyright` | Validates strict code style and 100% Pyright type safety |
 | **Run Line Count Check** | `python scripts/check_file_size.py` | Enforces 1,000-line ceiling per file under `src/` |
+
 
 ---
 

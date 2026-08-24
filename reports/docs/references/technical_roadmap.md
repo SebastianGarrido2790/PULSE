@@ -156,12 +156,14 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 **Key Tasks:**
 
-- Develop single-page tactical cockpit (`src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`) using Vanilla HTML5/ES6/CSS with dark-mode glassmorphism styling and Chart.js/Canvas timeline plotting.
+- Develop single-page tactical cockpit (`src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`) using Vanilla HTML5/ES6/CSS with dark-mode glassmorphism styling and Canvas 2D timeline plotting.
 - Connect UI to native `GET /v1/matches/{match_id}/stream` (SSE) with dynamic DOM updates, real-time match controls (play, pause, speed multiplier), and match selector dropdown.
 - Mount static assets in `src/api/main.py` via FastAPI `StaticFiles` at `/` and `/ui`.
 - Implement automated integration and smoke tests verifying static asset delivery, MIME types, and SSE browser client compatibility.
+- Create standardized one-click system launcher script (`launch_app.bat`) to automate environment synchronization, artifact verification, FastAPI startup, and browser launch.
 
-**Deliverables:** `src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`, static file mount in `src/api/main.py`, unit/integration tests in `tests/integration/test_static_ui.py`.
+**Deliverables:** `src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`, static file mount in `src/api/main.py`, unit/integration tests in `tests/integration/test_static_ui.py`, one-click ecosystem launcher `launch_app.bat`.
+
 
 **Exit Criteria:** Navigating to `http://localhost:8000/` loads the tactical cockpit in <100ms with 0 npm/Node dependencies; match replay streams and animates live leverage curves and LangGraph node states in real time.
 
