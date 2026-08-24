@@ -25,14 +25,15 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 ---
 
-## Stage 0 — Pre-Implementation Verification & Workspace Pre-Flight
+## Stage 0 — Pre-Implementation Verification & Workspace Pre-Flight ✅
 
 1. Verify that `src/api/static/` does not exist yet and that no partial UI code is present in the workspace.
 2. Confirm upstream API dependencies are healthy: `src/api/main.py::app`, `src/api/streaming.py` (`GET /v1/matches`, `GET /v1/matches/{match_id}`, `GET /v1/matches/{match_id}/stream`), and `src/simulator/replay.py::get_available_matches()`.
 3. Verify that `httpx` and `fastapi.staticfiles.StaticFiles` are installed and available in the `uv` environment.
 4. Run baseline test suite (`uv run pytest`) to confirm all 146 existing tests pass with 0 warnings before touching any file.
 
-**Gate 0:** Workspace clean; upstream API routes verified; 146/146 baseline tests passing.
+**Gate 0:** Workspace clean; upstream API routes verified; 146/146 baseline tests passing. ✅ **PASSED (2026-08-23)**
+
 
 ---
 
@@ -154,8 +155,9 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 | Stage | Focus Area | Closing Gate Condition | Status |
 |:---:|---|---|:---:|
-| **Stage 0** | Pre-Flight Audit | Workspace clean, baseline tests (146/146) green | 🟡 Pending |
+| **Stage 0** | Pre-Flight Audit | Workspace clean, baseline tests (146/146) green | 🟢 **Closed & Passed** |
 | **Stage 1** | HTML5 Skeleton | `src/api/static/index.html` with all 6 sub-component IDs, 0 external scripts | 🟡 Pending |
+
 | **Stage 2** | CSS Design System | `src/api/static/style.css` dark-mode glassmorphism styling complete | 🟡 Pending |
 | **Stage 3** | Canvas 2D Engine | Bespoke leverage & Wilson CI rendering engine implemented in `app.js` | 🟡 Pending |
 | **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟡 Pending |
