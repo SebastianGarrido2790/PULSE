@@ -146,14 +146,14 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 ---
 
-## Stage 7 — End-to-End Visual Verification & Quality Gate Audit
+## Stage 7 — End-to-End Visual Verification & Quality Gate Audit ✅
 
 25. Execute full test suite: `uv run pytest` (confirming all unit, integration, and eval tests pass with 0 warnings).
 26. Run strict linter and type-checking: `uv run ruff check .` and `uv run pyright`.
 27. Run file size ceiling check: `python scripts/check_file_size.py` (confirm all files in `src/` remain strictly <1,000 lines).
-28. Run historical match replay smoke test: execute `uv run simulator.replay --match-id <id> --speed-multiplier 0` and verify real-time stream processing end-to-end.
+28. Run historical match replay smoke test: execute `uv run python -m src.simulator.replay --match-id <id> --speed-multiplier 0` and verify real-time stream processing end-to-end.
 
-**Gate 7:** All quality gates pass (pytest 100%, pyright 0 errors, ruff clean, file size <1,000 lines); Phase 6.5 complete and ready for Phase 7 CI/CD Dockerization.
+**Gate 7:** All quality gates pass (pytest 100%, pyright 0 errors, ruff clean, file size <1,000 lines); Phase 6.5 complete and ready for Phase 7 CI/CD Dockerization. ✅ **PASSED (2026-08-24)**
 
 ---
 
@@ -168,7 +168,8 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 | **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟢 **Closed & Passed** |
 | **Stage 5** | FastAPI Route Mount | `app.mount("/static", ...)` and explicit `GET /`, `GET /ui` handlers in `main.py` | 🟢 **Closed & Passed** |
 | **Stage 6** | Integration Tests | `test_static_ui.py` passes all asset, MIME, and DOM contract assertions | 🟢 **Closed & Passed** |
-| **Stage 7** | Quality Gate Audit | Full suite green (`pytest`, `pyright`, `ruff`, `check_file_size.py`) | 🟡 Pending |
+| **Stage 7** | Quality Gate Audit | Full suite green (`pytest`, `pyright`, `ruff`, `check_file_size.py`) | 🟢 **Closed & Passed** |
+
 
 
 ---

@@ -150,7 +150,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
-## Phase 6.5 — Interactive Presentation Layer (Tactical Cockpit) 🟡 In Progress / Approved
+## Phase 6.5 — Interactive Presentation Layer (Tactical Cockpit) ✅ Complete
 
 **Goal:** Build and integrate an embedded, zero-dependency real-time web dashboard (`src/api/static/`) directly within FastAPI to visually showcase the streaming leverage engine, Wilson confidence intervals, conditional LangGraph node executions, and game-theoretic payoff matrices for technical evaluators, recruitment managers, and coaches (ADR-013).
 

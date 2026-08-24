@@ -1,11 +1,11 @@
 # PULSE — Test Suite Report
 
-> **Version:** v0.6.0 — _Living Document_  
-> **Phase:** 6 — API & Streaming Interface  
-> **Status:** 🟢 146 / 146 Tests Passing (0 Warnings)  
+> **Version:** v0.6.5 — _Living Document_  
+> **Phase:** 6.5 — Interactive Presentation Layer (Tactical Cockpit)  
+> **Status:** 🟢 152 / 152 Tests Passing (0 Warnings)  
 > **Coverage:** 91% Total Code Coverage (100% Graph Topology, Core Math, Schemas & Wire Contracts)  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
-> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase6_execution_workflow.md](../workflows/phase6_execution_workflow.md), [streaming_api_evaluation_report.md](streaming_api_evaluation_report.md), [system_design.md](../architecture/system_design.md)
+> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase6_5_execution_workflow.md](../workflows/phase6_5_execution_workflow.md), [phase6_5_presentation_layer_architecture.md](../architecture/phase6_5_presentation_layer_architecture.md), [interactive_presentation_layer_evaluation_report.md](interactive_presentation_layer_evaluation_report.md), [system_design.md](../architecture/system_design.md)
 
 ---
 
@@ -37,7 +37,7 @@ PULSE/
 │   │   ├── test_api_schemas.py          # Pydantic v2 wire models & validation tests (Phase 6)
 │   │   ├── test_point_record_conversion.py # PointRecord -> PointContext conversion tests (Phase 6)
 │   │   ├── test_persistence.py          # SQLite audit persistence & query tests (Phase 6)
-│   │   ├── test_api_main.py             # FastAPI lifespan & health route tests (Phase 6)
+│   │   ├── test_api_main.py             # FastAPI lifespan, static mounts & health route tests (Phases 6, 6.5)
 │   │   ├── test_streaming.py            # SSE, keep-alive comments & WS tests (Phase 6)
 │   │   ├── test_replay_generator.py     # Async generator & CLI tests (Phase 6)
 │   │   ├── test_game_theory.py          # Consolidated §8 validation properties (Phase 5)
@@ -47,6 +47,7 @@ PULSE/
 │   │   ├── test_build_payoff_matrices.py# DVC stage matrix extraction unit tests
 │   │   └── ...                          # Prior unit test suites (Phases 1-4)
 │   ├── integration/
+│   │   ├── test_static_ui.py            # Static UI delivery, DOM contracts & MIME tests (Phase 6.5)
 │   │   ├── test_api_streaming.py        # SSE/WS parity & SQLite persistence integration (Phase 6)
 │   │   └── test_conditional_graph.py    # LangGraph conditional edge & state tests (Phases 4-5)
 │   └── evals/
@@ -99,7 +100,7 @@ PULSE/
 | Tool            | Ruleset                                                                                                | Status                       |
 | :-------------- | :----------------------------------------------------------------------------------------------------- | :--------------------------- |
 | **Ruff Check**  | `E` (pycodestyle), `F` (Pyflakes), `I` (isort), `UP` (pyupgrade), `B` (bugbear), `RUF` (Ruff-specific) | 🟢 PASS (0 Linter Errors)    |
-| **Ruff Format** | Line length = 100                                                                                      | 🟢 PASS (88 Files Formatted) |
+| **Ruff Format** | Line length = 100                                                                                      | 🟢 PASS (89 Files Formatted) |
 
 ---
 
@@ -163,7 +164,8 @@ PULSE/
 | `test_game_theory.py::test_delta_non_negative` | Exploitation Guarantee | $\delta = \max_i (\Pi \hat{y})_i - V \ge 0.0$ always holds. | 🟢 PASS |
 | `test_game_theory.py::test_lp_matches_closed_form_on_2x2` | Solver Agreement | HiGHS Linear Programming matches analytical $2\times 2$ closed form within $10^{-4}$. | 🟢 PASS |
 | `test_game_theory_solver.py::test_linprog_strong_duality_verified` | Strong Duality Gate | Primal and Dual LPs converge to identical value ($|V_P - V_D| \le 10^{-5}$). | 🟢 PASS |
-| `test_game_theory.py::test_sufficiency_gate_fires_below_threshold` | Opponent Sample Gate | `sufficient_data=False` when total opponent observations $N_{\text{opp}}| `test_game_theory.py::test_exploit_result_all_none_when_gate_fires` | Null Value Contract | All exploit fields (`equilibrium_value`, `best_response_action`, `delta`) are `None` when gated. | 🟢 PASS |
+| `test_game_theory.py::test_sufficiency_gate_fires_below_threshold` | Opponent Sample Gate | `sufficient_data=False` when total opponent observations $N_{\text{opp}} < 30$. | 🟢 PASS |
+| `test_game_theory.py::test_exploit_result_all_none_when_gate_fires` | Null Value Contract | All exploit fields (`equilibrium_value`, `best_response_action`, `delta`) are `None` when gated. | 🟢 PASS |
 | `tests/unit/test_build_payoff_matrices.py` | DVC Matrix Compilation | Validates 534,168 point extraction, Beta prior fitting, and JSON artifact compilation. | 🟢 PASS |
 
 ---
@@ -175,7 +177,7 @@ PULSE/
 | `tests/unit/test_api_schemas.py` | Pydantic v2 Wire Contracts | Field constraints, score bounds, timestamp formatting, JSON schema serialization. | 🟢 PASS |
 | `tests/unit/test_point_record_conversion.py` | Schema Bridge Conversion | `PointRecord.to_point_context()`, score flip logic, surface mapping, bo3 & bo5 scope. | 🟢 PASS |
 | `tests/unit/test_persistence.py` | SQLite Audit Persistence | Async non-blocking write of `decision_logs` and `tactical_outputs` via `aiosqlite`. | 🟢 PASS |
-| `tests/unit/test_api_main.py` | FastAPI Application & Lifespan | Startup lifespan graph compilation (`app.state.graph`) and `/health` route response. | 🟢 PASS |
+| `tests/unit/test_api_main.py` | FastAPI Application & Lifespan | Startup lifespan graph compilation (`app.state.graph`), UI/static routes, and `/health` route response. | 🟢 PASS |
 | `tests/unit/test_streaming.py` | Streaming Transport Adapters | SSE route, periodic `: keep-alive\n\n` comments, WebSocket frames, match listing. | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_sse_event_stream_keep_alive_does_not_kill_slow_generator` | Keep-Alive Queue Decoupling | Long inter-point delay does not cancel in-flight generator task during heartbeat timeouts (D-5). | 🟢 PASS |
 | `tests/unit/test_streaming.py::test_get_match_metadata_endpoint` | Match Metadata Route | `GET /v1/matches/{match_id}` returns accurate `MatchMetadataResponse` and handles 404s (D-10). | 🟢 PASS |
@@ -189,6 +191,18 @@ PULSE/
 | `tests/integration/test_api_streaming.py::test_sse_streaming_and_persistence_parity` | SSE & SQLite Parity | Full SSE stream matches generator events 1-to-1 and persists records in SQLite. | 🟢 PASS |
 | `tests/integration/test_api_streaming.py::test_websocket_and_sse_content_parity` | Transport Equivalence | Bit-for-bit content payload parity between WebSocket and SSE streams (D-1). | 🟢 PASS |
 | `tests/integration/test_api_streaming.py::test_mid_stream_failure_integration` | Fail-Loud Mid-Stream | Emits `event_type="error"` on forced exception and terminates cleanly (D-13). | 🟢 PASS |
+
+---
+
+### 3.12 Interactive Presentation Layer (`tests/integration/test_static_ui.py`)
+
+| Test File / Function | Verification Target | What Is Verified | Status |
+| :--- | :--- | :--- | :---: |
+| `tests/integration/test_static_ui.py::test_root_and_ui_endpoints_serve_html` | SPA Route Delivery | `GET /` and `GET /ui` return HTTP 200 with `text/html; charset=utf-8` MIME type and `<!DOCTYPE html>`. | 🟢 PASS |
+| `tests/integration/test_static_ui.py::test_html_contains_required_cockpit_dom_contracts` | DOM Blueprint Contracts | Asserts HTML body contains all 6 sub-component container IDs (`#scoreboard`, `#oscillogram-container`, `#topology-inspector`, `#game-theory-panel`, `#tactical-feed`, `#stream-controls`). | 🟢 PASS |
+| `tests/integration/test_static_ui.py::test_static_assets_serve_correct_mime_types` | Static Assets MIME & Delivery | Asserts `GET /static/style.css` returns `text/css` and `GET /static/app.js` returns `text/javascript`. | 🟢 PASS |
+| `tests/integration/test_static_ui.py::test_no_external_cdn_references` | Zero-CDN Invariant | Asserts 0 external `http`/`https` CDN `<script>` or `<link>` references in `index.html` (100% self-contained). | 🟢 PASS |
+| `tests/integration/test_static_ui.py::test_match_preflight_and_docs_route_precedence` | Route Precedence & Integrity | Asserts `/v1/matches`, `/health`, and `/openapi.json` retain highest route precedence alongside static SPA endpoints. | 🟢 PASS |
 
 ---
 
@@ -235,6 +249,13 @@ Phase 6: API, Simulation & Streaming Quality Suite (Complete — 146 Passes)
   ├── SQLite Audit Persistence Traceability (FR-12)
   └── Fail-Loud Error Transparency & Keep-Alive Heartbeat (D-5, D-13)
        │
+Phase 6.5: Interactive Presentation Layer (Tactical Cockpit) (Complete — 152 Passes)
+  ├── Embedded Single-Page Application (SPA) Delivery via FastAPI Static Mount
+  ├── Canvas 2D Oscillogram & Shaded Wilson 95% Confidence Band Engine
+  ├── Native EventSource SSE Multi-Panel Dispatch Controller
+  ├── DOM Blueprint Contracts (6 Sub-Components) & Zero-CDN Invariant Verification
+  └── Health and OpenAPI Route Precedence Enforcement
+       │
 Phase 7: Observability, CI/CD, Shadow-Mode Acceptance (Scheduled Next)
   ├── OpenTelemetry Instrumentation Spans
   ├── GitHub Actions Full Coverage Gate (>= 70%) & Trivy Security Scan
@@ -249,13 +270,14 @@ Phase 7: Observability, CI/CD, Shadow-Mode Acceptance (Scheduled Next)
 | :----------------------------- | :-------------------------------------------------- | :---------------------------------------------------------- |
 | **Run Full Test Suite**        | `uv run pytest`                                     | Runs all unit, integration, and eval tests                  |
 | **Run Solver Unit Tests Only** | `uv run pytest -m solver`                           | Golden-value combinatorial correctness gate                 |
+| **Run Static UI Tests Only**   | `uv run pytest tests/integration/test_static_ui.py`  | Validates presentation layer DOM & asset delivery           |
 | **Run Coverage Report**        | `uv run pytest --cov=src --cov-report=term-missing` | Verifies $\ge 70\%$ line coverage requirement               |
 | **Run File Ceiling Check**     | `python scripts/check_file_size.py`                 | Enforces 1,000-line ceiling per file under `src/`           |
 | **Run Static Type Checker**    | `uv run pyright`                                    | Validates strict typing across `src/`, `tests/`, `scripts/` |
 | **Run Linter Checks**          | `uv run ruff check .`                               | Imports, syntax, and style rules enforcement                |
 | **Run Formatter Checks**       | `uv run ruff format --check .`                      | Verifies 100-character line length compliance               |
 
-**Live Output (Phase 6 Complete & Hardened — 2026-08-20):**
+**Live Output (Phase 6.5 Complete & Hardened — 2026-08-24):**
 
 ```text
 =============================== tests coverage ================================
@@ -265,7 +287,7 @@ Name                                 Stmts   Miss  Cover   Missing
 ------------------------------------------------------------------
 src\__init__.py                          0      0   100%
 src\api\__init__.py                      0      0   100%
-src\api\main.py                         42      4    90%   97-100, 109
+src\api\main.py                         53      4    92%   131-134, 143
 src\api\schemas.py                      31      0   100%
 src\api\streaming.py                    84      9    89%   138, 235-242
 src\config\__init__.py                   2      0   100%
@@ -288,12 +310,12 @@ src\models\pressure_deviation.py       134      8    94%   90, 140, 189, 240-241
 src\schemas\__init__.py                  0      0   100%
 src\schemas\point_record.py            107      4    96%   135, 142, 151-152
 src\simulator\__init__.py                0      0   100%
-src\simulator\replay.py                123     15    88%   50-51, 76-78, 169-173, 181, 277, 295, 306, 310
+src\simulator\replay.py                126     15    88%   50-51, 76-78, 169-173, 181, 281, 299, 310, 314
 src\utils\__init__.py                    0      0   100%
 src\utils\exceptions.py                 37      5    86%   30-31, 37-40
 src\utils\logger.py                     37      9    76%   52-54, 65-70, 77-79
 src\utils\persistence.py               104     14    87%   35, 86-89, 129, 155-158, 178-181
 ------------------------------------------------------------------
-TOTAL                                 1663    153    91%
-============================ 146 passed in 24.39s =============================
+TOTAL                                 1677    153    91%
+============================ 152 passed in 20.05s =============================
 ```

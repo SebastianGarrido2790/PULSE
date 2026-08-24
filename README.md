@@ -8,15 +8,17 @@ Designed for coaches, performance analysts, and broadcast teams as an advisory t
 
 ## 🚦 Project Status
 
-| Phase                             | Description                                                                   | Status       |
-| :-------------------------------- | :---------------------------------------------------------------------------- | :----------- |
-| **Phase 0 — Planning**            | ML Canvas, Project Charter, PRD, User Story, Technical Roadmap, System Design | ✅ Complete  |
-| **Phase 1 — Project Scaffolding** | Repository structure, `uv` toolchain, `params.yaml`, CI/CD, line ceiling gate | ✅ Complete  |
-| **Phase 2 — Data Layer & Core**   | `PointRecord` schema, validation pipeline, closed-form Markov solver          | ✅ Complete  |
-| **Phase 3 — Tier 1 ML**           | Point-win classifier & pressure deviation shrinkage model                     | ✅ Complete  |
-| **Phase 4 — Agent Orchestration** | Event-driven LangGraph (State Monitor + conditional nodes)                    | ✅ Complete  |
-| **Phase 5 — Game Theory Module**  | Minimax Nash equilibrium & best-response return exploit                       | 🟡 Next Up   |
-| **Phase 6 — API & Simulation**    | FastAPI streaming API, real-time match replay simulator, Docker & CI/CD       | ⬜ Scheduled |
+| Phase | Description | Status |
+| :--- | :--- | :---: |
+| **Phase 0 — Planning** | ML Canvas, Project Charter, PRD, User Story, Technical Roadmap, System Design | ✅ Complete |
+| **Phase 1 — Project Scaffolding** | Repository structure, `uv` toolchain, `params.yaml`, CI/CD, line ceiling gate | ✅ Complete |
+| **Phase 2 — Data Layer & Core** | `PointRecord` schema, validation pipeline, closed-form Markov solver | ✅ Complete |
+| **Phase 3 — Tier 1 ML** | Point-win classifier & pressure deviation empirical-Bayes shrinkage model | ✅ Complete |
+| **Phase 4 — Agent Orchestration** | Event-driven LangGraph (State Monitor + conditional diagnostic/exploit nodes) | ✅ Complete |
+| **Phase 5 — Game Theory Module** | Minimax Nash equilibrium, best-response return exploit & empirical-Bayes priors | ✅ Complete |
+| **Phase 6 — API & Simulation** | FastAPI streaming API (SSE/WS), real-time match replay simulator & SQLite audit | ✅ Complete |
+| **Phase 6.5 — Presentation Layer** | Embedded real-time Tactical Cockpit SPA (Canvas 2D, zero-CDN, glassmorphic UI) | ✅ Complete |
+| **Phase 7 — Observability & CI/CD** | OpenTelemetry tracing spans, multi-stage Docker container & GitHub Actions | 🟡 Next Up |
 
 ---
 
@@ -25,7 +27,7 @@ Designed for coaches, performance analysts, and broadcast teams as an advisory t
 PULSE operates on four foundational architectural principles:
 
 - **Ground-Truth Primacy:** The closed-form Markov solver provides mathematically exact leverage values. Deterministic mathematics is the ground truth; machine learning models only estimate inputs ($p_{\text{serve}}$ win probability).
-- **The Sufficiency Gate:** Exploits and pressure diagnostics are confidence-gated by observation counts. If data is insufficient, signals are suppressed rather than emitting un-supported advice.
+- **The Sufficiency Gate:** Exploits and pressure diagnostics are confidence-gated by observation counts. If data is insufficient, signals are suppressed rather than emitting unsupported advice.
 - **Advisory-Only Mandate:** PULSE provides high-precision intelligence to human analysts and coaches who make all final strategic decisions.
 - **Conditional Graph Topology:** LangGraph workflow executes state monitoring continuously, while downstream diagnostic and exploit nodes fire conditionally based on threshold triggers.
 
@@ -46,7 +48,8 @@ For a conceptual deep dive into how Markov chains, leverage calculations, and ga
 - **Orchestration:** LangGraph (Conditional Event-Driven Graph)
 - **Deterministic Core:** Closed-Form Markov Solver, Wilson Confidence Intervals, `scipy.optimize.linprog` (Game-Theoretic Equilibrium)
 - **ML & Data:** scikit-learn (Point-Win Classifier), Empirical-Bayes Shrinkage (Pressure Estimator), MLflow, DVC
-- **API & Streaming:** FastAPI (SSE / WebSockets)
+- **API & Streaming:** FastAPI (SSE / WebSockets), `aiosqlite`
+- **Presentation Layer:** Embedded Dark-Mode Tactical Cockpit (Vanilla HTML5, CSS Grid, Canvas 2D, Zero CDN)
 - **Quality & Evaluation:** Ruff, Pyright, DeepEval (Narrative Groundedness), Pytest
 
 ---
@@ -56,20 +59,27 @@ For a conceptual deep dive into how Markov chains, leverage calculations, and ga
 ```text
 .
 ├── src/
-│   ├── api/            # FastAPI streaming endpoints
+│   ├── api/            # FastAPI streaming endpoints & static asset delivery
+│   │   ├── main.py     # FastAPI application, static mounts (/static), and UI entrypoint
+│   │   ├── schemas.py  # Pydantic v2 request/response wire contracts
+│   │   ├── streaming.py# SSE & WebSocket streaming route handlers
+│   │   └── static/     # Embedded real-time Tactical Cockpit (HTML/CSS/JS)
 │   ├── core/           # Deterministic Markov solver, game theory, & leverage uncertainty
 │   ├── graph/          # LangGraph conditional orchestration nodes
 │   ├── models/         # Tier 1 ML models (point-win classifier, pressure deviation)
 │   ├── schemas/        # Pydantic v2 data contracts (PointRecord)
 │   ├── simulator/      # Historical match replay simulator
-│   ├── utils/          # Exception hierarchy, logger, sanitization
+│   ├── utils/          # Exception hierarchy, logger, SQLite persistence
 │   └── config/         # Parameters & config loaders
 ├── scripts/
-│   └── check_file_size.py # CI line-count ceiling checker (max 1,000 lines/file)
+│   ├── check_file_size.py # CI line-count ceiling checker (max 1,000 lines/file)
+│   └── build_payoff_matrices.py # Payoff matrix compilation DVC pipeline stage
 ├── tests/
-│   ├── unit/           # Markov solver analytical correctness tests
-│   ├── integration/    # LangGraph conditional topology tests
+│   ├── unit/           # Analytical correctness & module unit tests
+│   ├── integration/    # Static UI delivery, SSE streaming, & conditional graph tests
 │   └── evals/          # DeepEval narrative groundedness checks
+├── reports/
+│   └── docs/           # Architecture, decisions, evaluations, references, & workflows
 ├── tennis_mathematical_elegance.md # Mathematical background documentation
 ├── params.yaml         # Centralized operational thresholds
 ├── dvc.yaml            # Data version control pipeline
@@ -95,12 +105,13 @@ uv sync
 
 ### Running Commands
 
-| Action                   | Command                             |
-| :----------------------- | :---------------------------------- |
-| **Run Line Count Check** | `python scripts/check_file_size.py` |
-| **Run Test Suite**       | `pytest`                            |
-| **Lint & Type Check**    | `ruff check .`                      |
-| **Start Streaming API**  | `fastapi dev src/api/main.py`       |
+| Action | Command | Purpose |
+| :--- | :--- | :--- |
+| **Start Tactical Cockpit & API** | `uv run api.main` | Starts FastAPI service locally at `http://localhost:8000/` |
+| **Replay Match in Terminal** | `uv run simulator.replay --match-id <id>` | Replays historical match point-by-point to simulate live feed |
+| **Run Full Test Suite** | `uv run pytest` | Runs all 152 unit, integration, and groundedness eval tests |
+| **Lint & Type Check** | `uv run ruff check . && uv run pyright` | Validates strict code style and 100% Pyright type safety |
+| **Run Line Count Check** | `python scripts/check_file_size.py` | Enforces 1,000-line ceiling per file under `src/` |
 
 ---
 

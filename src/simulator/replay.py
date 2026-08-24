@@ -234,9 +234,13 @@ async def generate_point_events(
 
 
 def run_cli() -> None:
-    """CLI entrypoint for replaying a historical match via simulator.replay."""
+    """CLI entrypoint for replaying historical matches point-by-point (PULSE simulator)."""
     import argparse
+    import io
     import sys
+
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     parser = argparse.ArgumentParser(
         prog="simulator.replay",

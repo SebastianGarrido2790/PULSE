@@ -354,7 +354,7 @@ Phase 6 connects the in-process LangGraph orchestration engine to external consu
 
 ### ADR-013: Embedded Lightweight Real-Time Tactical Cockpit (Phase 6.5 — 2026-08-22)
 
-**Status:** Accepted & Approved (Option A — 2026-08-22)
+**Status:** Validated (Option A — 2026-08-24)
 
 **Context:**
 While PULSE is fundamentally an MLOps/agentic streaming backend, stakeholders (recruitment managers, technical evaluators, and portfolio managers) require an interactive presentation layer to observe live SSE streams, Wilson confidence intervals, LangGraph node execution transitions, and game-theoretic payoff matrices in real time. We evaluated 4 architectural approaches (Embedded Vanilla SPA, Standalone React/Vite Microservice, Streamlit/Gradio Python UI, Headless Status Quo).
