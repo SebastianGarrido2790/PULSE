@@ -374,7 +374,8 @@ export async function initMatchList() {
     const res = await fetch("/v1/matches");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    state.matches = data.matches || [];
+    state.matches = Array.isArray(data) ? data : data.matches || [];
+
 
     if (!DOM.matchSelect) return;
     DOM.matchSelect.innerHTML = "";

@@ -1,4 +1,4 @@
-"""Unit tests for src/api/main.py (FastAPI app, lifespan initialization, and health check)."""
+"""Unit tests for src/api/main.py (FastAPI app, static mounts, and health check)."""
 
 from fastapi.testclient import TestClient
 
@@ -31,3 +31,12 @@ def test_health_endpoint_degraded_when_no_graph() -> None:
     payload = response.json()
     assert payload["status"] == "degraded"
     assert payload["graph_ready"] is False
+
+
+def test_ui_and_static_routes_registered() -> None:
+    """Verify that root, ui alias, and static asset routes are registered on the app."""
+    route_paths = [getattr(r, "path", None) for r in app.routes]
+    assert "/" in route_paths
+    assert "/ui" in route_paths
+    assert "/health" in route_paths
+    assert "/static" in route_paths

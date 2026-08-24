@@ -131,7 +131,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 ---
 
-## Stage 6 — Automated Integration & DOM Contract Test Suite (`tests/integration/test_static_ui.py`)
+## Stage 6 — Automated Integration & DOM Contract Test Suite (`tests/integration/test_static_ui.py`) ✅
 
 22. Create `tests/integration/test_static_ui.py` using `httpx.AsyncClient` with `ASGITransport(app=app)`. **[D-8]**
 23. Implement integration test cases: **[D-8]**
@@ -141,7 +141,8 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
     - `test_match_preflight_and_stream_route_availability`: Asserts `GET /v1/matches` returns non-empty list and `GET /v1/matches/{match_id}/stream` endpoint is accessible.
 24. Update existing unit test `tests/unit/test_api_main.py` to assert new static routes and UI endpoints are registered.
 
-**Gate 6:** `pytest tests/integration/test_static_ui.py` passes 100% in <200ms; all route and DOM contract assertions green.
+**Gate 6:** `pytest tests/integration/test_static_ui.py` passes 100% in <200ms; all route and DOM contract assertions green. ✅ **PASSED (2026-08-24)**
+
 
 ---
 
@@ -166,9 +167,9 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 | **Stage 3** | Canvas 2D Engine | Bespoke leverage & Wilson CI rendering engine implemented in `app.js` | 🟢 **Closed & Passed** |
 | **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟢 **Closed & Passed** |
 | **Stage 5** | FastAPI Route Mount | `app.mount("/static", ...)` and explicit `GET /`, `GET /ui` handlers in `main.py` | 🟢 **Closed & Passed** |
-| **Stage 6** | Integration Tests | `test_static_ui.py` passes all asset, MIME, and DOM contract assertions | 🟡 Pending |
-
+| **Stage 6** | Integration Tests | `test_static_ui.py` passes all asset, MIME, and DOM contract assertions | 🟢 **Closed & Passed** |
 | **Stage 7** | Quality Gate Audit | Full suite green (`pytest`, `pyright`, `ruff`, `check_file_size.py`) | 🟡 Pending |
+
 
 ---
 
