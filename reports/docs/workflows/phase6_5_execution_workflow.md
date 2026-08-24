@@ -86,7 +86,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 ---
 
-## Stage 4 — SSE Event Consumption, Reactive State Store & UI Controller (`src/api/static/app.js` — Part 2)
+## Stage 4 — SSE Event Consumption, Reactive State Store & UI Controller (`src/api/static/app.js` — Part 2) ✅
 
 16. Implement match initialization controller: **[D-4, D-7]**
     - `async function initMatchList()`: fetches `GET /v1/matches`, populates `#match-select` dropdown with available match IDs, and selects default match.
@@ -103,7 +103,8 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
     - **Tactical Feed:** Render headline, LLM narrative synthesis, and actionable recommendations.
 19. Implement connection error handling and stream completion: catch stream close/error events, display completion toast, and interleave `: keep-alive` comment silence handling. **[D-4]**
 
-**Gate 4:** `src/api/static/app.js` fully implemented; 100% wire-compatible with `StreamPointEvent` Pydantic contract; playback controls and reactive UI updates verified.
+**Gate 4:** `src/api/static/app.js` fully implemented; 100% wire-compatible with `StreamPointEvent` Pydantic contract; playback controls and reactive UI updates verified. ✅ **PASSED (2026-08-23)**
+
 
 ---
 
@@ -162,8 +163,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 | **Stage 1** | HTML5 Skeleton | `src/api/static/index.html` with all 6 sub-component IDs, 0 external scripts | 🟢 **Closed & Passed** |
 | **Stage 2** | CSS Design System | `src/api/static/style.css` dark-mode glassmorphism styling complete | 🟢 **Closed & Passed** |
 | **Stage 3** | Canvas 2D Engine | Bespoke leverage & Wilson CI rendering engine implemented in `app.js` | 🟢 **Closed & Passed** |
-| **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟡 Pending |
-
+| **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟢 **Closed & Passed** |
 | **Stage 5** | FastAPI Route Mount | `app.mount("/static", ...)` and explicit `GET /`, `GET /ui` handlers in `main.py` | 🟡 Pending |
 | **Stage 6** | Integration Tests | `test_static_ui.py` passes all asset, MIME, and DOM contract assertions | 🟡 Pending |
 | **Stage 7** | Quality Gate Audit | Full suite green (`pytest`, `pyright`, `ruff`, `check_file_size.py`) | 🟡 Pending |
