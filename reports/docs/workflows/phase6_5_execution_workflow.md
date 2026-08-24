@@ -70,7 +70,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 
 ---
 
-## Stage 3 — Bespoke HTML5 Canvas 2D Leverage & Confidence Band Engine (`src/api/static/app.js` — Part 1)
+## Stage 3 — Bespoke HTML5 Canvas 2D Leverage & Confidence Band Engine (`src/api/static/app.js` — Part 1) ✅
 
 14. Implement Canvas 2D rendering pipeline in `src/api/static/app.js`: **[D-1, D-2, D-7]**
     - High-DPI screen scaling via `window.devicePixelRatio` to ensure sharp rendering on Retina/4K screens.
@@ -81,7 +81,8 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
     - High-leverage inflection point markers (crimson/amber glowing dots for points where leverage crossed threshold).
 15. Implement interactive canvas hover/cursor overlay tracking the nearest point index and rendering a floating tooltip with point score, server name, exact $\Delta L$, and Wilson bounds $[L_{\text{low}}, L_{\text{high}}]$. **[D-2]**
 
-**Gate 3:** Canvas 2D rendering functions complete and verified with synthetic sample point arrays; coordinate transforms and Wilson envelope polygon rendering verified.
+**Gate 3:** Canvas 2D rendering functions complete and verified with synthetic sample point arrays; coordinate transforms and Wilson envelope polygon rendering verified. ✅ **PASSED (2026-08-23)**
+
 
 ---
 
@@ -160,9 +161,9 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 | **Stage 0** | Pre-Flight Audit | Workspace clean, baseline tests (146/146) green | 🟢 **Closed & Passed** |
 | **Stage 1** | HTML5 Skeleton | `src/api/static/index.html` with all 6 sub-component IDs, 0 external scripts | 🟢 **Closed & Passed** |
 | **Stage 2** | CSS Design System | `src/api/static/style.css` dark-mode glassmorphism styling complete | 🟢 **Closed & Passed** |
-| **Stage 3** | Canvas 2D Engine | Bespoke leverage & Wilson CI rendering engine implemented in `app.js` | 🟡 Pending |
-
+| **Stage 3** | Canvas 2D Engine | Bespoke leverage & Wilson CI rendering engine implemented in `app.js` | 🟢 **Closed & Passed** |
 | **Stage 4** | SSE UI Controller | Native `EventSource` consumer and reactive DOM updater implemented | 🟡 Pending |
+
 | **Stage 5** | FastAPI Route Mount | `app.mount("/static", ...)` and explicit `GET /`, `GET /ui` handlers in `main.py` | 🟡 Pending |
 | **Stage 6** | Integration Tests | `test_static_ui.py` passes all asset, MIME, and DOM contract assertions | 🟡 Pending |
 | **Stage 7** | Quality Gate Audit | Full suite green (`pytest`, `pyright`, `ruff`, `check_file_size.py`) | 🟡 Pending |
