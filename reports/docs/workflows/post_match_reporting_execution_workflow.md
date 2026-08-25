@@ -57,7 +57,7 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 
 ---
 
-## Stage 2 — Pydantic v2 Wire Contracts (`src/api/schemas.py`)
+## Stage 2 — Pydantic v2 Wire Contracts (`src/api/schemas.py`) ✅
 
 8. Update `src/api/schemas.py` to define typed request and response contracts: **[D-2]**
    - `PivotalPointEntry`: Pydantic model for top pivotal points with score context and Wilson intervals.
@@ -65,7 +65,8 @@ Stage 6 (Integration Tests & Quality Gate Audit)
    - `GameTheoryExploitAudit`: Pydantic model for serve direction distributions, Nash mix, and $+EV$ margins.
    - `MatchReportResponse`: Comprehensive response schema containing match metadata, executive summary, pivotal points, pressure resilience, game theory audit, and markdown output.
 
-**Gate 2:** Pydantic schemas validate cleanly; serialization roundtrips verified in `tests/unit/test_api_schemas.py`.
+**Gate 2:** Pydantic schemas validate cleanly; serialization roundtrips verified in `tests/unit/test_api_schemas.py`. ✅ **PASSED (2026-08-24)**
+
 
 ---
 
@@ -140,8 +141,9 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 |:---:|---|---|:---:|
 | **Stage 0** | Pre-Flight Audit | Workspace clean, baseline tests (152/152) green | 🟢 **Closed & Passed** |
 | **Stage 1** | Analytics Engine | `src/analytics/match_report.py` deterministic aggregation | 🟢 **Closed & Passed** |
-| **Stage 2** | Wire Schemas | `MatchReportResponse` Pydantic v2 schemas validated | 🟡 Pending |
+| **Stage 2** | Wire Schemas | `MatchReportResponse` Pydantic v2 schemas validated | 🟢 **Closed & Passed** |
 | **Stage 3** | Grounded Synthesis | Executive debrief synthesis + deterministic fallback | 🟡 Pending |
+
 | **Stage 4** | API Endpoints | `GET /v1/matches/{id}/report` JSON & Markdown routes | 🟡 Pending |
 | **Stage 5** | Cockpit Modal UI | Interactive glassmorphic modal & export tools | 🟡 Pending |
 | **Stage 6** | Quality Gate Audit | Full test suite green (`pytest`, `pyright`, `ruff`, line ceiling) | 🟡 Pending |

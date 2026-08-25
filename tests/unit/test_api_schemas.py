@@ -4,9 +4,15 @@ import pytest
 from pydantic import ValidationError
 
 from src.api.schemas import (
+    GameTheoryExploitAudit,
     HealthCheckResponse,
     MatchMetadataResponse,
     MatchReplayRequest,
+    MatchReportResponse,
+    MatchSummaryStats,
+    PivotalPointEntry,
+    PlayerPressureMetrics,
+    ServeDirectionBreakdown,
     StreamPointEvent,
 )
 from src.graph.state import (
@@ -163,3 +169,156 @@ def test_health_check_response() -> None:
     assert health.status == "healthy"
     assert health.graph_ready is True
     assert len(health.artifacts_loaded) == 3
+
+
+def test_pivotal_point_entry_validation() -> None:
+    """Verify PivotalPointEntry validation and probability bounds."""
+    pt = PivotalPointEntry(
+        point_index=15,
+        set_num=2,
+        game_score="4-3",
+        point_score="30-40",
+        server_id="Carlos Alcaraz",
+        returner_id="Novak Djokovic",
+        point_winner_id="Novak Djokovic",
+        point_winner_role="returner",
+        delta_leverage=0.28,
+        leverage_low=0.22,
+        leverage_high=0.35,
+        p_hat_server=0.64,
+        match_win_prob_before=0.55,
+        is_break_point=True,
+        impact_narrative="Break Point converted by Novak Djokovic.",
+    )
+
+    assert pt.point_index == 15
+    assert pt.is_break_point is True
+    assert pt.delta_leverage == 0.28
+
+    with pytest.raises(ValidationError):
+        PivotalPointEntry(
+            point_index=-1,
+            set_num=0,
+            game_score="0-0",
+            point_score="0-0",
+            server_id="P1",
+            returner_id="P2",
+            point_winner_id="P1",
+            point_winner_role="server",
+            delta_leverage=1.5,
+            leverage_low=0.0,
+            leverage_high=1.0,
+            p_hat_server=0.5,
+            match_win_prob_before=0.5,
+            impact_narrative="invalid",
+        )
+
+
+def test_player_pressure_metrics_validation() -> None:
+    """Verify PlayerPressureMetrics schema constraints."""
+    press = PlayerPressureMetrics(
+        player_id="Carlos Alcaraz",
+        total_points=120,
+        routine_points_count=90,
+        routine_win_rate=0.68,
+        elevated_points_count=20,
+        elevated_win_rate=0.70,
+        critical_points_count=10,
+        critical_win_rate=0.80,
+        pressure_shift_delta_p=0.12,
+        resilience_assessment="Elevated / Clutch (+Win Rate under Pressure)",
+    )
+
+    assert press.player_id == "Carlos Alcaraz"
+    assert press.pressure_shift_delta_p == 0.12
+
+
+def test_match_report_response_serialization() -> None:
+    """Verify MatchReportResponse full model serialization and roundtrip."""
+    summary = MatchSummaryStats(
+        match_id="test_001",
+        surface="HARD",
+        player_1="Alex De Minaur",
+        player_2="Alexander Zverev",
+        winner="Alex De Minaur",
+        final_score="6-4, 6-3",
+        total_points=120,
+        p1_points_won=70,
+        p2_points_won=50,
+        p1_win_pct=0.583,
+        p2_win_pct=0.417,
+        mean_delta_leverage=0.038,
+        max_delta_leverage=0.34,
+        high_leverage_point_count=14,
+        break_point_count=8,
+        break_points_converted=4,
+    )
+
+    pt = PivotalPointEntry(
+        point_index=45,
+        set_num=1,
+        game_score="5-4",
+        point_score="40-30",
+        server_id="Alex De Minaur",
+        returner_id="Alexander Zverev",
+        point_winner_id="Alex De Minaur",
+        point_winner_role="server",
+        delta_leverage=0.34,
+        leverage_low=0.28,
+        leverage_high=0.40,
+        p_hat_server=0.70,
+        match_win_prob_before=0.85,
+        is_set_point=True,
+        impact_narrative="Set Point converted.",
+    )
+
+    press = PlayerPressureMetrics(
+        player_id="Alex De Minaur",
+        total_points=120,
+        routine_points_count=95,
+        routine_win_rate=0.57,
+        elevated_points_count=15,
+        elevated_win_rate=0.60,
+        critical_points_count=10,
+        critical_win_rate=0.70,
+        pressure_shift_delta_p=0.13,
+        resilience_assessment="Elevated / Clutch",
+    )
+
+    gt = GameTheoryExploitAudit(
+        server_id="Alex De Minaur",
+        returner_id="Alexander Zverev",
+        court_side="all",
+        realized_serve_mix=ServeDirectionBreakdown(
+            wide_count=20,
+            body_count=5,
+            t_count=25,
+            total_charted=50,
+            wide_pct=0.40,
+            body_pct=0.10,
+            t_pct=0.50,
+        ),
+        nash_serve_mix={"wide": 0.50, "t": 0.50},
+        returner_bias={"wide": 0.50, "t": 0.50},
+        exploit_gain_delta_ev=0.0,
+        sample_size=50,
+        sufficiency_gated=False,
+    )
+
+    response = MatchReportResponse(
+        summary=summary,
+        pivotal_points=[pt],
+        pressure_resilience=[press],
+        game_theory_audit=[gt],
+        executive_debrief="Solid tactical execution in decisive moments.",
+        markdown_report="# Full Report",
+    )
+
+    json_str = response.model_dump_json()
+    reloaded = MatchReportResponse.model_validate_json(json_str)
+
+    assert reloaded.summary.match_id == "test_001"
+    assert len(reloaded.pivotal_points) == 1
+    assert reloaded.pivotal_points[0].is_set_point is True
+    assert reloaded.markdown_report == "# Full Report"
+
