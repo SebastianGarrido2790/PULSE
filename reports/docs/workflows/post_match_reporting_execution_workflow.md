@@ -81,7 +81,7 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 
 ---
 
-## Stage 4 — FastAPI Report Endpoints (`src/api/streaming.py`)
+## Stage 4 — FastAPI Report Endpoints (`src/api/streaming.py`) ✅
 
 10. Register `GET /v1/matches/{match_id}/report` endpoint in `src/api/streaming.py`: **[D-3]**
     - Query parameters: `format: Literal["json", "markdown"] = "json"`.
@@ -89,7 +89,8 @@ Stage 6 (Integration Tests & Quality Gate Audit)
     - Handles missing match IDs with HTTP 404 and uninitialized graphs with HTTP 503.
 11. Update `tests/unit/test_streaming.py` and `tests/unit/test_api_main.py` with endpoint route registration tests.
 
-**Gate 4:** `GET /v1/matches/{match_id}/report` returns HTTP 200 with both JSON and Markdown formats for existing match IDs.
+**Gate 4:** `GET /v1/matches/{match_id}/report` returns HTTP 200 with both JSON and Markdown formats for existing match IDs. ✅ **PASSED (2026-08-25)**
+
 
 ---
 
@@ -144,8 +145,7 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 | **Stage 1** | Analytics Engine | `src/analytics/match_report.py` deterministic aggregation | 🟢 **Closed & Passed** |
 | **Stage 2** | Wire Schemas | `MatchReportResponse` Pydantic v2 schemas validated | 🟢 **Closed & Passed** |
 | **Stage 3** | Grounded Synthesis | Executive debrief synthesis + deterministic fallback | 🟢 **Closed & Passed** |
-| **Stage 4** | API Endpoints | `GET /v1/matches/{id}/report` JSON & Markdown routes | 🟡 Pending |
-
+| **Stage 4** | API Endpoints | `GET /v1/matches/{id}/report` JSON & Markdown routes | 🟢 **Closed & Passed** |
 | **Stage 5** | Cockpit Modal UI | Interactive glassmorphic modal & export tools | 🟡 Pending |
 | **Stage 6** | Quality Gate Audit | Full test suite green (`pytest`, `pyright`, `ruff`, line ceiling) | 🟡 Pending |
 

@@ -34,9 +34,18 @@ def test_health_endpoint_degraded_when_no_graph() -> None:
 
 
 def test_ui_and_static_routes_registered() -> None:
-    """Verify that root, ui alias, and static asset routes are registered on the app."""
+    """Verify that root, ui alias, static assets, and streaming routes are registered."""
     route_paths = [getattr(r, "path", None) for r in app.routes]
     assert "/" in route_paths
     assert "/ui" in route_paths
     assert "/health" in route_paths
     assert "/static" in route_paths
+
+    from src.api.streaming import streaming_router
+
+    streaming_paths = [getattr(r, "path", None) for r in streaming_router.routes]
+    assert "/v1/matches" in streaming_paths
+    assert "/v1/matches/{match_id}" in streaming_paths
+    assert "/v1/matches/{match_id}/report" in streaming_paths
+    assert "/v1/matches/{match_id}/stream" in streaming_paths
+    assert "/v1/matches/{match_id}/ws" in streaming_paths

@@ -11,10 +11,16 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from langgraph.graph.state import CompiledStateGraph
 
-from src.api.schemas import MatchMetadataResponse, MatchReplayRequest, StreamPointEvent
+from src.analytics.match_report import generate_match_report
+from src.api.schemas import (
+    MatchMetadataResponse,
+    MatchReplayRequest,
+    MatchReportResponse,
+    StreamPointEvent,
+)
 from src.config.loader import load_params
 from src.simulator.replay import generate_point_events, get_available_matches, load_match_records
 from src.utils.logger import get_logger
@@ -154,6 +160,69 @@ async def get_match_metadata(match_id: str) -> MatchMetadataResponse:
         total_points=len(records),
         match_format="bo3",
     )
+
+
+@streaming_router.get(
+    "/{match_id}/report",
+    response_model=MatchReportResponse,
+    responses={
+        200: {
+            "description": "Post-match tactical intelligence report in JSON or Markdown format",
+            "content": {
+                "application/json": {},
+                "text/markdown": {"schema": {"type": "string"}},
+            },
+        },
+        404: {"description": "Match ID not found"},
+    },
+    summary="Get comprehensive post-match tactical intelligence report",
+)
+async def get_match_report_endpoint(
+    match_id: str,
+    format: Literal["json", "markdown"] = Query(
+        default="json",
+        description="Response format ('json' for structured schema, 'markdown' for Markdown)",
+    ),
+    match_format: Literal["bo3", "bo5"] = Query(
+        default="bo3",
+        description="Match scoring format ('bo3' or 'bo5')",
+    ),
+) -> MatchReportResponse | PlainTextResponse:
+    """Generate and return post-match tactical intelligence report for a charted match.
+
+    Aggregates point-by-point leverage, identifies top pivotal moments, evaluates
+    pressure performance across leverage tiers, and audits serve-return game theory.
+
+    Authority: Phase 6.6 Post-Match Reporting Decisions D-2, D-3.
+    """
+    try:
+        records = load_match_records(match_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Match [{match_id}] could not be loaded: {exc}",
+        ) from exc
+
+    if not records:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Match [{match_id}] not found in dataset",
+        )
+
+    params = load_params()
+    report = generate_match_report(
+        records=records,
+        params=params,
+        match_format=match_format,
+    )
+
+    if format == "markdown":
+        return PlainTextResponse(
+            content=report.markdown_report,
+            media_type="text/markdown",
+        )
+
+    return report
 
 
 @streaming_router.get(

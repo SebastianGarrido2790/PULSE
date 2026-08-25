@@ -422,3 +422,50 @@ def test_stream_match_sse_bo5_parameter_propagation(
         assert len(events) > 0
         for ev in events:
             assert ev["point_context"]["match_format"] == "bo5"
+
+
+def test_get_match_report_json_success(
+    streaming_parquet_file: Path, monkeypatch
+) -> None:
+    """Verify GET /v1/matches/{match_id}/report returns valid JSON report payload."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: streaming_parquet_file,
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/v1/matches/stream_test_match_001/report?format=json")
+        assert response.status_code == 200
+        data = response.json()
+        assert "summary" in data
+        assert "pivotal_points" in data
+        assert "pressure_resilience" in data
+        assert "game_theory_audit" in data
+        assert "executive_debrief" in data
+        assert "markdown_report" in data
+        assert data["summary"]["match_id"] == "stream_test_match_001"
+
+
+def test_get_match_report_markdown_success(
+    streaming_parquet_file: Path, monkeypatch
+) -> None:
+    """Verify GET /v1/matches/{match_id}/report returns formatted Markdown report."""
+    monkeypatch.setattr(
+        "src.simulator.replay.resolve_parquet_path",
+        lambda *args, **kwargs: streaming_parquet_file,
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/v1/matches/stream_test_match_001/report?format=markdown")
+        assert response.status_code == 200
+        assert "text/markdown" in response.headers["content-type"]
+        assert "# PULSE Match Intelligence Report" in response.text
+        assert "Carlos Alcaraz" in response.text
+
+
+def test_get_match_report_not_found(monkeypatch) -> None:
+    """Verify GET /v1/matches/{match_id}/report returns 404 for unknown match."""
+    with TestClient(app) as client:
+        response = client.get("/v1/matches/non_existent_match_999/report")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
