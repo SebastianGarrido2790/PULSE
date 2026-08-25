@@ -38,7 +38,7 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 
 ---
 
-## Stage 1 — Deterministic Post-Match Analytics Engine (`src/analytics/match_report.py`)
+## Stage 1 — Deterministic Post-Match Analytics Engine (`src/analytics/match_report.py`) ✅
 
 5. Create `src/analytics/` directory and docstring-only `src/analytics/__init__.py`. **[D-1]**
 6. Implement `src/analytics/match_report.py` containing deterministic aggregation logic: **[D-1, D-6, D-7]**
@@ -52,7 +52,8 @@ Stage 6 (Integration Tests & Quality Gate Audit)
      - Compiles realized serve direction distributions vs Nash equilibrium mix across deuce and ad courts, quantifying returner bias and realized $+EV$ exploit margins ($\delta$).
 7. Implement `format_match_report_markdown(payload: MatchReportPayload) -> str` to generate a standardized, human-readable Markdown report. **[D-3]**
 
-**Gate 1:** `src/analytics/match_report.py` implemented; unit tests confirm exact mathematical outputs and bucket partitioning across golden test match fixtures.
+**Gate 1:** `src/analytics/match_report.py` implemented; unit tests confirm exact mathematical outputs and bucket partitioning across golden test match fixtures. ✅ **PASSED (2026-08-24)**
+
 
 ---
 
@@ -138,8 +139,7 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 | Stage | Focus Area | Closing Gate Condition | Status |
 |:---:|---|---|:---:|
 | **Stage 0** | Pre-Flight Audit | Workspace clean, baseline tests (152/152) green | 🟢 **Closed & Passed** |
-| **Stage 1** | Analytics Engine | `src/analytics/match_report.py` deterministic aggregation | 🟡 Pending |
-
+| **Stage 1** | Analytics Engine | `src/analytics/match_report.py` deterministic aggregation | 🟢 **Closed & Passed** |
 | **Stage 2** | Wire Schemas | `MatchReportResponse` Pydantic v2 schemas validated | 🟡 Pending |
 | **Stage 3** | Grounded Synthesis | Executive debrief synthesis + deterministic fallback | 🟡 Pending |
 | **Stage 4** | API Endpoints | `GET /v1/matches/{id}/report` JSON & Markdown routes | 🟡 Pending |

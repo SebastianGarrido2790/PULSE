@@ -1,0 +1,257 @@
+"""Unit tests for PULSE Post-Match Tactical Analytics & Reporting Engine.
+
+Tests deterministic post-match aggregation, pivotal point extraction,
+pressure resilience partitioning, game-theoretic audits, and Markdown report generation.
+
+Authority: Phase 6.6 Post-Match Reporting Stage 1 Verification.
+"""
+
+import pytest
+
+from src.analytics.match_report import (
+    MatchReportPayload,
+    compute_game_theory_audit,
+    compute_match_summary,
+    compute_pressure_resilience,
+    evaluate_all_points,
+    extract_top_pivotal_points,
+    format_match_report_markdown,
+    generate_match_report,
+)
+from src.schemas.point_record import (
+    PointOutcome,
+    PointRecord,
+    ServeDirection,
+    Surface,
+    ValidPointScore,
+)
+
+
+@pytest.fixture
+def sample_point_records() -> list[PointRecord]:
+    """Generate a synthetic sequence of 10 point records for unit testing."""
+    records: list[PointRecord] = []
+    # Game 1: P1 serves, P1 wins 40-15 (5 points)
+    # Point 0: 0-0
+    records.append(
+        PointRecord(
+            match_id="test_match_001",
+            point_id="pt_0",
+            server="Alex De Minaur",
+            returner="Alexander Zverev",
+            server_is_p1=True,
+            surface=Surface.HARD,
+            serve_number=1,
+            serve_direction=ServeDirection.WIDE,
+            p1_score=ValidPointScore.S0,
+            p2_score=ValidPointScore.S0,
+            p1_games=0,
+            p2_games=0,
+            p1_sets=0,
+            p2_sets=0,
+            point_winner=PointOutcome.SERVER,
+        )
+    )
+    # Point 1: 15-0
+    records.append(
+        PointRecord(
+            match_id="test_match_001",
+            point_id="pt_1",
+            server="Alex De Minaur",
+            returner="Alexander Zverev",
+            server_is_p1=True,
+            surface=Surface.HARD,
+            serve_number=1,
+            serve_direction=ServeDirection.T,
+            p1_score=ValidPointScore.S15,
+            p2_score=ValidPointScore.S0,
+            p1_games=0,
+            p2_games=0,
+            p1_sets=0,
+            p2_sets=0,
+            point_winner=PointOutcome.RETURNER,
+        )
+    )
+    # Point 2: 15-15
+    records.append(
+        PointRecord(
+            match_id="test_match_001",
+            point_id="pt_2",
+            server="Alex De Minaur",
+            returner="Alexander Zverev",
+            server_is_p1=True,
+            surface=Surface.HARD,
+            serve_number=2,
+            serve_direction=ServeDirection.BODY,
+            p1_score=ValidPointScore.S15,
+            p2_score=ValidPointScore.S15,
+            p1_games=0,
+            p2_games=0,
+            p1_sets=0,
+            p2_sets=0,
+            point_winner=PointOutcome.SERVER,
+        )
+    )
+    # Point 3: 30-15
+    records.append(
+        PointRecord(
+            match_id="test_match_001",
+            point_id="pt_3",
+            server="Alex De Minaur",
+            returner="Alexander Zverev",
+            server_is_p1=True,
+            surface=Surface.HARD,
+            serve_number=1,
+            serve_direction=ServeDirection.WIDE,
+            p1_score=ValidPointScore.S30,
+            p2_score=ValidPointScore.S15,
+            p1_games=0,
+            p2_games=0,
+            p1_sets=0,
+            p2_sets=0,
+            point_winner=PointOutcome.SERVER,
+        )
+    )
+    # Point 4: 40-15 (Game Point)
+    records.append(
+        PointRecord(
+            match_id="test_match_001",
+            point_id="pt_4",
+            server="Alex De Minaur",
+            returner="Alexander Zverev",
+            server_is_p1=True,
+            surface=Surface.HARD,
+            serve_number=1,
+            serve_direction=ServeDirection.T,
+            p1_score=ValidPointScore.S40,
+            p2_score=ValidPointScore.S15,
+            p1_games=0,
+            p2_games=0,
+            p1_sets=0,
+            p2_sets=0,
+            point_winner=PointOutcome.SERVER,
+        )
+    )
+    # High leverage point: Break point in Set 2 (Point 5)
+    records.append(
+        PointRecord(
+            match_id="test_match_001",
+            point_id="pt_5",
+            server="Alexander Zverev",
+            returner="Alex De Minaur",
+            server_is_p1=False,
+            surface=Surface.HARD,
+            serve_number=1,
+            serve_direction=ServeDirection.WIDE,
+            p1_score=ValidPointScore.S30,
+            p2_score=ValidPointScore.S40,
+            p1_games=4,
+            p2_games=4,
+            p1_sets=1,
+            p2_sets=0,
+            point_winner=PointOutcome.RETURNER,  # De Minaur converts Break Point
+            break_point=True,
+        )
+    )
+    # Match point in Set 2 (Point 6)
+    records.append(
+        PointRecord(
+            match_id="test_match_001",
+            point_id="pt_6",
+            server="Alex De Minaur",
+            returner="Alexander Zverev",
+            server_is_p1=True,
+            surface=Surface.HARD,
+            serve_number=1,
+            serve_direction=ServeDirection.WIDE,
+            p1_score=ValidPointScore.S40,
+            p2_score=ValidPointScore.S30,
+            p1_games=5,
+            p2_games=4,
+            p1_sets=1,
+            p2_sets=0,
+            point_winner=PointOutcome.SERVER,  # De Minaur converts Match Point
+            match_point=True,
+        )
+    )
+    return records
+
+
+def test_evaluate_all_points(sample_point_records: list[PointRecord]) -> None:
+    """Test point-by-point leverage evaluation."""
+    evals = evaluate_all_points(sample_point_records)
+    assert len(evals) == len(sample_point_records)
+    for ev in evals:
+        assert 0.0 <= ev.delta_leverage <= 1.0
+        assert 0.0 <= ev.leverage_low <= ev.leverage_high <= 1.0
+        assert ev.point_winner_id in ("Alex De Minaur", "Alexander Zverev")
+
+
+def test_compute_match_summary(sample_point_records: list[PointRecord]) -> None:
+    """Test match summary statistics computation."""
+    evals = evaluate_all_points(sample_point_records)
+    summary = compute_match_summary(sample_point_records, evals)
+
+    assert summary.match_id == "test_match_001"
+    assert summary.player_1 == "Alex De Minaur"
+    assert summary.player_2 == "Alexander Zverev"
+    assert summary.winner == "Alex De Minaur"
+    assert summary.total_points == len(sample_point_records)
+    assert summary.p1_points_won == 6
+    assert summary.p2_points_won == 1
+    assert summary.break_point_count == 1
+    assert summary.break_points_converted == 1
+    assert summary.max_delta_leverage >= summary.mean_delta_leverage
+
+
+def test_extract_top_pivotal_points(sample_point_records: list[PointRecord]) -> None:
+    """Test extraction and ranking of top pivotal moments."""
+    evals = evaluate_all_points(sample_point_records)
+    pivotal = extract_top_pivotal_points(evaluations=evals, top_n=3)
+
+    assert len(pivotal) == 3
+    # Assert sorted descending by delta_leverage
+    assert pivotal[0].delta_leverage >= pivotal[1].delta_leverage >= pivotal[2].delta_leverage
+    # Match point or break point should have high leverage
+    assert any(pt.is_match_point or pt.is_break_point for pt in pivotal)
+    for pt in pivotal:
+        assert pt.impact_narrative != ""
+
+
+def test_compute_pressure_resilience(sample_point_records: list[PointRecord]) -> None:
+    """Test pressure resilience metrics across leverage tiers."""
+    evals = evaluate_all_points(sample_point_records)
+    pressure_list = compute_pressure_resilience(evals, "Alex De Minaur", "Alexander Zverev")
+
+    assert len(pressure_list) == 2
+    for p in pressure_list:
+        assert 0.0 <= p.routine_win_rate <= 1.0
+        assert -1.0 <= p.pressure_shift_delta_p <= 1.0
+        assert p.resilience_assessment != ""
+
+
+def test_compute_game_theory_audit(sample_point_records: list[PointRecord]) -> None:
+    """Test serve-return game theory audit."""
+    audits = compute_game_theory_audit(sample_point_records)
+    assert len(audits) == 2
+    for audit in audits:
+        assert audit.sample_size >= 0
+        assert 0.0 <= audit.realized_serve_mix.wide_pct <= 1.0
+
+
+def test_generate_match_report_end_to_end(sample_point_records: list[PointRecord]) -> None:
+    """Test end-to-end match report generation and Markdown rendering."""
+    report = generate_match_report(sample_point_records)
+
+    assert isinstance(report, MatchReportPayload)
+    assert report.summary.total_points == len(sample_point_records)
+    assert len(report.pivotal_points) <= 5
+    assert len(report.pressure_resilience) == 2
+    assert report.executive_debrief != ""
+
+    markdown = format_match_report_markdown(report)
+    assert "# PULSE Match Intelligence Report" in markdown
+    assert "Alex De Minaur" in markdown
+    assert "Top Pivotal Moments Audit" in markdown
+    assert "Pressure Resilience Diagnostic" in markdown
+    assert "Game-Theoretic Serve & Return Execution Audit" in markdown
