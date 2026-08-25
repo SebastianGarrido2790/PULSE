@@ -73,6 +73,9 @@ echo   Tactical Cockpit URL : http://127.0.0.1:8000/
 echo   Swagger OpenAPI Docs : http://127.0.0.1:8000/docs
 echo   Health Status Check  : http://127.0.0.1:8000/health
 echo ========================================================================
+echo Checking and freeing port 8000 if previously occupied...
+powershell -NoProfile -Command "$conn = Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue; if ($conn) { Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500 }"
+
 echo.
 echo Launching default web browser in background (opening in 2s)...
 start "" powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process 'http://127.0.0.1:8000/'"

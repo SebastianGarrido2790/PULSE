@@ -760,8 +760,18 @@ function updateTopologyUI(decisionLog, pressureResult, exploitResult, tacticalOu
       DOM.nodePressureDiagnostic.classList.add("node-fired");
       DOM.badgePressureDiagnostic.className = "node-status-pill status-fired";
       DOM.badgePressureDiagnostic.textContent = "FIRED";
-      if (DOM.metricDeltaP) DOM.metricDeltaP.textContent = `${(pressureResult.delta_p_shrunk * 100).toFixed(1)}%`;
-      if (DOM.metricShrinkage) DOM.metricShrinkage.textContent = `${(pressureResult.shrinkage_factor * 100).toFixed(0)}%`;
+      const dpVal = pressureResult.delta_p_shrunk;
+      const sfVal = pressureResult.shrinkage_factor;
+      if (DOM.metricDeltaP) {
+        DOM.metricDeltaP.textContent = (dpVal !== null && dpVal !== undefined && !isNaN(dpVal))
+          ? `${(dpVal * 100).toFixed(1)}%`
+          : "0.0%";
+      }
+      if (DOM.metricShrinkage) {
+        DOM.metricShrinkage.textContent = (sfVal !== null && sfVal !== undefined && !isNaN(sfVal))
+          ? `${(sfVal * 100).toFixed(0)}%`
+          : "--";
+      }
     } else {
       DOM.nodePressureDiagnostic.classList.remove("node-fired");
       DOM.badgePressureDiagnostic.className = "node-status-pill status-suppressed";
