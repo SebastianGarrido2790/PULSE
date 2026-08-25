@@ -83,8 +83,21 @@ async def test_html_contains_required_cockpit_dom_contracts() -> None:
         assert 'id="btn-play"' in html
         assert 'id="btn-pause"' in html
         assert 'id="btn-reset"' in html
+        assert 'id="btn-match-report"' in html
         assert 'id="stream-status-badge"' in html
         assert 'id="otel-trace-badge"' in html
+
+        # Sub-Component 7: Post-Match Tactical Intelligence Modal
+        assert 'id="modal-match-report"' in html
+        assert 'id="report-executive-summary"' in html
+        assert 'id="report-key-indicators"' in html
+        assert 'id="report-pivotal-points"' in html
+        assert 'id="report-pressure-breakdown"' in html
+        assert 'id="report-game-theory-audit"' in html
+        assert 'id="report-actions"' in html
+        assert 'id="btn-copy-markdown"' in html
+        assert 'id="btn-download-json"' in html
+        assert 'id="btn-print-report"' in html
 
 
 @pytest.mark.asyncio
@@ -99,6 +112,7 @@ async def test_static_assets_serve_correct_mime_types() -> None:
         assert "text/css" in css_content_type
         assert ":root" in css_resp.text
         assert "--bg-base" in css_resp.text
+        assert ".modal-backdrop" in css_resp.text
 
         # 2. App JS
         js_resp = await client.get("/static/app.js")
@@ -107,6 +121,7 @@ async def test_static_assets_serve_correct_mime_types() -> None:
         assert "javascript" in js_content_type
         assert "renderLeverageChart" in js_resp.text
         assert "startStream" in js_resp.text
+        assert "openMatchReportModal" in js_resp.text
 
 
 @pytest.mark.asyncio

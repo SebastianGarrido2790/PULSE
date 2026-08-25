@@ -363,7 +363,27 @@ const DOM = {
   btnPlayText: document.getElementById("btn-play-text"),
   btnPause: document.getElementById("btn-pause"),
   btnReset: document.getElementById("btn-reset"),
+  btnMatchReport: document.getElementById("btn-match-report"),
   speedSelector: document.getElementById("speed-select"),
+  // Post-Match Report Modal
+  modalMatchReport: document.getElementById("modal-match-report"),
+  btnCloseReport: document.getElementById("btn-close-report"),
+  modalSurfaceBadge: document.getElementById("modal-surface-badge"),
+  modalScoreBadge: document.getElementById("modal-score-badge"),
+  modalReportTitle: document.getElementById("modal-report-title"),
+  debriefParagraph: document.getElementById("debrief-paragraph"),
+  kpiTotalPoints: document.getElementById("kpi-total-points"),
+  kpiP1Won: document.getElementById("kpi-p1-won"),
+  kpiP2Won: document.getElementById("kpi-p2-won"),
+  kpiMeanLev: document.getElementById("kpi-mean-lev"),
+  kpiPeakLev: document.getElementById("kpi-peak-lev"),
+  kpiBreakPoints: document.getElementById("kpi-break-points"),
+  pivotalPointsTbody: document.getElementById("pivotal-points-tbody"),
+  pressureCardsContainer: document.getElementById("pressure-cards-container"),
+  gtCardsContainer: document.getElementById("gt-cards-container"),
+  btnCopyMarkdown: document.getElementById("btn-copy-markdown"),
+  btnDownloadJson: document.getElementById("btn-download-json"),
+  btnPrintReport: document.getElementById("btn-print-report"),
 };
 
 /**
@@ -892,7 +912,263 @@ function updateTacticalFeedUI(tacticalOutput, deltaLeverage) {
 }
 
 // ============================================================================
-// 5. EVENT LISTENERS & INITIALIZATION
+// 5. POST-MATCH TACTICAL REPORT MODAL CONTROLLER (Stage 5)
+// ============================================================================
+
+let currentReportData = null;
+
+/**
+ * Open the Post-Match Report modal and fetch analytics data
+ */
+export async function openMatchReportModal(matchId = null) {
+  const targetMatchId = matchId || state.selectedMatchId || (state.matches.length > 0 ? state.matches[0] : null);
+  if (!targetMatchId) {
+    alert("Please select a match first to view its post-match tactical report.");
+    return;
+  }
+
+  if (DOM.modalMatchReport) {
+    DOM.modalMatchReport.classList.remove("hidden");
+  }
+
+  // Set loading placeholders
+  if (DOM.modalReportTitle) DOM.modalReportTitle.textContent = `Loading report for [${targetMatchId}]...`;
+  if (DOM.debriefParagraph) DOM.debriefParagraph.textContent = "Computing Markov leverage, extracting pivotal moments, and generating tactical debrief...";
+  if (DOM.pivotalPointsTbody) DOM.pivotalPointsTbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#9CA3AF;">Loading pivotal moments...</td></tr>`;
+  if (DOM.pressureCardsContainer) DOM.pressureCardsContainer.innerHTML = `<div style="color:#9CA3AF; padding:10px;">Evaluating leverage resilience tiers...</div>`;
+  if (DOM.gtCardsContainer) DOM.gtCardsContainer.innerHTML = `<div style="color:#9CA3AF; padding:10px;">Auditing serve-return distributions vs Nash equilibrium...</div>`;
+
+  try {
+    const res = await fetch(`/v1/matches/${targetMatchId}/report?format=json`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const data = await res.json();
+    currentReportData = data;
+    renderMatchReportData(data);
+  } catch (err) {
+    console.error("Failed to load match report:", err);
+    if (DOM.modalReportTitle) DOM.modalReportTitle.textContent = "Error Loading Match Report";
+    if (DOM.debriefParagraph) DOM.debriefParagraph.textContent = `Failed to generate report for [${targetMatchId}]: ${err.message}`;
+  }
+}
+
+/**
+ * Close the Post-Match Report modal
+ */
+export function closeMatchReportModal() {
+  if (DOM.modalMatchReport) {
+    DOM.modalMatchReport.classList.add("hidden");
+  }
+}
+
+/**
+ * Populate the report modal with structured analytics payload
+ */
+function renderMatchReportData(data) {
+  if (!data || !data.summary) return;
+  const s = data.summary;
+
+  if (DOM.modalReportTitle) DOM.modalReportTitle.textContent = `${s.player_1} vs ${s.player_2}`;
+  if (DOM.modalSurfaceBadge) DOM.modalSurfaceBadge.textContent = s.surface;
+  if (DOM.modalScoreBadge) DOM.modalScoreBadge.textContent = `Winner: ${s.winner} (${s.final_score})`;
+
+  if (DOM.debriefParagraph) {
+    DOM.debriefParagraph.textContent = data.executive_debrief || "No debrief available.";
+  }
+
+  // KPIs
+  if (DOM.kpiTotalPoints) DOM.kpiTotalPoints.textContent = s.total_points;
+  if (DOM.kpiP1Won) DOM.kpiP1Won.textContent = `${s.p1_points_won} (${(s.p1_win_pct * 100).toFixed(1)}%)`;
+  if (DOM.kpiP2Won) DOM.kpiP2Won.textContent = `${s.p2_points_won} (${(s.p2_win_pct * 100).toFixed(1)}%)`;
+  if (DOM.kpiMeanLev) DOM.kpiMeanLev.textContent = `${(s.mean_delta_leverage * 100).toFixed(1)}%`;
+  if (DOM.kpiPeakLev) DOM.kpiPeakLev.textContent = `${(s.max_delta_leverage * 100).toFixed(1)}%`;
+  if (DOM.kpiBreakPoints) DOM.kpiBreakPoints.textContent = `${s.break_points_converted} / ${s.break_point_count}`;
+
+  // Pivotal Points Table
+  if (DOM.pivotalPointsTbody) {
+    DOM.pivotalPointsTbody.innerHTML = "";
+    const pivotal = data.pivotal_points || [];
+    if (pivotal.length === 0) {
+      DOM.pivotalPointsTbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#9CA3AF;">No pivotal moments identified.</td></tr>`;
+    } else {
+      pivotal.forEach((pt, idx) => {
+        const tr = document.createElement("tr");
+        const ciStr = `[${(pt.leverage_low * 100).toFixed(1)}%, ${(pt.leverage_high * 100).toFixed(1)}%]`;
+        tr.innerHTML = `
+          <td><strong style="color:var(--accent-cyan)">#${idx + 1}</strong></td>
+          <td><code>${pt.point_index + 1}</code></td>
+          <td>Set ${pt.set_num}: ${pt.game_score} (${pt.point_score})</td>
+          <td>${pt.server_id}</td>
+          <td><strong>${pt.point_winner_id}</strong></td>
+          <td><strong class="text-magenta">${(pt.delta_leverage * 100).toFixed(1)}%</strong></td>
+          <td><span style="color:#9CA3AF;">${ciStr}</span></td>
+          <td>${pt.impact_narrative}</td>
+          <td><button class="btn-seek" data-point-idx="${pt.point_index}" title="Seek playback to this point">Seek</button></td>
+        `;
+        DOM.pivotalPointsTbody.appendChild(tr);
+      });
+
+      // Attach seek listeners
+      DOM.pivotalPointsTbody.querySelectorAll(".btn-seek").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const ptIdx = parseInt(e.currentTarget.getAttribute("data-point-idx"), 10);
+          seekToPoint(ptIdx);
+          closeMatchReportModal();
+        });
+      });
+    }
+  }
+
+  // Pressure Resilience Cards
+  if (DOM.pressureCardsContainer) {
+    DOM.pressureCardsContainer.innerHTML = "";
+    const pressure = data.pressure_resilience || [];
+    pressure.forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "pressure-player-card";
+
+      let ratingClass = "rating-steady";
+      if (p.pressure_shift_delta_p > 0.03) ratingClass = "rating-clutch";
+      else if (p.pressure_shift_delta_p < -0.03) ratingClass = "rating-vulnerable";
+
+      card.innerHTML = `
+        <div class="pressure-card-header">
+          <span class="pressure-card-title">${p.player_id}</span>
+          <span class="pressure-rating-badge ${ratingClass}">${p.resilience_assessment}</span>
+        </div>
+        <div>
+          <div class="tier-stat-row">
+            <span>Routine Points (ΔL &lt; 10%)</span>
+            <strong>${(p.routine_win_rate * 100).toFixed(1)}% (${p.routine_points_count} pts)</strong>
+          </div>
+          <div class="tier-progress-track">
+            <div class="tier-progress-bar bar-routine" style="width: ${Math.min(100, p.routine_win_rate * 100)}%;"></div>
+          </div>
+
+          <div class="tier-stat-row">
+            <span>Elevated Points (10% ≤ ΔL &lt; 25%)</span>
+            <strong>${(p.elevated_win_rate * 100).toFixed(1)}% (${p.elevated_points_count} pts)</strong>
+          </div>
+          <div class="tier-progress-track">
+            <div class="tier-progress-bar bar-routine" style="width: ${Math.min(100, p.elevated_win_rate * 100)}%;"></div>
+          </div>
+
+          <div class="tier-stat-row">
+            <span>Critical Points (ΔL ≥ 25%)</span>
+            <strong class="text-magenta">${(p.critical_win_rate * 100).toFixed(1)}% (${p.critical_points_count} pts)</strong>
+          </div>
+          <div class="tier-progress-track">
+            <div class="tier-progress-bar bar-critical" style="width: ${Math.min(100, p.critical_win_rate * 100)}%;"></div>
+          </div>
+        </div>
+        <div style="font-size:0.8rem; color:#9CA3AF; border-top:1px solid var(--border-glass); padding-top:8px;">
+          Pressure Shift (Δp): <strong style="color:${p.pressure_shift_delta_p >= 0 ? '#10B981' : '#EF4444'}">${p.pressure_shift_delta_p >= 0 ? '+' : ''}${(p.pressure_shift_delta_p * 100).toFixed(1)}%</strong>
+        </div>
+      `;
+      DOM.pressureCardsContainer.appendChild(card);
+    });
+  }
+
+  // Game Theory Cards
+  if (DOM.gtCardsContainer) {
+    DOM.gtCardsContainer.innerHTML = "";
+    const gtList = data.game_theory_audit || [];
+    gtList.forEach((gt) => {
+      const card = document.createElement("div");
+      card.className = "gt-card";
+
+      const real = gt.realized_serve_mix;
+      const statusLabel = gt.sufficiency_gated
+        ? '<span class="badge badge-leverage" style="background:rgba(239,68,68,0.2); border:1px solid #EF4444; color:#EF4444;">Gated (N &lt; 10)</span>'
+        : '<span class="badge badge-accent">Statistically Supported</span>';
+
+      card.innerHTML = `
+        <div class="pressure-card-header">
+          <span class="pressure-card-title">Server: <strong>${gt.server_id}</strong> vs ${gt.returner_id}</span>
+          ${statusLabel}
+        </div>
+        <div style="font-size:0.85rem; display:flex; flex-direction:column; gap:6px;">
+          <div><strong>Realized Serve Mix:</strong> Wide ${(real.wide_pct * 100).toFixed(0)}% / Body ${(real.body_pct * 100).toFixed(0)}% / T ${(real.t_pct * 100).toFixed(0)}% (${real.total_charted} charted)</div>
+          <div><strong>Nash Equilibrium Mix:</strong> Wide ${((gt.nash_serve_mix.wide || 0.5) * 100).toFixed(0)}% / T ${((gt.nash_serve_mix.t || 0.5) * 100).toFixed(0)}%</div>
+          <div><strong>Observed Returner Bias:</strong> Wide ${((gt.returner_bias.wide || 0.5) * 100).toFixed(0)}% / T ${((gt.returner_bias.t || 0.5) * 100).toFixed(0)}%</div>
+          <div style="margin-top:4px; font-weight:700; color:var(--accent-cyan);">Exploit Gain (+EV): ${(gt.exploit_gain_delta_ev >= 0 ? '+' : '')}${(gt.exploit_gain_delta_ev * 100).toFixed(1)}% win rate</div>
+        </div>
+      `;
+      DOM.gtCardsContainer.appendChild(card);
+    });
+  }
+}
+
+/**
+ * Seek the timeline oscillogram and visual state to a specific point index
+ */
+function seekToPoint(pointIndex) {
+  if (state.pointsHistory && state.pointsHistory[pointIndex]) {
+    state.currentPointIndex = pointIndex;
+    state.hoveredPointIndex = pointIndex;
+    renderLeverageChart();
+  }
+}
+
+/**
+ * Copy pre-rendered Markdown report to system clipboard
+ */
+async function copyReportMarkdown() {
+  if (!currentReportData || !currentReportData.markdown_report) {
+    if (state.selectedMatchId) {
+      try {
+        const res = await fetch(`/v1/matches/${state.selectedMatchId}/report?format=markdown`);
+        const text = await res.text();
+        await navigator.clipboard.writeText(text);
+        if (DOM.btnCopyMarkdown) {
+          const original = DOM.btnCopyMarkdown.innerHTML;
+          DOM.btnCopyMarkdown.innerHTML = "<span>✓ Copied!</span>";
+          setTimeout(() => { DOM.btnCopyMarkdown.innerHTML = original; }, 2000);
+        }
+      } catch (e) {
+        console.error("Failed to copy markdown:", e);
+      }
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(currentReportData.markdown_report);
+    if (DOM.btnCopyMarkdown) {
+      const original = DOM.btnCopyMarkdown.innerHTML;
+      DOM.btnCopyMarkdown.innerHTML = "<span>✓ Copied!</span>";
+      setTimeout(() => { DOM.btnCopyMarkdown.innerHTML = original; }, 2000);
+    }
+  } catch (e) {
+    console.error("Failed to copy markdown to clipboard:", e);
+  }
+}
+
+/**
+ * Download structured JSON report file
+ */
+function downloadReportJson() {
+  if (!currentReportData) return;
+  const matchId = currentReportData.summary ? currentReportData.summary.match_id : (state.selectedMatchId || "match");
+  const blob = new Blob([JSON.stringify(currentReportData, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `pulse_match_report_${matchId}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Print / Save as PDF using browser print dialog
+ */
+function printReport() {
+  window.print();
+}
+
+// ============================================================================
+// 6. EVENT LISTENERS & INITIALIZATION
 // ============================================================================
 
 function attachEventListeners() {
@@ -913,6 +1189,50 @@ function attachEventListeners() {
       resetStream();
     });
   }
+
+  if (DOM.btnMatchReport) {
+    DOM.btnMatchReport.addEventListener("click", () => {
+      openMatchReportModal();
+    });
+  }
+
+  if (DOM.btnCloseReport) {
+    DOM.btnCloseReport.addEventListener("click", () => {
+      closeMatchReportModal();
+    });
+  }
+
+  if (DOM.modalMatchReport) {
+    DOM.modalMatchReport.addEventListener("click", (e) => {
+      if (e.target === DOM.modalMatchReport) {
+        closeMatchReportModal();
+      }
+    });
+  }
+
+  if (DOM.btnCopyMarkdown) {
+    DOM.btnCopyMarkdown.addEventListener("click", () => {
+      copyReportMarkdown();
+    });
+  }
+
+  if (DOM.btnDownloadJson) {
+    DOM.btnDownloadJson.addEventListener("click", () => {
+      downloadReportJson();
+    });
+  }
+
+  if (DOM.btnPrintReport) {
+    DOM.btnPrintReport.addEventListener("click", () => {
+      printReport();
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && DOM.modalMatchReport && !DOM.modalMatchReport.classList.contains("hidden")) {
+      closeMatchReportModal();
+    }
+  });
 
   if (DOM.matchSelect) {
     DOM.matchSelect.addEventListener("change", async (e) => {

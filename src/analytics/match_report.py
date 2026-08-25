@@ -91,9 +91,7 @@ def evaluate_all_points(
     table = (
         stratum_table
         if stratum_table is not None
-        else _safe_load_stratum_table(
-            Path("artifacts/models/point_win_classifier/stratum_table.json")
-        )
+        else _safe_load_stratum_table(Path("artifacts/models/point_win_classifier"))
     )
 
     evaluations: list[PointEvaluation] = []
@@ -948,11 +946,12 @@ async def generate_match_report_async(
 
 def _safe_load_stratum_table(path: Path) -> StratumTable:
     """Load StratumTable if artifact exists, else return fallback container."""
-    if path.exists():
+    dir_path = path.parent if path.is_file() or path.suffix == ".json" else path
+    if dir_path.exists():
         try:
-            return load_stratum_table(path)
+            return load_stratum_table(dir_path)
         except Exception as exc:
-            logger.warning("Could not load StratumTable from [%s]: %s", path, exc)
+            logger.warning("Could not load StratumTable from [%s]: %s", dir_path, exc)
     return StratumTable(global_default_p=0.62)
 
 

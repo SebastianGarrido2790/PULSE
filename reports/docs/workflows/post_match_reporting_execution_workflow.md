@@ -94,7 +94,7 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 
 ---
 
-## Stage 5 — Tactical Cockpit Interactive Modal (`src/api/static/`)
+## Stage 5 — Tactical Cockpit Interactive Modal (`src/api/static/`) ✅
 
 12. Update `src/api/static/index.html`: **[D-5]**
     - Add `#btn-match-report` button to `#stream-controls` (styled with reporting icon `📊`).
@@ -115,7 +115,8 @@ Stage 6 (Integration Tests & Quality Gate Audit)
     - Bind clipboard copy and JSON download event handlers.
     - Wire pivotal point row clicks to seek the Canvas 2D oscillogram to the exact point index.
 
-**Gate 5:** Modal opens smoothly in browser; data populates correctly; copy/download/jump-to-point actions function cleanly with zero console errors.
+**Gate 5:** Modal opens smoothly in browser; data populates correctly; copy/download/jump-to-point actions function cleanly with zero console errors. ✅ **PASSED (2026-08-25)**
+
 
 ---
 
@@ -146,8 +147,9 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 | **Stage 2** | Wire Schemas | `MatchReportResponse` Pydantic v2 schemas validated | 🟢 **Closed & Passed** |
 | **Stage 3** | Grounded Synthesis | Executive debrief synthesis + deterministic fallback | 🟢 **Closed & Passed** |
 | **Stage 4** | API Endpoints | `GET /v1/matches/{id}/report` JSON & Markdown routes | 🟢 **Closed & Passed** |
-| **Stage 5** | Cockpit Modal UI | Interactive glassmorphic modal & export tools | 🟡 Pending |
+| **Stage 5** | Cockpit Modal UI | Interactive glassmorphic modal & export tools | 🟢 **Closed & Passed** |
 | **Stage 6** | Quality Gate Audit | Full test suite green (`pytest`, `pyright`, `ruff`, line ceiling) | 🟡 Pending |
+
 
 ---
 

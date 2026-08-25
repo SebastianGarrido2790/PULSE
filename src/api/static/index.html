@@ -372,6 +372,17 @@
           </svg>
           <span>Reset</span>
         </button>
+
+        <button id="btn-match-report" class="btn btn-accent" title="View Comprehensive Post-Match Tactical Intelligence Report">
+          <svg class="icon icon-report" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span>Post-Match Report</span>
+        </button>
       </div>
 
       <div class="controls-right">
@@ -387,6 +398,139 @@
 
   </div>
 
+  <!-- MODAL: POST-MATCH TACTICAL INTELLIGENCE REPORT -->
+  <div class="modal-backdrop hidden" id="modal-match-report" role="dialog" aria-modal="true" aria-labelledby="modal-report-title">
+    <div class="modal-dialog">
+      <!-- 1. Header -->
+      <div class="modal-header" id="report-header">
+        <div class="modal-header-titles">
+          <div class="modal-badge-group">
+            <span class="badge badge-accent">Post-Match Tactical Intelligence</span>
+            <span class="badge badge-surface" id="modal-surface-badge">Hard</span>
+            <span class="badge badge-score" id="modal-score-badge">Final: --</span>
+          </div>
+          <h2 class="modal-title" id="modal-report-title">Match Report: Loading...</h2>
+        </div>
+        <button class="btn-icon modal-close" id="btn-close-report" aria-label="Close Report">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="modal-body" id="report-body">
+        
+        <!-- 2. Executive Tactical Debrief -->
+        <section class="report-section" id="report-executive-summary">
+          <h3 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            Executive Tactical Debrief
+          </h3>
+          <div class="report-card debrief-card" id="debrief-text-container">
+            <p id="debrief-paragraph">Loading tactical debrief...</p>
+          </div>
+        </section>
+
+        <!-- 3. Key Match Indicators Grid -->
+        <section class="report-section" id="report-key-indicators">
+          <h3 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            Match Overview & Key Indicators
+          </h3>
+          <div class="kpi-grid" id="report-kpi-grid">
+            <div class="kpi-card"><span class="kpi-label">Total Points</span><strong class="kpi-val" id="kpi-total-points">0</strong></div>
+            <div class="kpi-card"><span class="kpi-label">P1 Points Won</span><strong class="kpi-val" id="kpi-p1-won">0 (0.0%)</strong></div>
+            <div class="kpi-card"><span class="kpi-label">P2 Points Won</span><strong class="kpi-val" id="kpi-p2-won">0 (0.0%)</strong></div>
+            <div class="kpi-card"><span class="kpi-label">Mean Leverage (ΔL)</span><strong class="kpi-val text-cyan" id="kpi-mean-lev">0.0%</strong></div>
+            <div class="kpi-card"><span class="kpi-label">Peak Leverage (ΔL)</span><strong class="kpi-val text-magenta" id="kpi-peak-lev">0.0%</strong></div>
+            <div class="kpi-card"><span class="kpi-label">Break Points</span><strong class="kpi-val" id="kpi-break-points">0 / 0</strong></div>
+          </div>
+        </section>
+
+        <!-- 4. Top Pivotal Moments Table -->
+        <section class="report-section" id="report-pivotal-points">
+          <h3 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            Top Pivotal Moments Audit (Highest Leverage Inflections)
+          </h3>
+          <div class="table-container">
+            <table class="report-table" id="pivotal-points-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Point #</th>
+                  <th>Score Context</th>
+                  <th>Server</th>
+                  <th>Winner</th>
+                  <th>Leverage (ΔL)</th>
+                  <th>Wilson 95% CI</th>
+                  <th>Strategic Impact</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="pivotal-points-tbody">
+                <!-- Dynamically generated rows -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 5. Pressure Resilience Diagnostic -->
+        <section class="report-section" id="report-pressure-breakdown">
+          <h3 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Pressure Resilience Diagnostic (Routine vs Critical)
+          </h3>
+          <div class="pressure-cards-grid" id="pressure-cards-container">
+            <!-- Dynamically generated player cards -->
+          </div>
+        </section>
+
+        <!-- 6. Game-Theoretic Serve & Return Execution Audit -->
+        <section class="report-section" id="report-game-theory-audit">
+          <h3 class="section-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="12 6 12 12 16 14"/></svg>
+            Game-Theoretic Serve & Return Audit
+          </h3>
+          <div class="gt-cards-grid" id="gt-cards-container">
+            <!-- Dynamically generated matchup cards -->
+          </div>
+        </section>
+
+        <!-- 7. Governance & Sufficiency Gate Disclosure -->
+        <div class="advisory-disclaimer modal-disclaimer">
+          <svg class="icon icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span><strong>Sufficiency & Advisory Gate:</strong> Leverage computed via exact absorbing Markov chain solver. Wilson 95% bounds reflect observation volume. Advisory only — coaching staff retains sole decision-making authority.</span>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer / Action Toolbar -->
+      <div class="modal-footer" id="report-actions">
+        <div class="footer-left">
+          <span class="report-version-tag">PULSE Analytics Engine v0.6.5</span>
+        </div>
+        <div class="footer-actions">
+          <button class="btn btn-secondary" id="btn-copy-markdown">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>Copy Markdown</span>
+          </button>
+          <button class="btn btn-secondary" id="btn-download-json">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download JSON</span>
+          </button>
+          <button class="btn btn-primary" id="btn-print-report">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            <span>Print / PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/static/app.js"></script>
 </body>
 </html>
+
