@@ -16,6 +16,7 @@ from src.analytics.match_report import (
     evaluate_all_points,
     extract_top_pivotal_points,
     format_match_report_markdown,
+    generate_executive_debrief,
     generate_match_report,
 )
 from src.schemas.point_record import (
@@ -255,3 +256,50 @@ def test_generate_match_report_end_to_end(sample_point_records: list[PointRecord
     assert "Top Pivotal Moments Audit" in markdown
     assert "Pressure Resilience Diagnostic" in markdown
     assert "Game-Theoretic Serve & Return Execution Audit" in markdown
+
+
+def test_generate_executive_debrief_grounding(sample_point_records: list[PointRecord]) -> None:
+    """Verify that executive debrief accurately states computed numerical values."""
+    evals = evaluate_all_points(sample_point_records)
+    summary = compute_match_summary(sample_point_records, evals)
+    pivotal = extract_top_pivotal_points(evaluations=evals, top_n=3)
+    pressure_list = compute_pressure_resilience(evals, "Alex De Minaur", "Alexander Zverev")
+    audits = compute_game_theory_audit(sample_point_records)
+
+    debrief = generate_executive_debrief(summary, pivotal, pressure_list, audits)
+    assert "Alex De Minaur" in debrief
+    assert "Alexander Zverev" in debrief
+    assert f"{summary.mean_delta_leverage:.1%}" in debrief
+    assert f"{summary.max_delta_leverage:.1%}" in debrief
+    assert f"{summary.high_leverage_point_count}" in debrief
+
+
+def test_generate_executive_debrief_with_custom_client(
+    sample_point_records: list[PointRecord],
+) -> None:
+    """Verify that a custom LLM callable debrief synthesizer is called when provided."""
+    evals = evaluate_all_points(sample_point_records)
+    summary = compute_match_summary(sample_point_records, evals)
+    pivotal = extract_top_pivotal_points(evaluations=evals, top_n=3)
+    pressure_list = compute_pressure_resilience(evals, "Alex De Minaur", "Alexander Zverev")
+    audits = compute_game_theory_audit(sample_point_records)
+
+    def mock_llm_synthesizer(payload: dict) -> str:
+        return "Custom Grounded LLM Debrief: Alex De Minaur controlled the baseline tempo."
+
+    debrief = generate_executive_debrief(
+        summary, pivotal, pressure_list, audits, llm_client=mock_llm_synthesizer
+    )
+    assert debrief == "Custom Grounded LLM Debrief: Alex De Minaur controlled the baseline tempo."
+
+
+@pytest.mark.asyncio
+async def test_generate_match_report_async(sample_point_records: list[PointRecord]) -> None:
+    """Verify async match report generation with attached Markdown report."""
+    from src.analytics.match_report import generate_match_report_async
+
+    report = await generate_match_report_async(sample_point_records)
+    assert report.summary.match_id == "test_match_001"
+    assert report.executive_debrief != ""
+    assert report.markdown_report != ""
+    assert "# PULSE Match Intelligence Report" in report.markdown_report

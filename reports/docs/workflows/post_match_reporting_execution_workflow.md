@@ -70,13 +70,14 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 
 ---
 
-## Stage 3 — Grounded Narrative Synthesis Integration (`src/analytics/match_report.py`)
+## Stage 3 — Grounded Narrative Synthesis Integration (`src/analytics/match_report.py`) ✅
 
 9. Implement `generate_executive_debrief(payload: MatchReportPayload, llm_client: Any | None = None) -> str`: **[D-4]**
    - Calls the grounded LLM narrative synthesis client to draft a 3-paragraph executive tactical summary referencing exact numbers ($\Delta L$, $\Delta p$, $\delta$).
    - Implements a deterministic template-based fallback if the LLM client is unreachable or disabled, ensuring 100% availability.
 
-**Gate 3:** Narrative debrief contains 0 hallucinated numbers; deterministic fallback passes when LLM is mocked out.
+**Gate 3:** Narrative debrief contains 0 hallucinated numbers; deterministic fallback passes when LLM is mocked out. ✅ **PASSED (2026-08-24)**
+
 
 ---
 
@@ -142,9 +143,9 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 | **Stage 0** | Pre-Flight Audit | Workspace clean, baseline tests (152/152) green | 🟢 **Closed & Passed** |
 | **Stage 1** | Analytics Engine | `src/analytics/match_report.py` deterministic aggregation | 🟢 **Closed & Passed** |
 | **Stage 2** | Wire Schemas | `MatchReportResponse` Pydantic v2 schemas validated | 🟢 **Closed & Passed** |
-| **Stage 3** | Grounded Synthesis | Executive debrief synthesis + deterministic fallback | 🟡 Pending |
-
+| **Stage 3** | Grounded Synthesis | Executive debrief synthesis + deterministic fallback | 🟢 **Closed & Passed** |
 | **Stage 4** | API Endpoints | `GET /v1/matches/{id}/report` JSON & Markdown routes | 🟡 Pending |
+
 | **Stage 5** | Cockpit Modal UI | Interactive glassmorphic modal & export tools | 🟡 Pending |
 | **Stage 6** | Quality Gate Audit | Full test suite green (`pytest`, `pyright`, `ruff`, line ceiling) | 🟡 Pending |
 

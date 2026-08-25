@@ -8,7 +8,7 @@ Authority: Phase 6.6 Post-Match Reporting Decisions D-1, D-6, D-7, FR-12, FR-13.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from src.api.schemas import (
     GameTheoryExploitAudit,
@@ -515,7 +515,17 @@ def compute_game_theory_audit(
     return audits
 
 
-def generate_executive_debrief(
+POST_MATCH_SYSTEM_PROMPT = (
+    "You are an expert tennis performance analyst assistant producing a post-match "
+    "executive tactical debrief. Synthesize the provided match statistics, top pivotal "
+    "inflection moments, pressure resilience metrics, and game-theoretic serve-return "
+    "audits into a concise, 3-paragraph coach-readable debrief. State numbers and percentages "
+    "EXACTLY as provided in the input payload. DO NOT invent, hallucinate, alter, or "
+    "re-derive any figures."
+)
+
+
+def generate_deterministic_debrief(
     summary: MatchSummaryStats,
     pivotal_points: list[PivotalPointDetail],
     pressure: list[PlayerPressureMetrics],
@@ -584,6 +594,120 @@ def generate_executive_debrief(
     ]
 
     return "\n".join(lines)
+
+
+async def generate_executive_debrief_async(
+    summary: MatchSummaryStats,
+    pivotal_points: list[PivotalPointDetail],
+    pressure: list[PlayerPressureMetrics],
+    game_theory: list[GameTheoryExploitAudit],
+    params: Params | None = None,
+    llm_client: Any | None = None,
+) -> str:
+    """Synthesize post-match executive debrief with grounded LLM call and deterministic fallback.
+
+    Args:
+        summary: High-level match summary.
+        pivotal_points: Ranked pivotal points.
+        pressure: Pressure resilience metrics per player.
+        game_theory: Serve direction and game-theoretic audits.
+        params: Optional configuration parameters.
+        llm_client: Optional custom LLM client.
+
+    Returns:
+        str: 3-paragraph executive tactical summary.
+    """
+    fallback_text = generate_deterministic_debrief(
+        summary, pivotal_points, pressure, game_theory
+    )
+    cfg = params if params is not None else load_params()
+
+    payload = {
+        "match_summary": summary.model_dump(),
+        "top_pivotal_points": [pt.model_dump() for pt in pivotal_points[:3]],
+        "pressure_resilience": [pr.model_dump() for pr in pressure],
+        "game_theory_audit": [gt.model_dump() for gt in game_theory],
+    }
+
+    if llm_client is not None:
+        try:
+            if hasattr(llm_client, "synthesize_debrief"):
+                res = await llm_client.synthesize_debrief(payload)
+                if res:
+                    return str(res)
+            elif callable(llm_client):
+                import inspect
+                res = llm_client(payload)
+                if inspect.isawaitable(res):
+                    res = await res
+                if res:
+                    return str(res)
+        except Exception as exc:
+            logger.warning("Custom LLM client synthesis failed: %s", exc)
+        return fallback_text
+
+    import os
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        logger.debug("ANTHROPIC_API_KEY not set. Using deterministic executive debrief.")
+        return fallback_text
+
+    try:
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(
+            api_key=api_key,
+            timeout=cfg.llm.request_timeout_s,
+        )
+        import json
+        user_prompt = f"Post-Match Analytics Payload:\n{json.dumps(payload, indent=2)}"
+        response = await client.messages.create(
+            model=cfg.llm.model_name,
+            max_tokens=cfg.llm.max_tokens,
+            temperature=cfg.llm.temperature,
+            system=POST_MATCH_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        if response.content and len(response.content) > 0:
+            first_block = response.content[0]
+            if isinstance(first_block, anthropic.types.TextBlock):
+                text = first_block.text.strip()
+                if text:
+                    return text
+    except Exception as exc:
+        logger.warning(
+            "Post-match LLM debrief generation failed (%s: %s). Using fallback.",
+            type(exc).__name__,
+            exc,
+        )
+
+    return fallback_text
+
+
+def generate_executive_debrief(
+    summary: MatchSummaryStats,
+    pivotal_points: list[PivotalPointDetail],
+    pressure: list[PlayerPressureMetrics],
+    game_theory: list[GameTheoryExploitAudit],
+    llm_client: Any | None = None,
+    params: Params | None = None,
+) -> str:
+    """Generate executive tactical debrief, calling synchronous client or deterministic fallback."""
+    if llm_client is not None and callable(llm_client) and not hasattr(llm_client, "__await__"):
+        try:
+            payload = {
+                "match_summary": summary.model_dump(),
+                "top_pivotal_points": [pt.model_dump() for pt in pivotal_points[:3]],
+                "pressure_resilience": [pr.model_dump() for pr in pressure],
+                "game_theory_audit": [gt.model_dump() for gt in game_theory],
+            }
+            res = llm_client(payload)
+            if isinstance(res, str) and res.strip():
+                return res.strip()
+        except Exception as exc:
+            logger.warning("Sync LLM callable failed: %s", exc)
+
+    return generate_deterministic_debrief(summary, pivotal_points, pressure, game_theory)
 
 
 def format_match_report_markdown(payload: MatchReportPayload) -> str:
@@ -713,13 +837,13 @@ def format_match_report_markdown(payload: MatchReportPayload) -> str:
     return "\n".join(lines)
 
 
-
 def generate_match_report(
     records: list[PointRecord],
     stratum_table: StratumTable | None = None,
     payoff_matrices: dict[str, PayoffMatrix] | None = None,
     params: Params | None = None,
     match_format: Literal["bo3", "bo5"] = "bo3",
+    llm_client: Any | None = None,
 ) -> MatchReportPayload:
     """Generate the complete, deterministic Post-Match Report payload for a match.
 
@@ -729,6 +853,7 @@ def generate_match_report(
         payoff_matrices: Optional dictionary of PayoffMatrix instances.
         params: Optional Params configuration.
         match_format: 'bo3' or 'bo5'.
+        llm_client: Optional LLM client or callable for debrief synthesis.
 
     Returns:
         MatchReportPayload: Aggregated post-match report payload.
@@ -749,15 +874,71 @@ def generate_match_report(
         surface=summary.surface,
         params=params,
     )
-    debrief = generate_executive_debrief(summary, pivotal, pressure, game_theory)
+    debrief = generate_executive_debrief(
+        summary, pivotal, pressure, game_theory, llm_client=llm_client, params=params
+    )
 
-    return MatchReportPayload(
+    report = MatchReportPayload(
         summary=summary,
         pivotal_points=pivotal,
         pressure_resilience=pressure,
         game_theory_audit=game_theory,
         executive_debrief=debrief,
     )
+    report.markdown_report = format_match_report_markdown(report)
+    return report
+
+
+async def generate_match_report_async(
+    records: list[PointRecord],
+    stratum_table: StratumTable | None = None,
+    payoff_matrices: dict[str, PayoffMatrix] | None = None,
+    params: Params | None = None,
+    match_format: Literal["bo3", "bo5"] = "bo3",
+    llm_client: Any | None = None,
+) -> MatchReportPayload:
+    """Asynchronously generate the complete Post-Match Report payload for a match.
+
+    Args:
+        records: List of PointRecord items for the match.
+        stratum_table: Optional StratumTable.
+        payoff_matrices: Optional dictionary of PayoffMatrix instances.
+        params: Optional Params configuration.
+        match_format: 'bo3' or 'bo5'.
+        llm_client: Optional LLM client or callable for debrief synthesis.
+
+    Returns:
+        MatchReportPayload: Aggregated post-match report payload.
+    """
+    evaluations = evaluate_all_points(
+        records=records,
+        stratum_table=stratum_table,
+        params=params,
+        match_format=match_format,
+    )
+
+    summary = compute_match_summary(records, evaluations, params=params)
+    pivotal = extract_top_pivotal_points(evaluations, top_n=5)
+    pressure = compute_pressure_resilience(evaluations, summary.player_1, summary.player_2)
+    game_theory = compute_game_theory_audit(
+        records,
+        payoff_matrices=payoff_matrices,
+        surface=summary.surface,
+        params=params,
+    )
+    debrief = await generate_executive_debrief_async(
+        summary, pivotal, pressure, game_theory, params=params, llm_client=llm_client
+    )
+
+    report = MatchReportPayload(
+        summary=summary,
+        pivotal_points=pivotal,
+        pressure_resilience=pressure,
+        game_theory_audit=game_theory,
+        executive_debrief=debrief,
+    )
+    report.markdown_report = format_match_report_markdown(report)
+    return report
 
 
 # ---------------------------------------------------------------------------
