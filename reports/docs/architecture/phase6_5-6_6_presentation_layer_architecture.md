@@ -1,8 +1,8 @@
-# Phase 6.5 — Interactive Presentation Layer Architecture
+# Phase 6.5 & 6.6 — Interactive Presentation Layer & Post-Match Reporting Architecture
 
 ## Executive Summary
 
-Phase 6.5 delivers the **Embedded Real-Time Tactical Cockpit** for PULSE — a single-page, dark-mode glassmorphic presentation layer served directly by FastAPI. Designed specifically for portfolio evaluators, recruitment managers, coaches, and performance analysts, the Tactical Cockpit provides an immediate visual lens into PULSE's event-driven intelligence without requiring external frontend build tooling, npm packages, or third-party CDN scripts.
+Phases 6.5 and 6.6 deliver the **Embedded Real-Time Tactical Cockpit & Post-Match Intelligence Suite** for PULSE — a single-page, dark-mode glassmorphic presentation layer served directly by FastAPI. Designed specifically for portfolio evaluators, recruitment managers, coaches, broadcast teams, and performance analysts, the Tactical Cockpit provides an immediate visual lens into PULSE's event-driven intelligence during live match replay as well as retrospective post-match tactical debriefs, without requiring external frontend build tooling, npm packages, or third-party CDN scripts.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -21,8 +21,12 @@ Phase 6.5 delivers the **Embedded Real-Time Tactical Cockpit** for PULSE — a s
 │ 5. TACTICAL ADVISORY FEED                                                       │
 │    Coach & Broadcast Signal (Narrative Synthesis & Actionable Recommendations)  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
-│ 6. STREAM CONTROL BAR                                                           │
-│    Match Selection (3,300+ matches) │ Speed (0.5x, 1.0x, 2.0x, Instant) │ Trace   │
+│ 6. STREAM CONTROL BAR & POST-MATCH REPORT LAUNCHER                              │
+│    Match Selection │ Speed (0.5x, 1x, 2x, Instant) │ [📑 View Post-Match Report]  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│ 7. POST-MATCH TACTICAL INTELLIGENCE MODAL (Phase 6.6 Overlay)                   │
+│    Executive Debrief │ Key Indicators KPI Grid │ Top 5 Pivotal Moments Table    │
+│    Pressure Resilience Tiers │ Minimax Serve/Return Audit │ Markdown/JSON/Print │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -49,6 +53,16 @@ Phase 6.5 delivers the **Embedded Real-Time Tactical Cockpit** for PULSE — a s
 - **Multi-Panel Reactive Dispatch:** Unpacks incoming `StreamPointEvent` payloads and synchronously updates all 5 visual panels in a single frame.
 - **Stream Lifecycle Management:** Supports Play, Pause, Reset, speed switching, and graceful end-of-match handling without memory leaks.
 
+### 1.4 Post-Match Tactical Intelligence & Modal Integration (ADR-014 — Phase 6.6)
+- **Deterministic Analytics Grounding:** Queries `GET /v1/matches/{match_id}/report?format=json` to retrieve the fully aggregated post-match tactical evaluation computed in $< 200\text{ms}$ by `src/analytics/match_report.py`.
+- **Interactive Glassmorphic Modal:** Opens a non-disruptive, backdrop-filtered modal dialog displaying 6 structured debrief sections:
+  - **Executive Tactical Debrief:** Grounded 3-paragraph synthesis (via async Anthropic LLM client or deterministic fallback).
+  - **Key Match Indicators:** Grid displaying Total Points, Set Scores, Mean Leverage, and Peak Leverage Point.
+  - **Top Pivotal Moments Table:** Exact $\Delta L$ ranking with point context and interactive "Seek" buttons jumping directly to specific points on the timeline.
+  - **Pressure Resilience Breakdown:** Side-by-side player win rate comparison across Routine, Elevated, and Critical leverage tiers with empirical shift ($\Delta p$).
+  - **Game-Theoretic Audit Cards:** Realized serve direction distributions vs Nash equilibrium ($x^*$) and returner bias ($\hat{y}$) with data sufficiency status.
+  - **Export Suite:** One-click clipboard copy (`Copy Markdown`), raw data export (`Download JSON`), and browser print stylesheet (`@media print` for PDF generation).
+
 ---
 
 ## 2. Component Blueprint & Data Contracts
@@ -60,33 +74,39 @@ Phase 6.5 delivers the **Embedded Real-Time Tactical Cockpit** for PULSE — a s
 | **3. Topology Inspector** | `#topology-inspector`, `#node-state-monitor`, `#node-pressure-diagnostic`, `#node-strategy-exploit`, `#node-tactical-output` | `StreamPointEvent.decision_log`, `pressure_result`, `exploit_result` | Glowing node execution cards, latency badges, Sufficiency Gate ($N \ge 10$) state |
 | **4. Game Theory** | `#game-theory-panel`, `#payoff-grid`, `#bar-nash`, `#bar-bias`, `#exploit-callout` | `StreamPointEvent.exploit_result.payoff_matrix`, `delta` | 2×2 payoff matrix with best-response cell highlight, Nash vs Bias progress bars, +EV gain badge |
 | **5. Tactical Feed** | `#tactical-feed`, `#tactical-headline`, `#tactical-narrative`, `#tactical-recommendation-list` | `StreamPointEvent.tactical_output.narrative`, `raw_payload` | Coach-readable strategic guidance, pressure shift diagnosis, serve direction advice |
-| **6. Control Bar** | `#stream-controls`, `#match-select`, `#speed-select`, `#btn-play`, `#btn-pause`, `#btn-reset`, `#stream-status-badge` | `GET /v1/matches`, `GET /v1/matches/{match_id}` | Match selector, speed radio group (0.5x, 1.0x, 2.0x, Instant), stream lifecycle buttons |
+| **6. Control Bar** | `#stream-controls`, `#match-select`, `#speed-select`, `#btn-play`, `#btn-pause`, `#btn-reset`, `#btn-match-report` | `GET /v1/matches`, `GET /v1/matches/{match_id}` | Match selector, speed radio group (0.5x, 1.0x, 2.0x, Instant), stream lifecycle buttons, report trigger |
+| **7. Post-Match Modal** | `#modal-match-report`, `#report-executive-summary`, `#report-pivotal-points`, `#report-pressure-breakdown`, `#btn-copy-markdown`, `#btn-download-json` | `MatchReportResponse` (`GET /v1/matches/{id}/report`) | Full-screen glassmorphic report dialog, pivotal point seek actions, clipboard copy & JSON export |
 
 ---
 
 ## 3. Directory Layout & File Responsibilities
 
 ```text
-src/api/
-├── main.py              # FastAPI app instance, static asset mounting (/static), and root UI delivery (GET /, GET /ui)
-├── schemas.py           # Pydantic v2 request/response wire schemas (StreamPointEvent, MatchMetadataResponse)
-├── streaming.py         # SSE event generator and REST match catalogue endpoints
-└── static/              # 100% self-contained presentation layer assets
-    ├── index.html       # Semantic HTML5 layout with all 6 sub-component containers & inline SVG vector icons
-    ├── style.css        # CSS Custom Properties, glassmorphism backdrop filters, and responsive CSS Grid
-    └── app.js           # Canvas 2D rendering engine, SSE EventSource consumer, and reactive DOM controller
+src/
+├── analytics/
+│   └── match_report.py  # Deterministic post-match analytics engine, pivotal points & markdown/JSON serializers (Phase 6.6)
+├── api/
+│   ├── main.py          # FastAPI app instance, static asset mounting (/static), and root UI delivery (GET /, GET /ui)
+│   ├── schemas.py       # Pydantic v2 request/response wire schemas (StreamPointEvent, MatchReportResponse, MatchMetadataResponse)
+│   ├── streaming.py     # SSE event generator, REST match catalogue, and GET /v1/matches/{id}/report routes
+│   └── static/          # 100% self-contained presentation layer assets
+│       ├── index.html   # Semantic HTML5 layout with all 7 sub-component containers, report modal & inline SVG icons
+│       ├── style.css    # CSS Custom Properties, glassmorphism backdrop filters, responsive grid & print stylesheet
+│       └── app.js       # Canvas 2D engine, SSE controller, reactive DOM updater, and match report modal manager
 tests/
 ├── integration/
-│   └── test_static_ui.py  # Automated integration test suite validating static delivery, DOM IDs, and MIME types
+│   ├── test_match_report_api.py # Automated integration tests for report endpoints (JSON, Markdown, BO5, mock LLM, 404)
+│   └── test_static_ui.py        # Automated integration tests validating static delivery, DOM IDs, and MIME types
 └── unit/
-    └── test_api_main.py   # Unit test suite verifying route registrations and health checks
+    ├── test_match_report.py     # Unit test suite for Markov leverage aggregation, ranking, pressure, and game-theory audit
+    └── test_api_main.py         # Unit test suite verifying route registrations and health checks
 ```
 
 ---
 
 ## 4. Verification & Validation Summary
 
-- **Total Integration Tests:** 5 dedicated tests in `test_static_ui.py` covering HTML delivery, DOM contract validation, MIME headers, zero-CDN compliance, and route precedence.
-- **Full Test Suite:** 152/152 tests passing (100%) with 0 warnings.
+- **Total Integration Tests:** 10 dedicated integration tests across `test_static_ui.py` (HTML delivery, DOM contracts, MIME headers, zero-CDN compliance, route precedence) and `test_match_report_api.py` (JSON wire contracts, Markdown serialization, BO5 scoring rules, LLM async debrief, 404 handling).
+- **Full Test Suite:** 172/172 tests passing (100%) with 0 warnings.
 - **Type Checking & Linting:** 0 Pyright errors, 0 Ruff errors.
 - **File Size Ceiling:** All files in `src/` strictly satisfy the CI ceiling limit (<1,000 lines).

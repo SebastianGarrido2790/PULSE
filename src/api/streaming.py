@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSock
 from fastapi.responses import PlainTextResponse, StreamingResponse
 from langgraph.graph.state import CompiledStateGraph
 
-from src.analytics.match_report import generate_match_report
+from src.analytics.match_report import generate_match_report_async
 from src.api.schemas import (
     MatchMetadataResponse,
     MatchReplayRequest,
@@ -210,7 +210,7 @@ async def get_match_report_endpoint(
         )
 
     params = load_params()
-    report = generate_match_report(
+    report = await generate_match_report_async(
         records=records,
         params=params,
         match_format=match_format,

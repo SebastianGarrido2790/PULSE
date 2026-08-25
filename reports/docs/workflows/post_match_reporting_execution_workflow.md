@@ -120,7 +120,7 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 
 ---
 
-## Stage 6 — Automated Integration Tests & Quality Gate Audit
+## Stage 6 — Automated Integration Tests & Quality Gate Audit ✅
 
 15. Create `tests/unit/test_match_report.py`:
     - Tests exact leverage ranking, pressure bucket partitioning, and game theory audit calculations.
@@ -128,13 +128,13 @@ Stage 6 (Integration Tests & Quality Gate Audit)
     - Tests `GET /v1/matches/{id}/report` endpoint across JSON and Markdown formats.
     - Asserts DOM contracts and static asset delivery in `tests/integration/test_static_ui.py`.
 17. Run full quality gate audit:
-    - `uv run pytest` (confirming all unit, integration, and eval tests pass).
+    - `uv run pytest` (confirming all unit, integration, and eval tests pass: 172/172 passed).
     - `uv run ruff check .` and `uv run pyright` (0 errors, 0 warnings).
     - `python scripts/check_file_size.py` (confirm all files < 1,000 lines).
 18. Update documentation artifacts:
     - Update `README.md`, `technical_roadmap.md`, and `reports/docs/architecture/system_design.md`.
 
-**Gate 6:** All tests passing (100%); strict types and linter clean; file sizes < 1,000 lines; Phase complete.
+**Gate 6:** All tests passing (100%); strict types and linter clean; file sizes < 1,000 lines; Phase complete. ✅ **PASSED (2026-08-25)**
 
 ---
 
@@ -148,9 +148,9 @@ Stage 6 (Integration Tests & Quality Gate Audit)
 | **Stage 3** | Grounded Synthesis | Executive debrief synthesis + deterministic fallback | 🟢 **Closed & Passed** |
 | **Stage 4** | API Endpoints | `GET /v1/matches/{id}/report` JSON & Markdown routes | 🟢 **Closed & Passed** |
 | **Stage 5** | Cockpit Modal UI | Interactive glassmorphic modal & export tools | 🟢 **Closed & Passed** |
-| **Stage 6** | Quality Gate Audit | Full test suite green (`pytest`, `pyright`, `ruff`, line ceiling) | 🟡 Pending |
-
+| **Stage 6** | Quality Gate Audit | Full test suite green (172/172), `pyright`, `ruff`, line ceiling | 🟢 **Closed & Passed** |
 
 ---
 
 **Execution Rule:** Do not begin any stage until the preceding stage's gate has fully passed and user approval has been explicitly granted.
+

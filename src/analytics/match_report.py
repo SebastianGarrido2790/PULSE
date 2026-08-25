@@ -668,10 +668,9 @@ async def generate_executive_debrief_async(
         )
         if response.content and len(response.content) > 0:
             first_block = response.content[0]
-            if isinstance(first_block, anthropic.types.TextBlock):
-                text = first_block.text.strip()
-                if text:
-                    return text
+            text = getattr(first_block, "text", "")
+            if isinstance(text, str) and text.strip():
+                return text.strip()
     except Exception as exc:
         logger.warning(
             "Post-match LLM debrief generation failed (%s: %s). Using fallback.",

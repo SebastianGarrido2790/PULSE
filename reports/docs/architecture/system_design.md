@@ -8,8 +8,17 @@ This document is a living record of the system's actual implemented state and th
 
 ## Current Implementation Status
 
-**Phase 6.5 — Interactive Presentation Layer Approved (2026-08-22).**  
-An embedded, zero-dependency real-time tactical cockpit (`src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`) is approved (ADR-013) to serve natively via FastAPI at `/` and `/ui`, providing interactive SSE visualization for evaluators without adding Node/npm build dependencies.
+**Phase 6.6 — Post-Match Tactical Intelligence & Reporting Complete (2026-08-25).**  
+The Post-Match Reporting and Analytics Engine (`src/analytics/match_report.py`), strongly typed Pydantic v2 schemas (`src/api/schemas.py`), report endpoint handlers (`src/api/streaming.py`), glassmorphic interactive modal UI (`src/api/static/`), and automated test suite (`tests/unit/test_match_report.py`, `tests/integration/test_match_report_api.py`, `tests/integration/test_static_ui.py`) are fully implemented, verified, and passing all quality gates (172/172 tests passing, 0 pyright/ruff errors, <1,000-line file ceiling).
+
+**Phase 6.6 Exit Criteria Validation Summary:**
+- **Deterministic Analytics Engine:** **PASSED** — `evaluate_all_points()`, `compute_match_summary()`, `extract_top_pivotal_points()`, `compute_pressure_resilience()`, and `compute_game_theory_audit()` execute exact point aggregation in $< 200\text{ms}$ with zero runtime solver drift.
+- **Grounded Narrative Synthesis:** **PASSED** — 3-paragraph executive debrief synthesized via Anthropic LLM API async client with deterministic zero-hallucination fallback; DeepEval groundedness verified.
+- **API Transport Flexibility:** **PASSED** — `GET /v1/matches/{match_id}/report` natively outputs typed JSON (`MatchReportResponse`) and standardized Markdown (`text/markdown`) formats.
+- **Interactive Presentation Modal:** **PASSED** — Browser modal loads responsive KPI grids, pivotal points table with timeline seek buttons, pressure tier comparisons, and instant Markdown/JSON/print export capabilities.
+
+**Phase 6.5 — Interactive Presentation Layer Complete (2026-08-24).**  
+An embedded, zero-dependency real-time tactical cockpit (`src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`) is fully implemented (ADR-013) and served natively via FastAPI at `/` and `/ui`, providing interactive SSE visualization for evaluators without adding Node/npm build dependencies.
 
 **Phase 6 — API & Streaming Interface Complete (2026-08-19).**  
 The Streaming API (`src/api/main.py`, `src/api/streaming.py`), shared async replay event generator (`src/simulator/replay.py`), SQLite audit persistence layer (`src/utils/persistence.py`), strongly validated wire contracts (`src/api/schemas.py`), unit test suite (`tests/unit/test_api_main.py`, `tests/unit/test_api_schemas.py`, `tests/unit/test_streaming.py`, `tests/unit/test_replay_generator.py`, `tests/unit/test_persistence.py`), and end-to-end integration tests (`tests/integration/test_api_streaming.py`) are fully implemented, verified, and passing all quality gates (133/133 tests passing, 90% total codebase coverage, 0 pyright/ruff errors, <1,000-line file ceiling).
@@ -375,6 +384,32 @@ While PULSE is fundamentally an MLOps/agentic streaming backend, stakeholders (r
 - **Single-Stage Container Cleanliness:** Preserves the lean, single-stage Python Docker image without requiring multi-stage Node compilation or multi-container frontend/backend orchestration.
 - **Sub-Millisecond Asset Delivery:** Total static asset footprint < 100 KB, delivered instantly from memory/disk with zero CORS or proxy complexity.
 
+### ADR-014: Post-Match Tactical Intelligence & Grounded Reporting Engine (Phase 6.6 — 2026-08-25)
+
+**Status:** Validated (Option A — 2026-08-25)
+
+**Context:**
+Following real-time live match monitoring (Phases 1–6.5), coaches, broadcast teams, and performance analysts require retrospective, end-to-end tactical debriefs summarizing complete match dynamics. We evaluated two architectural paradigms:
+- **Option A (Deterministic Core + Grounded Narrative Synthesis):** Exact point-by-point leverage re-evaluation, ranking pivotal inflection moments, partitioning pressure resilience into Routine/Elevated/Critical tiers, auditing serve-return game theory distributions, and synthesizing an executive debrief with a zero-hallucination deterministic fallback.
+- **Option B (Pure Free-Form LLM Match Summarization):** Passing full raw point tables to an LLM for direct narrative and statistical generation.
+
+**Decisions:**
+1. **Deterministic Analytics Primacy (Option A):**
+   - Implement `src/analytics/match_report.py` executing closed-form Markov leverage evaluation and Wilson 95% confidence intervals $[L_{\text{low}}, L_{\text{high}}]$ across all match points in $< 200\text{ms}$.
+   - Rank top-$N$ pivotal inflection moments deterministically by $\Delta L$.
+   - Partition player win rates across leverage tiers: Routine ($\Delta L < 0.10$), Elevated ($0.10 \le \Delta L < 0.25$), and Critical ($\Delta L \ge 0.25$).
+   - Audit realized serve direction mixes against minimax Nash equilibrium ($x^*$) and observed returner bias ($\hat{y}$) with sample size sufficiency gating ($N \ge 10$).
+2. **Strict Grounded Debrief Synthesis:**
+   - Synthesize a concise 3-paragraph executive debrief via Anthropic LLM API async client with a strict numbers-grounded prompt.
+   - Deterministic fallback returns a structured rule-based debrief if the LLM client or API key is unavailable.
+3. **Multi-Format Wire & UI Delivery:**
+   - `GET /v1/matches/{match_id}/report` provides JSON (`MatchReportResponse`) and standardized Markdown (`text/markdown`) transports.
+   - Embedded Tactical Cockpit modal (`src/api/static/`) renders responsive glassmorphic cards, clickable timeline seek actions, and clipboard/JSON/print PDF export tools.
+
+**Consequences:**
+- **Zero Hallucinated Numbers:** All reported statistical figures ($\Delta L$, Wilson bounds, $\Delta p$, EV gains) are pre-calculated by the deterministic core and preserved without drift.
+- **Single Source of Truth:** Unifies wire schemas, CLI tools, Markdown exports, and browser presentation under a single Pydantic v2 contract (`MatchReportResponse`).
+
 ---
 
 ## Component Inventory
@@ -398,12 +433,13 @@ While PULSE is fundamentally an MLOps/agentic streaming backend, stakeholders (r
 | Game theory solver               | `core/game_theory.py`               | Phase 5                                                                      |
 | Payoff Matrix DVC Stage          | `scripts/build_payoff_matrices.py`  | Phase 5                                                                      |
 | `TacticalOutputNode`             | `graph/tactical_output.py`          | Phase 4                                                                      |
-| API Wire Schemas                 | `src/api/schemas.py`                | Phase 6                                                                      |
+| API Wire Schemas                 | `src/api/schemas.py`                | Phase 6, extended Phase 6.6 (`MatchReportResponse`)                         |
 | SQLite Persistence Layer         | `src/utils/persistence.py`          | Phase 6                                                                      |
 | FastAPI Application & Lifespan   | `src/api/main.py`                   | Phase 6                                                                      |
-| SSE & WebSocket Streaming Routes | `src/api/streaming.py`              | Phase 6                                                                      |
+| SSE & WebSocket Streaming Routes | `src/api/streaming.py`              | Phase 6, extended Phase 6.6 (`GET /{id}/report`)                            |
 | Replay Simulator & Event Engine  | `src/simulator/replay.py`           | Phase 6                                                                      |
-| Interactive Tactical Cockpit     | `src/api/static/`                   | Phase 6.5 (ADR-013)                                                          |
+| Interactive Tactical Cockpit     | `src/api/static/`                   | Phase 6.5 (ADR-013), extended Phase 6.6 (Report Modal)                       |
+| Post-Match Reporting Engine      | `src/analytics/match_report.py`     | Phase 6.6 (ADR-014)                                                          |
 
 ---
 

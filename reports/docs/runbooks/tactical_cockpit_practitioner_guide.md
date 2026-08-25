@@ -2,7 +2,7 @@
 
 > **Document Type:** Operational Runbook & Interpretive Manual  
 > **Audience:** Tennis Coaches, Performance Analysts, Broadcast Commentators, Quantitative Evaluators  
-> **System:** PULSE (Point-Level Understanding & Strategic Leverage Engine) v0.6.5  
+> **System:** PULSE (Point-Level Understanding & Strategic Leverage Engine) v0.6.6  
 > **Location:** `reports/docs/runbooks/tactical_cockpit_practitioner_guide.md`
 
 ---
@@ -209,12 +209,25 @@ The lower panel synthesizes all active mathematical layers into a clear coaching
 ### Panel 6: Stream Control Bar
 
 The bottom bar controls the simulation engine:
-- **Match Selector:** Choose from over 3,300 historical ATP matches charted in the dataset.
+- **Match Selector:** Choose from over 3,300 ATP matches charted in the dataset.
 - **Speed Multiplier:** Select playback cadence:
   - `0.5x` / `1.0x` / `2.0x`: Realistic pacing for real-time simulation.
   - `Instant`: Zero-delay processing for instant whole-match tactical diagnosis.
 - **Controls:** `Start Replay`, `Pause`, `Reset`.
+- **View Post-Match Report button (`📑`):** Opens the comprehensive, retrospective match debrief modal.
 - **Trace Badge:** Shows the active OpenTelemetry trace ID (e.g., `pt-206-20200103`) for debugging and audit logging.
+
+---
+
+### Panel 7: Post-Match Tactical Intelligence Modal
+
+Accessible via the `View Post-Match Report` button, this overlay gathers retrospective match metrics:
+- **Executive Tactical Summary:** 3-paragraph executive summary synthesized by Anthropic client (or deterministic fallback) with zero hallucinated figures.
+- **Key Match Indicators:** Aggregate statistics containing total points, set scores, average leverage, and peak leverage point index.
+- **Top Pivotal Moments Table:** Descending list of the top 5 highest-leverage inflection moments. Clicking any point's **Seek** button jumps the cockpit timeline directly to that point context.
+- **Pressure Resilience Diagnostic:** Graphical win-rate comparison across Routine, Elevated, and Critical leverage tiers.
+- **Game-Theoretic Audit:** Evaluates realized serve mixes against minimax Nash equilibrium.
+- **Export Toolbar:** Actions to copy the standardized Markdown report, download the structured JSON data payload, or trigger the print dialog for PDF export.
 
 ---
 

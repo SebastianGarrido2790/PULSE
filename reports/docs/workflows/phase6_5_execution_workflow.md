@@ -153,7 +153,7 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 27. Run file size ceiling check: `python scripts/check_file_size.py` (confirm all files in `src/` remain strictly <1,000 lines).
 28. Run historical match replay smoke test: execute `uv run python -m src.simulator.replay --match-id <id> --speed-multiplier 0` and verify real-time stream processing end-to-end.
 
-**Gate 7:** All quality gates pass (pytest 100%, pyright 0 errors, ruff clean, file size <1,000 lines); Phase 6.5 complete and ready for Phase 7 CI/CD Dockerization. ✅ **PASSED (2026-08-24)**
+**Gate 7:** All quality gates pass (pytest 100%, pyright 0 errors, ruff clean, file size <1,000 lines); Phase 6.5 complete and successfully handed off to Phase 6.6 Post-Match Reporting. ✅ **PASSED (2026-08-24)**
 
 ---
 
@@ -170,8 +170,15 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
 | **Stage 6** | Integration Tests | `test_static_ui.py` passes all asset, MIME, and DOM contract assertions | 🟢 **Closed & Passed** |
 | **Stage 7** | Quality Gate Audit | Full suite green (`pytest`, `pyright`, `ruff`, `check_file_size.py`) | 🟢 **Closed & Passed** |
 
+---
 
+## Next Phase Transition — Phase 6.6 (Post-Match Tactical Reporting)
+
+With the live real-time Tactical Cockpit fully verified and hardened in Phase 6.5, the presentation layer was extended in **Phase 6.6** to support comprehensive, retrospective post-match tactical debriefs (`#modal-match-report`), pivotal point timeline seekers, leverage-tiered pressure audits, and one-click Markdown/JSON/print exporters.
+
+👉 See **[post_match_reporting_execution_workflow.md](post_match_reporting_execution_workflow.md)** for the complete Phase 6.6 ordered implementation and quality gate records.
 
 ---
 
 **Execution Rule:** Do not begin any stage until the preceding stage's gate has fully passed.
+

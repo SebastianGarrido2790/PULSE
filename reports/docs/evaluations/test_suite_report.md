@@ -1,11 +1,11 @@
 # PULSE — Test Suite Report
 
-> **Version:** v0.6.5 — _Living Document_  
-> **Phase:** 6.5 — Interactive Presentation Layer (Tactical Cockpit)  
-> **Status:** 🟢 152 / 152 Tests Passing (0 Warnings)  
-> **Coverage:** 91% Total Code Coverage (100% Graph Topology, Core Math, Schemas & Wire Contracts)  
+> **Version:** v0.6.6 — _Living Document_  
+> **Phase:** 6.6 — Post-Match Tactical Intelligence & Grounded Reporting Engine  
+> **Status:** 🟢 172 / 172 Tests Passing (0 Warnings)  
+> **Coverage:** 90% Total Code Coverage (100% Graph Topology, Core Math, Schemas & Wire Contracts)  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
-> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [phase6_5_execution_workflow.md](../workflows/phase6_5_execution_workflow.md), [phase6_5_presentation_layer_architecture.md](../architecture/phase6_5_presentation_layer_architecture.md), [interactive_presentation_layer_evaluation_report.md](interactive_presentation_layer_evaluation_report.md), [system_design.md](../architecture/system_design.md)
+> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [post_match_reporting_execution_workflow.md](../workflows/post_match_reporting_execution_workflow.md), [phase6_5_execution_workflow.md](../workflows/phase6_5_execution_workflow.md), [phase6_5_presentation_layer_architecture.md](../architecture/phase6_5_presentation_layer_architecture.md), [interactive_presentation_layer_evaluation_report.md](interactive_presentation_layer_evaluation_report.md), [system_design.md](../architecture/system_design.md)
 
 ---
 
@@ -14,7 +14,7 @@
 The **PULSE (Point-Level Understanding & Strategic Leverage Engine)** test suite enforces a rigorous, deterministic quality policy designed to ensure mathematical ground truth, strict typing, and reproducible event-driven orchestration. Our testing posture rests on six core principles:
 
 - **Ground-Truth Mathematical Primacy:** Closed-form combinatorial probability theory and exact minimax linear programming are the ground truths. From Phase 2 onward, the Markov solver must match theoretical win-probabilities within a $1 \times 10^{-9}$ tolerance. Solver divergence is a CI-blocking build failure.
-- **Determinism:** Every test must produce identical results under a fixed seed. Replayed matches, payoff matrix compilation, and solver evaluations are 100% reproducible across local and CI environments.
+- **Determinism:** Every test must produce identical results under a fixed seed. Replayed matches, payoff matrix compilation, post-match analytics, and solver evaluations are 100% reproducible across local and CI environments.
 - **Fail-Loud Policy:** Validation errors raise explicit custom exceptions (`SolverException`, `GameTheorySolverException`, `SufficiencyGateException`, `PersistenceException`, `InvalidMatchStateError`, `ModelInferenceError`, `SanitizationError`) rather than falling back silently.
 - **File-Size Ceiling Gate:** No Python source file under `src/` may exceed 1,000 lines (§5.1 of project constitution). Enforced via `scripts/check_file_size.py` as a hard CI gate.
 - **Strict Static Typing:** Python 3.11+ code targeting 80%+ Pyright type-check coverage with zero tolerated errors or missing import warnings.
@@ -34,11 +34,12 @@ PULSE/
 ├── tests/
 │   ├── __init__.py                      # Package docstring stub
 │   ├── unit/
-│   │   ├── test_api_schemas.py          # Pydantic v2 wire models & validation tests (Phase 6)
+│   │   ├── test_match_report.py         # Deterministic analytics, ranking, pressure, game-theory & debrief (Phase 6.6)
+│   │   ├── test_api_schemas.py          # Pydantic v2 wire models & validation tests (Phases 6, 6.6)
 │   │   ├── test_point_record_conversion.py # PointRecord -> PointContext conversion tests (Phase 6)
 │   │   ├── test_persistence.py          # SQLite audit persistence & query tests (Phase 6)
 │   │   ├── test_api_main.py             # FastAPI lifespan, static mounts & health route tests (Phases 6, 6.5)
-│   │   ├── test_streaming.py            # SSE, keep-alive comments & WS tests (Phase 6)
+│   │   ├── test_streaming.py            # SSE, keep-alive comments, WS & report route tests (Phases 6, 6.6)
 │   │   ├── test_replay_generator.py     # Async generator & CLI tests (Phase 6)
 │   │   ├── test_game_theory.py          # Consolidated §8 validation properties (Phase 5)
 │   │   ├── test_game_theory_solver.py   # Analytical & HiGHS LP equilibrium solver tests
@@ -47,7 +48,8 @@ PULSE/
 │   │   ├── test_build_payoff_matrices.py# DVC stage matrix extraction unit tests
 │   │   └── ...                          # Prior unit test suites (Phases 1-4)
 │   ├── integration/
-│   │   ├── test_static_ui.py            # Static UI delivery, DOM contracts & MIME tests (Phase 6.5)
+│   │   ├── test_match_report_api.py     # End-to-end report API (JSON, Markdown, BO5, LLM mock, 404) (Phase 6.6)
+│   │   ├── test_static_ui.py            # Static UI delivery, DOM contracts, report modal & MIME tests (Phases 6.5, 6.6)
 │   │   ├── test_api_streaming.py        # SSE/WS parity & SQLite persistence integration (Phase 6)
 │   │   └── test_conditional_graph.py    # LangGraph conditional edge & state tests (Phases 4-5)
 │   └── evals/
@@ -57,6 +59,7 @@ PULSE/
 ├── params.yaml                          # Quantitative operational thresholds contract
 └── .github/workflows/ci.yml             # Single sequential GitHub Actions CI quality gate
 ```
+
 
 ---
 
@@ -199,10 +202,38 @@ PULSE/
 | Test File / Function | Verification Target | What Is Verified | Status |
 | :--- | :--- | :--- | :---: |
 | `tests/integration/test_static_ui.py::test_root_and_ui_endpoints_serve_html` | SPA Route Delivery | `GET /` and `GET /ui` return HTTP 200 with `text/html; charset=utf-8` MIME type and `<!DOCTYPE html>`. | 🟢 PASS |
-| `tests/integration/test_static_ui.py::test_html_contains_required_cockpit_dom_contracts` | DOM Blueprint Contracts | Asserts HTML body contains all 6 sub-component container IDs (`#scoreboard`, `#oscillogram-container`, `#topology-inspector`, `#game-theory-panel`, `#tactical-feed`, `#stream-controls`). | 🟢 PASS |
+| `tests/integration/test_static_ui.py::test_html_contains_required_cockpit_dom_contracts` | DOM Blueprint Contracts | Asserts HTML body contains all core sub-components (`#scoreboard`, `#oscillogram-container`, `#topology-inspector`, `#game-theory-panel`, `#tactical-feed`, `#stream-controls`, `#modal-match-report`). | 🟢 PASS |
 | `tests/integration/test_static_ui.py::test_static_assets_serve_correct_mime_types` | Static Assets MIME & Delivery | Asserts `GET /static/style.css` returns `text/css` and `GET /static/app.js` returns `text/javascript`. | 🟢 PASS |
 | `tests/integration/test_static_ui.py::test_no_external_cdn_references` | Zero-CDN Invariant | Asserts 0 external `http`/`https` CDN `<script>` or `<link>` references in `index.html` (100% self-contained). | 🟢 PASS |
 | `tests/integration/test_static_ui.py::test_match_preflight_and_docs_route_precedence` | Route Precedence & Integrity | Asserts `/v1/matches`, `/health`, and `/openapi.json` retain highest route precedence alongside static SPA endpoints. | 🟢 PASS |
+
+---
+
+### 3.13 Post-Match Tactical Analytics Engine (`tests/unit/test_match_report.py`)
+
+| Test File / Function | Verification Target | What Is Verified | Status |
+| :--- | :--- | :--- | :---: |
+| `tests/unit/test_match_report.py::test_evaluate_all_points` | Markov Leverage & Confidence Evaluation | Computes continuous $\Delta L$ and Wilson 95% confidence intervals $[L_{\text{low}}, L_{\text{high}}]$ across all match points. | 🟢 PASS |
+| `tests/unit/test_match_report.py::test_compute_match_summary` | Match Aggregate Summary | Computes total points, set scores, average leverage, and peak leverage point index correctly. | 🟢 PASS |
+| `tests/unit/test_match_report.py::test_extract_top_pivotal_points` | Top-$N$ Pivotal Point Ranking | Correctly extracts and ranks the top 5 highest-leverage inflection moments descending by $\Delta L$. | 🟢 PASS |
+| `tests/unit/test_match_report.py::test_compute_pressure_resilience` | Pressure Tier Partitioning | Partitions player point win rates across Routine, Elevated, and Critical tiers with empirical pressure shift $\Delta p$. | 🟢 PASS |
+| `tests/unit/test_match_report.py::test_compute_game_theory_audit_sufficient_data` | Minimax Serve/Return Audit | Audits realized serve direction mixes against Nash equilibrium and returner bias when $N \ge 10$. | 🟢 PASS |
+| `tests/unit/test_match_report.py::test_compute_game_theory_audit_insufficient_data` | Game Theory Sufficiency Gate | Suppresses exploit evaluation and sets `sufficient_data=False` when total charted serves $< 10$. | 🟢 PASS |
+| `tests/unit/test_match_report.py::test_generate_deterministic_debrief` | Grounded Deterministic Debrief | Synthesizes a structured 3-paragraph tactical debrief using only pre-computed metrics without LLM dependency. | 🟢 PASS |
+| `tests/unit/test_match_report.py::test_format_markdown_report` | Markdown Report Serializer | Emits standardized GitHub-flavored Markdown containing all 5 required structural sections. | 🟢 PASS |
+| `tests/unit/test_match_report.py::test_generate_match_report_end_to_end` | Full Report Generation Pipeline | End-to-end execution of `generate_match_report` producing fully populated `MatchReportResponse`. | 🟢 PASS |
+
+---
+
+### 3.14 Post-Match Reporting API Endpoints (`tests/integration/test_match_report_api.py`)
+
+| Test File / Function | Verification Target | What Is Verified | Status |
+| :--- | :--- | :--- | :---: |
+| `tests/integration/test_match_report_api.py::test_get_match_report_json_integration` | JSON Report Wire Contract | `GET /v1/matches/{id}/report?format=json` returns HTTP 200 with valid `MatchReportResponse` schema. | 🟢 PASS |
+| `tests/integration/test_match_report_api.py::test_get_match_report_markdown_integration` | Markdown Report Route | `GET /v1/matches/{id}/report?format=markdown` returns HTTP 200 with `text/markdown` and standard headers. | 🟢 PASS |
+| `tests/integration/test_match_report_api.py::test_get_match_report_bo5_format_integration` | BO5 Scoring Rules Propagation | `?match_format=bo5` correctly propagates into Markov leverage solver during match report aggregation. | 🟢 PASS |
+| `tests/integration/test_match_report_api.py::test_get_match_report_custom_llm_debrief_integration` | LLM Debrief Async Integration | Synthesizes customized executive debrief when Anthropic client succeeds with zero hallucinated figures. | 🟢 PASS |
+| `tests/integration/test_match_report_api.py::test_get_match_report_not_found_404` | 404 Error Handling | Requesting an unrecorded or non-existent match ID cleanly raises HTTP 404 with structured error detail. | 🟢 PASS |
 
 ---
 
@@ -256,6 +287,15 @@ Phase 6.5: Interactive Presentation Layer (Tactical Cockpit) (Complete — 152 P
   ├── DOM Blueprint Contracts (6 Sub-Components) & Zero-CDN Invariant Verification
   └── Health and OpenAPI Route Precedence Enforcement
        │
+Phase 6.6: Post-Match Tactical Intelligence & Grounded Reporting (Complete — 172 Passes)
+  ├── Deterministic Post-Match Analytics Engine (Leverage Aggregation, Wilson Bounds)
+  ├── Top-N Pivotal Inflection Points Ranking by Delta L
+  ├── Pressure Resilience Partitioning Across Leverage Tiers (Routine / Elevated / Critical)
+  ├── Minimax Serve/Return Realized Mix Audit & Sufficiency Gating (N >= 10)
+  ├── Grounded Executive Debrief Synthesis (Async Anthropic LLM + Zero-Hallucination Fallback)
+  ├── FastAPI REST Report Endpoint (JSON & Markdown Transports, bo3/bo5 parameter)
+  └── Interactive Glassmorphic Report Modal UI & One-Click Clipboard/JSON/Print Exporters
+       │
 Phase 7: Observability, CI/CD, Shadow-Mode Acceptance (Scheduled Next)
   ├── OpenTelemetry Instrumentation Spans
   ├── GitHub Actions Full Coverage Gate (>= 70%) & Trivy Security Scan
@@ -270,6 +310,7 @@ Phase 7: Observability, CI/CD, Shadow-Mode Acceptance (Scheduled Next)
 | :----------------------------- | :-------------------------------------------------- | :---------------------------------------------------------- |
 | **Run Full Test Suite**        | `uv run pytest`                                     | Runs all unit, integration, and eval tests                  |
 | **Run Solver Unit Tests Only** | `uv run pytest -m solver`                           | Golden-value combinatorial correctness gate                 |
+| **Run Match Report Tests**     | `uv run pytest tests/unit/test_match_report.py tests/integration/test_match_report_api.py` | Validates post-match analytics and API routes |
 | **Run Static UI Tests Only**   | `uv run pytest tests/integration/test_static_ui.py`  | Validates presentation layer DOM & asset delivery           |
 | **Run Coverage Report**        | `uv run pytest --cov=src --cov-report=term-missing` | Verifies $\ge 70\%$ line coverage requirement               |
 | **Run File Ceiling Check**     | `python scripts/check_file_size.py`                 | Enforces 1,000-line ceiling per file under `src/`           |
@@ -277,7 +318,7 @@ Phase 7: Observability, CI/CD, Shadow-Mode Acceptance (Scheduled Next)
 | **Run Linter Checks**          | `uv run ruff check .`                               | Imports, syntax, and style rules enforcement                |
 | **Run Formatter Checks**       | `uv run ruff format --check .`                      | Verifies 100-character line length compliance               |
 
-**Live Output (Phase 6.5 Complete & Hardened — 2026-08-24):**
+**Live Output (Phase 6.6 Complete & Hardened — 2026-08-25):**
 
 ```text
 =============================== tests coverage ================================
@@ -286,16 +327,18 @@ ______________ coverage: platform win32, python 3.11.13-final-0 _______________
 Name                                 Stmts   Miss  Cover   Missing
 ------------------------------------------------------------------
 src\__init__.py                          0      0   100%
+src\analytics\__init__.py                0      0   100%
+src\analytics\match_report.py          302     51    83%   180, 272-273, 352-359, 368, 370, 376, 378, 448, 476-492, 631-645, 674-681, 704-705, 952-954, 964-966
 src\api\__init__.py                      0      0   100%
 src\api\main.py                         53      4    92%   131-134, 143
-src\api\schemas.py                      31      0   100%
-src\api\streaming.py                    84      9    89%   138, 235-242
+src\api\schemas.py                     102      0   100%
+src\api\streaming.py                    98     10    90%   144, 207, 304-311
 src\config\__init__.py                   2      0   100%
 src\config\loader.py                    89      1    99%   156
 src\core\__init__.py                     0      0   100%
-src\core\game_theory.py                175     13    93%   74, 86, 257, 290, 301, 341, 345, 352, 429, 474, 478, 481-484
+src\core\game_theory.py                175     12    93%   74, 86, 257, 290, 301, 341, 345, 352, 429, 474, 481-484
 src\core\leverage_uncertainty.py        48      0   100%
-src\core\markov_solver.py              228     46    80%   62, 67, 115, 140, 183, 251-272, 318, 325, 376-406, 424-425, 429, 431-432, 442, 444-445, 450-451, 469, 526
+src\core\markov_solver.py              228     40    82%   62, 67, 115, 140, 183, 251-272, 318, 325, 376-406, 429, 431-432, 442, 444-445
 src\graph\__init__.py                    0      0   100%
 src\graph\llm_client.py                 29     20    31%   42-82
 src\graph\pressure_diagnostic.py        28      0   100%
@@ -316,6 +359,7 @@ src\utils\exceptions.py                 37      5    86%   30-31, 37-40
 src\utils\logger.py                     37      9    76%   52-54, 65-70, 77-79
 src\utils\persistence.py               104     14    87%   35, 86-89, 129, 155-158, 178-181
 ------------------------------------------------------------------
-TOTAL                                 1677    153    91%
-============================ 152 passed in 20.05s =============================
+TOTAL                                 2064    198    90%
+============================ 172 passed in 36.02s =============================
 ```
+

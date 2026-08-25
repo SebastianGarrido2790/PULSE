@@ -173,9 +173,32 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ---
 
+## Phase 6.6 — Post-Match Tactical Intelligence & Reporting ✅ Complete
+
+**Goal:** Provide an end-to-end post-match tactical intelligence and performance debriefing engine that aggregates point-by-point leverage, extracts top pivotal inflection moments, evaluates leverage-tiered pressure resilience, audits serve-return game theory distributions, and renders coach-ready reports in JSON, Markdown, and interactive UI modal formats.
+
+**Key Tasks:**
+
+- Implement deterministic analytics engine in `src/analytics/match_report.py` (Markov leverage aggregation, Wilson 95% confidence intervals, pivotal point ranking, pressure tier partitioning, and minimax serve-return audit).
+- Add Pydantic v2 schemas (`MatchReportResponse`, `PivotalPointEntry`, `PlayerPressureMetrics`, `GameTheoryExploitAudit`, `MatchSummaryStats`) in `src/api/schemas.py`.
+- Integrate grounded executive debrief synthesis with Anthropic LLM API async client and deterministic zero-hallucination fallback.
+- Register `GET /v1/matches/{match_id}/report` endpoint in `src/api/streaming.py` supporting `json` and `markdown` output formats and `bo3`/`bo5` scoring rules.
+- Add glassmorphic Post-Match Report interactive modal, tabular KPI displays, and clipboard/JSON/print PDF export tools to Tactical Cockpit UI (`src/api/static/`).
+- Build comprehensive unit and integration test suites (`tests/unit/test_match_report.py`, `tests/integration/test_match_report_api.py`, `tests/integration/test_static_ui.py`) passing 100%.
+
+**Deliverables:** `src/analytics/match_report.py`, `src/api/schemas.py`, `src/api/streaming.py`, `src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`, `tests/unit/test_match_report.py`, `tests/integration/test_match_report_api.py`, `reports/docs/workflows/post_match_reporting_execution_workflow.md`.
+
+**Exit Criteria:** Full post-match intelligence reports generated in <200ms; executive debrief grounded with 0 hallucinated figures; interactive modal accessible via browser with instant markdown copy and JSON export; 172/172 test suite passing.
+
+**Dependencies:** Phases 1–6.5 complete.
+
+**Est. Duration:** 1 day
+
+---
+
 ## Phase 7 — Observability, CI/CD, Shadow-Mode Acceptance
 
-**Goal:** Production-harden the system, bake the unified API and UI into a production container, and run the full shadow-mode acceptance evaluation.
+**Goal:** Production-harden the system, bake the unified API, UI, and reporting engine into a production container, and run the full shadow-mode acceptance evaluation.
 
 **Key Tasks:**
 
@@ -190,7 +213,7 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 **Exit Criteria:** All items in `pulse_project_charter.md` §5 Definition of Done are checked off.
 
-**Dependencies:** Phases 1–6.5 complete.
+**Dependencies:** Phases 1–6.6 complete.
 
 **Est. Duration:** 1–2 days
 
@@ -198,6 +221,6 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 ## Sequential Action Plan (Immediate Next Steps)
 
-1. Implement Phase 6.5 embedded UI cockpit (`src/api/static/`) and mount in FastAPI `src/api/main.py`
-2. Validate UI responsiveness, SSE stream event consumption, and browser compatibility
-3. Proceed to Phase 7 CI/CD, Dockerization, and Shadow-Mode Acceptance with full visual dashboard verification
+1. Proceed to Phase 7: Observability, OpenTelemetry instrumentation, and distributed trace context propagation
+2. Finalize multi-stage Docker build and Docker Compose packaging for full-stack deployment
+3. Run shadow-mode retrospective evaluation and verify all Definition of Done merge criteria

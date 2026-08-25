@@ -18,6 +18,7 @@ Designed for coaches, performance analysts, and broadcast teams as an advisory t
 | **Phase 5 — Game Theory Module** | Minimax Nash equilibrium, best-response return exploit & empirical-Bayes priors | ✅ Complete |
 | **Phase 6 — API & Simulation** | FastAPI streaming API (SSE/WS), real-time match replay simulator & SQLite audit | ✅ Complete |
 | **Phase 6.5 — Presentation Layer** | Embedded real-time Tactical Cockpit SPA (Canvas 2D, zero-CDN, glassmorphic UI) | ✅ Complete |
+| **Phase 6.6 — Post-Match Analytics** | Deterministic leverage summary, pivotal point audit, pressure & game-theory report | ✅ Complete |
 | **Phase 7 — Observability & CI/CD** | OpenTelemetry tracing spans, multi-stage Docker container & GitHub Actions | 🟡 Next Up |
 
 ---
@@ -47,6 +48,7 @@ For a conceptual deep dive into how Markov chains, leverage calculations, and ga
 - **Dependency Management:** `uv`
 - **Orchestration:** LangGraph (Conditional Event-Driven Graph)
 - **Deterministic Core:** Closed-Form Markov Solver, Wilson Confidence Intervals, `scipy.optimize.linprog` (Game-Theoretic Equilibrium)
+- **Analytics & Reporting:** Deterministic Post-Match Analytics Engine, Pivotal Point Extractor, Markdown & JSON Exporters
 - **ML & Data:** scikit-learn (Point-Win Classifier), Empirical-Bayes Shrinkage (Pressure Estimator), MLflow, DVC
 - **API & Streaming:** FastAPI (SSE / WebSockets), `aiosqlite`
 - **Presentation Layer:** Embedded Dark-Mode Tactical Cockpit (Vanilla HTML5, CSS Grid, Canvas 2D, Zero CDN)
@@ -59,6 +61,7 @@ For a conceptual deep dive into how Markov chains, leverage calculations, and ga
 ```text
 .
 ├── src/
+│   ├── analytics/      # Post-match aggregation, pivotal point extraction, & reporting
 │   ├── api/            # FastAPI streaming endpoints & static asset delivery
 │   │   ├── main.py     # FastAPI application, static mounts (/static), and UI entrypoint
 │   │   ├── schemas.py  # Pydantic v2 request/response wire contracts
@@ -76,7 +79,7 @@ For a conceptual deep dive into how Markov chains, leverage calculations, and ga
 │   └── build_payoff_matrices.py # Payoff matrix compilation DVC pipeline stage
 ├── tests/
 │   ├── unit/           # Analytical correctness & module unit tests
-│   ├── integration/    # Static UI delivery, SSE streaming, & conditional graph tests
+│   ├── integration/    # Static UI delivery, SSE streaming, match report API, & graph tests
 │   └── evals/          # DeepEval narrative groundedness checks
 ├── reports/
 │   └── docs/           # Architecture, decisions, evaluations, references, & workflows
@@ -110,7 +113,7 @@ uv sync
 | **One-Click Cockpit Launch** | `.\launch_app.bat` | Syncs env, verifies artifacts, opens browser, and starts FastAPI app |
 | **Start Tactical Cockpit & API** | `uv run api.main` | Starts FastAPI service locally at `http://localhost:8000/` |
 | **Replay Match in Terminal** | `uv run simulator.replay --match-id <id>` | Replays historical match point-by-point to simulate live feed |
-| **Run Full Test Suite** | `uv run pytest` | Runs all 152 unit, integration, and groundedness eval tests |
+| **Run Full Test Suite** | `uv run pytest` | Runs all 172 unit, integration, and groundedness eval tests |
 | **Lint & Type Check** | `uv run ruff check . && uv run pyright` | Validates strict code style and 100% Pyright type safety |
 | **Run Line Count Check** | `python scripts/check_file_size.py` | Enforces 1,000-line ceiling per file under `src/` |
 
