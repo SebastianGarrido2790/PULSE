@@ -33,6 +33,7 @@ from src.schemas.point_record import (
     PointRecord,
     ServeDirection,
     Surface,
+    infer_match_format,
 )
 from src.utils.logger import get_logger
 
@@ -68,25 +69,6 @@ class PointEvaluation:
 # ---------------------------------------------------------------------------
 # Core Analytical Algorithms
 # ---------------------------------------------------------------------------
-
-
-def infer_match_format(
-    records: list[PointRecord],
-    requested_format: Literal["bo3", "bo5"] = "bo3",
-) -> Literal["bo3", "bo5"]:
-    """Infer match format from point records if not explicitly forced to bo5.
-
-    Auto-detects Best-of-5 scoring if any record exhibits set scores or totals
-    incompatible with Best-of-3 rules (e.g. 2-1 set scores entering set 4).
-    """
-    if requested_format == "bo5":
-        return "bo5"
-    for r in records:
-        if (r.p1_sets >= 2 and r.p2_sets >= 1) or (r.p2_sets >= 2 and r.p1_sets >= 1):
-            return "bo5"
-        if (r.p1_sets + r.p2_sets) >= 3 or r.p1_sets >= 3 or r.p2_sets >= 3:
-            return "bo5"
-    return "bo3"
 
 
 def evaluate_all_points(

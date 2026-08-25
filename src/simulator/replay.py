@@ -19,7 +19,7 @@ from src.api.schemas import StreamPointEvent
 from src.config.loader import Params, load_params
 from src.graph.pulse_graph import build_pulse_graph
 from src.graph.state import PointContext, PulseGraphState
-from src.schemas.point_record import PointRecord
+from src.schemas.point_record import PointRecord, infer_match_format
 from src.utils.exceptions import IngestionException, PersistenceException
 from src.utils.logger import get_logger
 from src.utils.persistence import persist_point_event
@@ -154,11 +154,12 @@ async def generate_point_events(
         return
 
     # Process points sequentially
+    effective_format = infer_match_format(records, match_format)
     for point_idx, record in enumerate(records):
         point_context: PointContext | None = None
         try:
             point_context = record.to_point_context(
-                point_index=point_idx, match_format=match_format
+                point_index=point_idx, match_format=effective_format
             )
             initial_state = PulseGraphState(point_context=point_context)
 
