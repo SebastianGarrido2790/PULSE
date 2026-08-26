@@ -400,7 +400,7 @@ Following real-time live match monitoring (Phases 1–6.5), coaches, broadcast t
    - Partition player win rates across leverage tiers: Routine ($\Delta L < 0.10$), Elevated ($0.10 \le \Delta L < 0.25$), and Critical ($\Delta L \ge 0.25$).
    - Audit realized serve direction mixes against minimax Nash equilibrium ($x^*$) and observed returner bias ($\hat{y}$) with sample size sufficiency gating ($N \ge 10$).
 2. **Strict Grounded Debrief Synthesis:**
-   - Synthesize a concise 3-paragraph executive debrief via Anthropic LLM API async client with a strict numbers-grounded prompt.
+   - Synthesize a concise 3-paragraph executive debrief via configured LLM API async client with a strict numbers-grounded prompt.
    - Deterministic fallback returns a structured rule-based debrief if the LLM client or API key is unavailable.
 3. **Multi-Format Wire & UI Delivery:**
    - `GET /v1/matches/{match_id}/report` provides JSON (`MatchReportResponse`) and standardized Markdown (`text/markdown`) transports.
@@ -409,6 +409,29 @@ Following real-time live match monitoring (Phases 1–6.5), coaches, broadcast t
 **Consequences:**
 - **Zero Hallucinated Numbers:** All reported statistical figures ($\Delta L$, Wilson bounds, $\Delta p$, EV gains) are pre-calculated by the deterministic core and preserved without drift.
 - **Single Source of Truth:** Unifies wire schemas, CLI tools, Markdown exports, and browser presentation under a single Pydantic v2 contract (`MatchReportResponse`).
+
+### ADR-015: Free-Tier LLM Provider Integration & Direct SDK Architecture (Phase 6.6 — 2026-08-26)
+
+**Status:** Validated (Option 1: Groq Cloud — 2026-08-26)
+
+**Context:**
+PULSE requires a small, fast, instruction-following LLM for two presentation tasks: live point narrative synthesis on escalated points (`TacticalOutputNode`) and post-match executive debrief synthesis (`src/analytics/match_report.py`). The initial default was Anthropic (`claude-3-5-haiku-20241022`), requiring a paid key. To ensure zero-friction developer onboarding and free tier accessibility, we evaluated four free-tier provider options (Groq Cloud, Google Gemini AI Studio, Local Ollama, OpenRouter) and evaluated Direct SDKs vs. LangChain wrapper abstractions.
+
+**Decisions:**
+1. **Groq Cloud Default Free-Tier (`llama-3.1-8b-instant`):**
+   - Configured `groq` as the default provider in `params.yaml` with `model_name: "llama-3.1-8b-instant"`.
+   - Free tier delivers 30 RPM and 14,400 RPD with ultra-low LPU latency (~100–300ms), well within the per-point streaming budget.
+2. **Direct SDK Architecture over LangChain Wrappers:**
+   - Adopted lightweight, async-native vendor SDKs (`groq.AsyncGroq`, `anthropic.AsyncAnthropic`) rather than heavy `langchain-groq` or `langchain-core` abstractions.
+   - Preserves zero overhead, explicit exception handling, and minimal dependency footprint without LangChain wrapper churn.
+3. **Dual Provider Support & Deterministic Fallback:**
+   - `src/graph/llm_client.py` dynamically routes to Groq or Anthropic based on `params.yaml`.
+   - If the API key is not present or if an exception occurs, the system automatically falls back to deterministic raw-signal passthrough without throwing runtime errors.
+4. **Presentation Layer Decomposition:**
+   - Extracted `format_match_report_markdown` into `src/analytics/formatting.py` to maintain all core analytics modules strictly below the 1,000-line modularity ceiling.
+
+**Consequences:**
+Enables 100% free, low-latency live narrative generation and post-match debriefing with zero extra toolchain overhead. Validated across 176 passing tests with 0 type errors.
 
 ---
 
@@ -422,7 +445,7 @@ Following real-time live match monitoring (Phases 1–6.5), coaches, broadcast t
 | Configuration Contract           | `params.yaml`, `pyrightconfig.json` | Phase 1, extended Phase 6 (`api`, `simulator` params)                       |
 | File Ceiling Enforcement         | `scripts/check_file_size.py`        | Phase 1                                                                      |
 | CI Quality Gate                  | `.github/workflows/ci.yml`          | Phase 1                                                                      |
-| `PointRecord` schema             | `schemas/point_record.py`           | Phase 2, extended Phase 6 (`to_point_context()`)                              |
+| `PointRecord` schema             | `schemas/point_record.py`           | Phase 2, extended Phase 6 (`to_point_context()`, `infer_match_format()`)     |
 | Closed-form Markov solver        | `core/markov_solver.py`             | Phase 2                                                                      |
 | Point-win classifier             | `models/point_win_classifier.py`    | Phase 3                                                                      |
 | Pressure Deviation model         | `models/pressure_deviation.py`      | Phase 3                                                                      |
@@ -433,6 +456,7 @@ Following real-time live match monitoring (Phases 1–6.5), coaches, broadcast t
 | Game theory solver               | `core/game_theory.py`               | Phase 5                                                                      |
 | Payoff Matrix DVC Stage          | `scripts/build_payoff_matrices.py`  | Phase 5                                                                      |
 | `TacticalOutputNode`             | `graph/tactical_output.py`          | Phase 4                                                                      |
+| LLM Client Wrapper               | `src/graph/llm_client.py`           | Phase 4, extended Phase 6.6 (ADR-015 Groq integration)                       |
 | API Wire Schemas                 | `src/api/schemas.py`                | Phase 6, extended Phase 6.6 (`MatchReportResponse`)                         |
 | SQLite Persistence Layer         | `src/utils/persistence.py`          | Phase 6                                                                      |
 | FastAPI Application & Lifespan   | `src/api/main.py`                   | Phase 6                                                                      |
@@ -440,6 +464,7 @@ Following real-time live match monitoring (Phases 1–6.5), coaches, broadcast t
 | Replay Simulator & Event Engine  | `src/simulator/replay.py`           | Phase 6                                                                      |
 | Interactive Tactical Cockpit     | `src/api/static/`                   | Phase 6.5 (ADR-013), extended Phase 6.6 (Report Modal)                       |
 | Post-Match Reporting Engine      | `src/analytics/match_report.py`     | Phase 6.6 (ADR-014)                                                          |
+| Report Markdown Formatting       | `src/analytics/formatting.py`       | Phase 6.6 (ADR-015)                                                          |
 
 ---
 

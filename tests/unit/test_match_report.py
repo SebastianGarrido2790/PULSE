@@ -303,3 +303,29 @@ async def test_generate_match_report_async(sample_point_records: list[PointRecor
     assert report.executive_debrief != ""
     assert report.markdown_report != ""
     assert "# PULSE Match Intelligence Report" in report.markdown_report
+
+
+@pytest.mark.asyncio
+async def test_generate_match_report_async_groq_mock(
+    sample_point_records: list[PointRecord],
+) -> None:
+    """Verify async match report generation invokes Groq when configured and key is present."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from src.analytics.match_report import generate_match_report_async
+    from src.config.loader import load_params
+
+    cfg = load_params()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "Groq Debrief: Dominant baseline performance by De Minaur."
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch.dict("os.environ", {"GROQ_API_KEY": "gsk_test_key"}):
+        with patch("groq.AsyncGroq", return_value=mock_client):
+            report = await generate_match_report_async(sample_point_records, params=cfg)
+            expected = "Groq Debrief: Dominant baseline performance by De Minaur."
+            assert report.executive_debrief == expected

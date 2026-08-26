@@ -90,11 +90,11 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 - Implement `StateMonitorNode`: per-point leverage + confidence band computation, threshold check against `params.yaml`
 - Implement conditional edges: escalate to `PressureDiagnosticNode` on leverage threshold; escalate to `StrategyExploitNode` on leverage threshold **and** sample-size gate (Phase 4 dependency)
 - Finalize how confidence-band width interacts with the escalation threshold (open question from `prd.md` §10), provisional rule: wide bands raise the effective threshold required to trigger
-- Implement `TacticalOutputNode` with variable output shape depending on which upstream nodes fired
+- Implement `TacticalOutputNode` with variable output shape depending on which upstream nodes fired, calling ultra-fast free-tier Groq Cloud (`llama-3.1-8b-instant`) or Anthropic with deterministic raw-signal passthrough fallback
 - Structured logging of every fire/suppress decision with its triggering condition (FR-10)
 - Integration tests verifying the graph produces different node sets for different match-state fixtures
 
-**Deliverables:** `graph/state_monitor.py`, `graph/pressure_diagnostic.py`, `graph/strategy_exploit.py`, `graph/tactical_output.py`, `graph/pulse_graph.py`, integration test suite
+**Deliverables:** `graph/state_monitor.py`, `graph/pressure_diagnostic.py`, `graph/strategy_exploit.py`, `graph/tactical_output.py`, `graph/pulse_graph.py`, `graph/llm_client.py`, integration test suite
 
 **Exit Criteria:** Graph correctly varies its execution path across a set of fixture match states (routine point, high-leverage/low-data point, high-leverage/high-data point); all decisions logged.
 
@@ -181,14 +181,14 @@ This roadmap sequences implementation so that the deterministic ground truth (Ph
 
 - Implement deterministic analytics engine in `src/analytics/match_report.py` (Markov leverage aggregation, Wilson 95% confidence intervals, pivotal point ranking, pressure tier partitioning, and minimax serve-return audit).
 - Add Pydantic v2 schemas (`MatchReportResponse`, `PivotalPointEntry`, `PlayerPressureMetrics`, `GameTheoryExploitAudit`, `MatchSummaryStats`) in `src/api/schemas.py`.
-- Integrate grounded executive debrief synthesis with Anthropic LLM API async client and deterministic zero-hallucination fallback.
-- Register `GET /v1/matches/{match_id}/report` endpoint in `src/api/streaming.py` supporting `json` and `markdown` output formats and `bo3`/`bo5` scoring rules.
+- Integrate grounded executive debrief synthesis with free-tier Groq Cloud (`llama-3.1-8b-instant`) / Anthropic LLM async clients and deterministic zero-hallucination fallback.
+- Register `GET /v1/matches/{match_id}/report` endpoint in `src/api/streaming.py` supporting `json` and `markdown` output formats and automatic `bo3`/`bo5` scoring detection.
 - Add glassmorphic Post-Match Report interactive modal, tabular KPI displays, and clipboard/JSON/print PDF export tools to Tactical Cockpit UI (`src/api/static/`).
 - Build comprehensive unit and integration test suites (`tests/unit/test_match_report.py`, `tests/integration/test_match_report_api.py`, `tests/integration/test_static_ui.py`) passing 100%.
 
-**Deliverables:** `src/analytics/match_report.py`, `src/api/schemas.py`, `src/api/streaming.py`, `src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`, `tests/unit/test_match_report.py`, `tests/integration/test_match_report_api.py`, `reports/docs/workflows/post_match_reporting_execution_workflow.md`.
+**Deliverables:** `src/analytics/match_report.py`, `src/analytics/formatting.py`, `src/api/schemas.py`, `src/api/streaming.py`, `src/api/static/index.html`, `src/api/static/app.js`, `src/api/static/style.css`, `tests/unit/test_match_report.py`, `tests/integration/test_match_report_api.py`, `reports/docs/workflows/post_match_reporting_execution_workflow.md`, `reports/docs/decisions/free_tier_llm.md`.
 
-**Exit Criteria:** Full post-match intelligence reports generated in <200ms; executive debrief grounded with 0 hallucinated figures; interactive modal accessible via browser with instant markdown copy and JSON export; 172/172 test suite passing.
+**Exit Criteria:** Full post-match intelligence reports generated in <200ms; executive debrief grounded with 0 hallucinated figures; interactive modal accessible via browser with instant markdown copy and JSON export; 176/176 test suite passing.
 
 **Dependencies:** Phases 1–6.5 complete.
 

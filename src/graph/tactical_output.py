@@ -1,10 +1,10 @@
 """PULSE — Tactical Output Node (src/graph/tactical_output.py).
 
 Terminal node assembling pre-computed signals and conditionally synthesizing coach-readable
-narratives via Anthropic LLM API only on escalated points.
+narratives via configured LLM provider (Groq Cloud free-tier, Anthropic) only on escalated points.
 Maintains zero LLM calls on routine points.
 
-Authority: FR-7, Phase 4 Decisions D-2b, D-7, D-7a, D-9, D-10, ADR-001.
+Authority: FR-7, Phase 4 Decisions D-2b, D-7, D-7a, D-9, D-10, ADR-001, Free-Tier LLM ADR.
 """
 
 from collections.abc import Callable

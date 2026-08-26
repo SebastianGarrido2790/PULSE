@@ -56,7 +56,7 @@ Phases 6.5 and 6.6 deliver the **Embedded Real-Time Tactical Cockpit & Post-Matc
 ### 1.4 Post-Match Tactical Intelligence & Modal Integration (ADR-014 — Phase 6.6)
 - **Deterministic Analytics Grounding:** Queries `GET /v1/matches/{match_id}/report?format=json` to retrieve the fully aggregated post-match tactical evaluation computed in $< 200\text{ms}$ by `src/analytics/match_report.py`.
 - **Interactive Glassmorphic Modal:** Opens a non-disruptive, backdrop-filtered modal dialog displaying 6 structured debrief sections:
-  - **Executive Tactical Debrief:** Grounded 3-paragraph synthesis (via async Anthropic LLM client or deterministic fallback).
+  - **Executive Tactical Debrief:** Grounded 3-paragraph synthesis (via configured async LLM client: Groq Cloud free-tier `llama-3.1-8b-instant` / Anthropic, or deterministic raw-signal fallback).
   - **Key Match Indicators:** Grid displaying Total Points, Set Scores, Mean Leverage, and Peak Leverage Point.
   - **Top Pivotal Moments Table:** Exact $\Delta L$ ranking with point context and interactive "Seek" buttons jumping directly to specific points on the timeline.
   - **Pressure Resilience Breakdown:** Side-by-side player win rate comparison across Routine, Elevated, and Critical leverage tiers with empirical shift ($\Delta p$).
@@ -84,7 +84,8 @@ Phases 6.5 and 6.6 deliver the **Embedded Real-Time Tactical Cockpit & Post-Matc
 ```text
 src/
 ├── analytics/
-│   └── match_report.py  # Deterministic post-match analytics engine, pivotal points & markdown/JSON serializers (Phase 6.6)
+│   ├── match_report.py  # Deterministic post-match analytics engine, pivotal points & debrief synthesis (Phase 6.6)
+│   └── formatting.py    # Markdown report formatter extracted to ensure strict modularity under 1,000 lines (Phase 6.6)
 ├── api/
 │   ├── main.py          # FastAPI app instance, static asset mounting (/static), and root UI delivery (GET /, GET /ui)
 │   ├── schemas.py       # Pydantic v2 request/response wire schemas (StreamPointEvent, MatchReportResponse, MatchMetadataResponse)
@@ -107,6 +108,6 @@ tests/
 ## 4. Verification & Validation Summary
 
 - **Total Integration Tests:** 10 dedicated integration tests across `test_static_ui.py` (HTML delivery, DOM contracts, MIME headers, zero-CDN compliance, route precedence) and `test_match_report_api.py` (JSON wire contracts, Markdown serialization, BO5 scoring rules, LLM async debrief, 404 handling).
-- **Full Test Suite:** 172/172 tests passing (100%) with 0 warnings.
+- **Full Test Suite:** 176/176 tests passing (100%) with 0 warnings.
 - **Type Checking & Linting:** 0 Pyright errors, 0 Ruff errors.
 - **File Size Ceiling:** All files in `src/` strictly satisfy the CI ceiling limit (<1,000 lines).

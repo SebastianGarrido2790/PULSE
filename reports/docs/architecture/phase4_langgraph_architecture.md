@@ -22,7 +22,7 @@ This document explains **what Phase 4 built, how each component works at the imp
 | Triggered pressure diagnostic node | `src/graph/pressure_diagnostic.py` | ✅ Complete |
 | Triggered exploit stub node (sufficiency gate) | `src/graph/strategy_exploit.py` | ✅ Complete |
 | LLM narrative synthesis terminal node | `src/graph/tactical_output.py` | ✅ Complete |
-| Anthropic LLM thin wrapper | `src/graph/llm_client.py` | ✅ Complete |
+| LLM narrative wrapper (Groq Cloud free-tier / Anthropic) | `src/graph/llm_client.py` | ✅ Complete |
 | LangGraph conditional graph definition & compiler | `src/graph/pulse_graph.py` | ✅ Complete |
 | DeepEval groundedness evaluation suite | `tests/evals/test_tactical_output_groundedness.py` | ✅ Complete |
 | End-to-end integration test suite | `tests/integration/test_conditional_graph.py` | ✅ Complete |

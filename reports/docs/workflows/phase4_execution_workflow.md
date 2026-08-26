@@ -35,7 +35,7 @@ _Nothing downstream can be built without this — every node reads and writes th
 
 6. Create `src/graph/state.py`. Define the `PulseGraphState` Pydantic `BaseModel` exactly per the approved field table: `point_context`, `leverage_result` (always populated), `pressure_result: Optional`, `exploit_result: Optional`, `tactical_output`, `decision_log`. **[D-2, D-2a]**
 7. In the same file, define the nested sub-models it references: a leverage-result model (`ΔL`, `ΔL_low`, `ΔL_high`, `p_hat`, `sample_size`, `fallback_tier`) and a decision-log-entry model (`node`, `fired: bool`, `reason: str`). **[D-2]**
-8. Add the LLM configuration block to `params.yaml` — provider, model name (Haiku-class), `max_tokens`, `temperature`, request timeout — no hardcoded values in `tactical_output.py` later. **[D-7]**
+8. Add the LLM configuration block to `params.yaml` — provider (Groq default free-tier `llama-3.1-8b-instant` / Anthropic), `max_tokens`, `temperature`, request timeout — no hardcoded values in `tactical_output.py` later. **[D-7, D-7 Amendment 1]**
 9. Explicitly confirm no new `params.yaml` key is needed for the escalation-threshold logic itself — D-4 (Option B, lower-bound gating) uses only the existing `thresholds.leverage_escalation`, no new coefficient. Record this as a deliberate no-op, not an oversight. **[D-4]**
 10. Explicitly confirm no new `dvc.yaml` stage is needed — orchestration code isn't a DVC-tracked artifact producer. Record as a deliberate no-op. **[audit §1.4]**
 
@@ -115,7 +115,7 @@ _Wires Stages 3–5 together. This is where D-3, D-4, D-4a, and D-5 all become r
 
 _The terminal node. Once this exists, `pulse_graph.py` can be compiled end to end._
 
-34. Create `src/graph/llm_client.py`. Implement a thin wrapper, e.g. `call_narrative_llm(payload, params) -> str | None`, around the Anthropic SDK call (Haiku-class model, per D-7). On any exception — timeout, network, rate limit — it returns `None` rather than raising, which is the deterministic-passthrough fallback the harness requires, not an error state. **[D-7]**
+34. Create `src/graph/llm_client.py`. Implement a thin async wrapper, e.g. `call_narrative_llm(payload, params) -> str | None`, supporting configured providers (Groq Cloud default free-tier `llama-3.1-8b-instant` or Anthropic, per D-7 & D-7 Amendment 1). On any exception — timeout, network, rate limit, missing key — it returns `None` rather than raising, activating deterministic raw-signal passthrough. **[D-7, D-7 Amendment 1]**
 35. Create `src/graph/tactical_output.py`. Implement `make_tactical_output_node(params)`, async factory-built node. **[D-9, D-10, D-7a]**
 36. Inside: assemble the structured signal payload strictly from whichever of `leverage_result` / `pressure_result` / `exploit_result` are non-`None` on the incoming state (FR-7's variable output shape, via D-2b's presence-check pattern) — this assembly happens before any LLM call and does not depend on it. **[D-2b]**
 37. Guard the LLM call: only invoke `call_narrative_llm()` when at least one of `pressure_result` or `exploit_result` is non-`None`. A routine, non-escalated point gets its `tactical_output` populated directly from `leverage_result` with **no LLM call at all** — this keeps inference cost at zero for the overwhelming majority of points, consistent with "cents per escalation, not per point" in the project charter's cost story. **[D-7]**

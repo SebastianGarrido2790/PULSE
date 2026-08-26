@@ -148,3 +148,52 @@ async def test_tactical_output_routine_zero_llm_calls(
     assert "Routine point" in res.narrative
     assert "leverage_result" in res.raw_payload
     assert "pressure_result" not in res.raw_payload
+
+
+@pytest.mark.asyncio
+async def test_call_narrative_llm_groq_missing_key() -> None:
+    """Verify Groq provider returns None when GROQ_API_KEY is not set."""
+    from unittest.mock import patch
+
+    from src.config.loader import load_params
+    from src.graph.llm_client import call_narrative_llm
+
+    cfg = load_params()
+    with patch.dict("os.environ", {}, clear=True):
+        res = await call_narrative_llm({"delta_leverage": 0.15}, params=cfg)
+        assert res is None
+
+
+@pytest.mark.asyncio
+async def test_call_narrative_llm_groq_success() -> None:
+    """Verify Groq provider calls AsyncGroq and returns narrative text."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from src.config.loader import load_params
+    from src.graph.llm_client import call_narrative_llm
+
+    cfg = load_params()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "Groq generated tactical signal text."
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch.dict("os.environ", {"GROQ_API_KEY": "gsk_test123"}):
+        with patch("groq.AsyncGroq", return_value=mock_client):
+            res = await call_narrative_llm({"delta_leverage": 0.15}, params=cfg)
+            assert res == "Groq generated tactical signal text."
+
+
+@pytest.mark.asyncio
+async def test_call_narrative_llm_unsupported_provider() -> None:
+    """Verify unsupported provider returns None and triggers passthrough."""
+    from src.config.loader import load_params
+    from src.graph.llm_client import call_narrative_llm
+
+    cfg = load_params()
+    cfg.llm.provider = "unknown_vendor"
+    res = await call_narrative_llm({"delta_leverage": 0.15}, params=cfg)
+    assert res is None

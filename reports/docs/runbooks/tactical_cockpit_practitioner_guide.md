@@ -222,7 +222,7 @@ The bottom bar controls the simulation engine:
 ### Panel 7: Post-Match Tactical Intelligence Modal
 
 Accessible via the `View Post-Match Report` button, this overlay gathers retrospective match metrics:
-- **Executive Tactical Summary:** 3-paragraph executive summary synthesized by Anthropic client (or deterministic fallback) with zero hallucinated figures.
+- **Executive Tactical Summary:** 3-paragraph executive summary synthesized by configured LLM client (Groq Cloud free-tier `llama-3.1-8b-instant` or Anthropic, with deterministic raw fallback) with zero hallucinated figures.
 - **Key Match Indicators:** Aggregate statistics containing total points, set scores, average leverage, and peak leverage point index.
 - **Top Pivotal Moments Table:** Descending list of the top 5 highest-leverage inflection moments. Clicking any point's **Seek** button jumps the cockpit timeline directly to that point context.
 - **Pressure Resilience Diagnostic:** Graphical win-rate comparison across Routine, Elevated, and Critical leverage tiers.

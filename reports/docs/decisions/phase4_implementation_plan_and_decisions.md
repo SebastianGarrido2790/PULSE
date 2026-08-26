@@ -153,6 +153,16 @@ FR-10 requires every escalation decision, fire _or_ suppress, logged with its tr
 
 **Decision: Option A (Approved)**, mainly for toolchain consistency and because the job here is deliberately thin (§2: "the LLM's role is thin enough that a deterministic passthrough is a complete, honest fallback") — a large model isn't needed, a cheap, reliable, instruction-following one is.
 
+#### D-7 Amendment 1: Free-Tier Provider Integration (Groq Cloud) & Direct SDKs (Phase 6.6 — 2026-08-26)
+
+**Context:**
+To eliminate barriers for local developers, evaluators, and reviewers, PULSE introduced out-of-the-box free-tier LLM support. We evaluated 4 free-tier providers (Groq Cloud, Google Gemini, Local Ollama, OpenRouter) and evaluated Direct SDKs vs. LangChain wrappers.
+
+**Amended Decision:**
+1. **Groq Cloud Default Free-Tier (`llama-3.1-8b-instant`):** Set `provider: "groq"` in `params.yaml`. Groq's LPU provides ultra-low latency (100–300ms) within free-tier limits (30 RPM / 14,400 RPD).
+2. **Direct SDK Architecture:** Adopted `groq.AsyncGroq` and `anthropic.AsyncAnthropic` direct clients rather than heavy LangChain wrappers to keep wrapper overhead at 0ms and dependencies minimal.
+3. **Dual Provider Support:** `src/graph/llm_client.py` supports both Groq and Anthropic, with deterministic raw-signal passthrough fallback whenever an API key is missing or calls fail.
+
 **D-7a 🟢 — sync vs. async node functions, project-wide.** Not just a `tactical_output.py` question — whatever's decided sets the calling convention for all four Phase 4 nodes. Phase 6 wires this graph into FastAPI's async-native SSE/WebSocket streaming, and `TacticalOutputNode` makes the one real network call inside a <5s triggered-node budget, where blocking the event loop is a real cost. Building sync now and retrofitting in Phase 6 is avoidable rework against an already-fixed target. **Proposal:** all four nodes as `async def` from the start. Recorded for completeness — there's no real case for sync given the fixed downstream target.
 
 ---
@@ -203,7 +213,7 @@ FR-10 requires every escalation decision, fire _or_ suppress, logged with its tr
 | D-4 / D-4a        | Escalation gate on lower band bound, applied uniformly     | 🟢 Approved (Option B / Uniform)                          |
 | D-5               | Fire/suppress logging in routing functions                 | 🟢 Recorded                                               |
 | D-6               | Pressure lookup accessor in `models/pressure_deviation.py` | 🟢 Approved (Option A + VERIFY bucket function location)  |
-| D-7 / D-7a        | LLM provider (Anthropic Haiku) + async nodes               | 🟢 Approved (Option A / Async)                            |
+| D-7 / D-7a        | LLM provider (Groq default free-tier / Anthropic) + async nodes | 🟢 Approved (Amended Option 1 Groq / Async) |
 | D-8               | Minimal DeepEval groundedness test, built in Phase 4       | 🟢 Approved (Option A)                                    |
 | D-9               | Load artifacts once, at graph construction                 | 🟢 Recorded                                               |
 | D-10              | Functions + closures over callable classes                 | 🟢 Approved (Option A)                                    |

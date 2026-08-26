@@ -1,11 +1,11 @@
 # PULSE — Test Suite Report
 
 > **Version:** v0.6.6 — _Living Document_  
-> **Phase:** 6.6 — Post-Match Tactical Intelligence & Grounded Reporting Engine  
-> **Status:** 🟢 172 / 172 Tests Passing (0 Warnings)  
-> **Coverage:** 90% Total Code Coverage (100% Graph Topology, Core Math, Schemas & Wire Contracts)  
+> **Phase:** 6.6 — Post-Match Tactical Intelligence & Free-Tier Groq LLM Engine  
+> **Status:** 🟢 176 / 176 Tests Passing (0 Warnings)  
+> **Coverage:** 91% Total Code Coverage (100% Graph Topology, Core Math, Schemas & Wire Contracts)  
 > **Maintained By:** MLOps & Performance Analytics Engineering Team  
-> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [post_match_reporting_execution_workflow.md](../workflows/post_match_reporting_execution_workflow.md), [phase6_5_execution_workflow.md](../workflows/phase6_5_execution_workflow.md), [phase6_5_presentation_layer_architecture.md](../architecture/phase6_5_presentation_layer_architecture.md), [interactive_presentation_layer_evaluation_report.md](interactive_presentation_layer_evaluation_report.md), [system_design.md](../architecture/system_design.md)
+> **Reference Documents:** [technical_roadmap.md](../references/technical_roadmap.md), [post_match_reporting_execution_workflow.md](../workflows/post_match_reporting_execution_workflow.md), [phase6_5_execution_workflow.md](../workflows/phase6_5_execution_workflow.md), [phase6_5_presentation_layer_architecture.md](../architecture/phase6_5_presentation_layer_architecture.md), [interactive_presentation_layer_evaluation_report.md](interactive_presentation_layer_evaluation_report.md), [system_design.md](../architecture/system_design.md), [free_tier_llm.md](../decisions/free_tier_llm.md)
 
 ---
 
@@ -287,13 +287,14 @@ Phase 6.5: Interactive Presentation Layer (Tactical Cockpit) (Complete — 152 P
   ├── DOM Blueprint Contracts (6 Sub-Components) & Zero-CDN Invariant Verification
   └── Health and OpenAPI Route Precedence Enforcement
        │
-Phase 6.6: Post-Match Tactical Intelligence & Grounded Reporting (Complete — 172 Passes)
+Phase 6.6: Post-Match Tactical Intelligence & Free-Tier Groq LLM Engine (Complete — 176 Passes)
   ├── Deterministic Post-Match Analytics Engine (Leverage Aggregation, Wilson Bounds)
   ├── Top-N Pivotal Inflection Points Ranking by Delta L
   ├── Pressure Resilience Partitioning Across Leverage Tiers (Routine / Elevated / Critical)
   ├── Minimax Serve/Return Realized Mix Audit & Sufficiency Gating (N >= 10)
-  ├── Grounded Executive Debrief Synthesis (Async Anthropic LLM + Zero-Hallucination Fallback)
-  ├── FastAPI REST Report Endpoint (JSON & Markdown Transports, bo3/bo5 parameter)
+  ├── Free-Tier Groq Cloud (llama-3.1-8b-instant) / Anthropic Async LLM Narrative Debrief
+  ├── Presentation Layer Decomposition (src/analytics/formatting.py under 1,000-line ceiling)
+  ├── FastAPI REST Report Endpoint (JSON & Markdown Transports, Auto BO3/BO5 Detection)
   └── Interactive Glassmorphic Report Modal UI & One-Click Clipboard/JSON/Print Exporters
        │
 Phase 7: Observability, CI/CD, Shadow-Mode Acceptance (Scheduled Next)

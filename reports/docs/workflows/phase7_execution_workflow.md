@@ -30,10 +30,10 @@
 
 ## Stage 1 — Close the `llm_client.py` Coverage Gap
 
-6. Write tests mocking: (a) a network/timeout exception from the Anthropic SDK call, (b) a missing `ANTHROPIC_API_KEY`, (c) a malformed or empty API response — each asserting the deterministic-passthrough fallback fires correctly (no exception propagates out, a structured payload is returned instead). **[D-8]**
+6. Write tests mocking: (a) a network/timeout exception from Groq or Anthropic SDK calls, (b) missing `GROQ_API_KEY` / `ANTHROPIC_API_KEY`, (c) a malformed or empty API response, (d) unsupported provider configuration — each asserting the deterministic-passthrough fallback fires correctly (no exception propagates out, a structured payload is returned instead). **[D-8, ADR-015]**
 7. Re-run coverage on `llm_client.py` specifically; confirm it moves well clear of where it sat before, closing Finding C directly rather than letting the aggregate absorb it again.
 
-**Gate 1:** `llm_client.py` coverage measurably improved; all three fallback paths have explicit, individually-named tests — not folded into one parametrized test that could hide which path actually failed.
+**Gate 1:** `llm_client.py` coverage measurably improved; all fallback paths have explicit, individually-named tests for both Groq and Anthropic — not folded into one parametrized test that could hide which path actually failed.
 
 ---
 

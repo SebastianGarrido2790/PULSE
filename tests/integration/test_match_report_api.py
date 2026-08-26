@@ -139,21 +139,24 @@ async def test_get_match_report_bo5_format_parameter(
 async def test_get_match_report_custom_llm_debrief_integration(
     test_parquet_file: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Verify LLM synthesis generates customized debrief when Anthropic client succeeds."""
+    """Verify LLM synthesis generates customized debrief when LLM client succeeds."""
     monkeypatch.setattr(
         "src.simulator.replay.resolve_parquet_path",
         lambda *args, **kwargs: test_parquet_file,
     )
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "mock-test-key")
+    monkeypatch.setenv("GROQ_API_KEY", "mock-test-key")
 
-    mock_msg = MagicMock()
-    mock_msg.content = [
-        MagicMock(text="Synthesized AI debrief: Alex De Minaur controlled pivotal moments.")
-    ]
-    mock_client = AsyncMock()
-    mock_client.messages.create.return_value = mock_msg
+    mock_choice = MagicMock()
+    mock_choice.message.content = (
+        "Synthesized AI debrief: Alex De Minaur controlled pivotal moments."
+    )
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
 
-    monkeypatch.setattr("anthropic.AsyncAnthropic", lambda **kwargs: mock_client)
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    monkeypatch.setattr("groq.AsyncGroq", lambda **kwargs: mock_client)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
