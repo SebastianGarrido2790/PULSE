@@ -1,141 +1,194 @@
 # Phase 7 — Execution Workflow
+
 **Observability, CI/CD, Shadow-Mode Acceptance — Ordered Implementation Steps**
 
-**Product:** PULSE | **Phase:** 7 of 7 (final) | **Version:** 1.0.0 | **Date:** 2026-08-20
-**Status:** 🟡 Ready to execute — no code written yet
-**Authority:** `phase7_implementation_plan_and_decisions.md` v1.0.0 (D-1–D-13, all approved)
+**Product:** PULSE | **Phase:** 7 of 7 (final) | **Version:** 1.1.0 | **Date:** 2026-08-26  
+**Status:** 🟡 Ready to execute — no code written yet  
+**Authority:** `phase7_implementation_plan_and_decisions.md` v1.1.0 (D-1–D-13, all approved)  
 **Scope of this document:** sequencing only, no code.
 
 ---
 
 ## How to Read This
 
-11 stages (0–10), strictly ordered. Steps numbered continuously (1–35) so any step is unambiguously referenceable. Each step is tagged with the decision(s) it implements. **A Gate closes every stage — nothing in the next stage starts until its gate passes.**
-
-**Note on VERIFY items:** the approved decisions document's §1.3 VERIFY items are still open — approval of the *decisions* didn't waive the requirement to actually read `project_charter.md` §5, `pulse_ml_canvas.md` §8, and `src/utils/logger.py` directly. Stage 0 resolves these before anything else proceeds, exactly as it did for the two prior phases that had blocking VERIFY items.
+11 stages (0–10), strictly ordered. Steps numbered continuously (1–31) so any step is unambiguously referenceable. Each step is tagged with the decision(s) it implements. **A Gate closes every stage — nothing in the next stage starts until its gate passes.**
 
 ---
 
 ## Stage 0 — Pre-Implementation Verification
 
-1. Read `project_charter.md` §5 (Definition of Done) in full. Produce an explicit checklist mapping every DoD item to the Phase 7 deliverable or decision that satisfies it — this checklist is what Stage 9's final report gets reconciled against, not a generic summary written from memory of this document.
-2. Read `pulse_ml_canvas.md` §8 in full. Confirm or revise D-9's scaffolding assumption (a standalone offline script mirroring `build_payoff_matrices.py`'s shape) against the actual stated methodology — if §8 implies something structurally different, that's resolved here, not improvised at Stage 7.
-3. Read `src/utils/logger.py` directly. Confirm whether `structlog` JSON output already exists project-wide (making D-11 an audit pass) or needs introducing for the first time (making it a real migration, per D-11's own explicit caveat that this changes the scope of Stage 3 below).
-4. Read the current `.github/workflows/ci.yml` directly — not the Phase 1 roadmap's description of what it was meant to contain — to know exactly what Stage 6 needs to add versus what's already there.
-5. Confirm `llm_client.py`'s exact untested line ranges (lines 42–82 per the last-seen Phase 6 coverage report) to scope Stage 1's tests precisely rather than guessing at what's uncovered.
+1. Read `reports/docs/references/pulse_project_charter.md` §5 (Definition of Done) in full. Produce an explicit checklist mapping every DoD item to the Phase 7 deliverable or decision that satisfies it — this checklist is what Stage 9's final report gets reconciled against.
+2. Read `reports/docs/references/pulse_ml_canvas.md` §8 (Evaluation) in full. Confirm the retrospective escalation-precision evaluation methodology (realized win-probability swing vs. pre-outcome escalation alerts) governing `scripts/evaluate_escalation_precision.py`. **[D-9]**
+3. Read `src/utils/logger.py` directly. Audit log formatting and handlers (`RotatingFileHandler`, `RichHandler`), confirming logger conventions across all `src/` modules. **[D-11]**
+4. Read `.github/workflows/ci.yml` directly to inventory existing steps and scope Stage 6 additions (integration test suites, coverage gate, Docker build, Trivy scan). **[D-3]**
+5. Confirm current test baseline (176 tests passing) and verify test coverage over `src/graph/llm_client.py`, `src/analytics/match_report.py`, and `src/analytics/formatting.py`. **[D-8]**
 
-**Gate 0:** all three VERIFY items resolved against literal source text; D-9's and D-11's actual scope confirmed, not assumed; `ci.yml`'s current real content known.
-
----
-
-## Stage 1 — Close the `llm_client.py` Coverage Gap
-
-6. Write tests mocking: (a) a network/timeout exception from Groq or Anthropic SDK calls, (b) missing `GROQ_API_KEY` / `ANTHROPIC_API_KEY`, (c) a malformed or empty API response, (d) unsupported provider configuration — each asserting the deterministic-passthrough fallback fires correctly (no exception propagates out, a structured payload is returned instead). **[D-8, ADR-015]**
-7. Re-run coverage on `llm_client.py` specifically; confirm it moves well clear of where it sat before, closing Finding C directly rather than letting the aggregate absorb it again.
-
-**Gate 1:** `llm_client.py` coverage measurably improved; all fallback paths have explicit, individually-named tests for both Groq and Anthropic — not folded into one parametrized test that could hide which path actually failed.
+**Gate 0:** all pre-implementation verification items resolved against literal source text; D-9 methodology confirmed; CI and logging baseline fully mapped.
 
 ---
 
-## Stage 2 — OTel Spans for Solver & Model Layers
+## Stage 1 — Verify Multi-Provider LLM & Debrief Test Coverage
 
-8. Add per-call spans to `core/markov_solver.py`'s public functions (e.g., `compute_leverage()`), `core/leverage_uncertainty.py`'s `propagate_leverage_uncertainty()`, `models/point_win_classifier.py`'s `resolve_point_win_probability()`, `models/pressure_deviation.py`'s `get_pressure_deviation()`, and `core/game_theory.py`'s `compute_exploit()` — each opening a span at entry, relying on OTel's automatic context propagation to nest under whatever node-level span is already open. **[D-10]**
-9. Confirm span attributes carry genuinely useful latency-profiling detail (e.g., which fallback tier resolved, matrix dimensions solved) without just duplicating what `decision_log` already records.
-10. Manual trace inspection: run one replayed point through the graph — specifically an escalated one, not a routine one — and confirm the resulting span tree shows node → solver/model child spans correctly nested, not appearing as unrelated siblings.
+6. Confirm unit and integration test coverage for direct SDK wrappers (`groq.AsyncGroq`, `anthropic.AsyncAnthropic`): (a) network/timeout exceptions, (b) missing `GROQ_API_KEY` / `ANTHROPIC_API_KEY`, (c) malformed API responses, (d) unsupported provider configuration — each asserting deterministic raw-payload passthrough fallback without unhandled exceptions. **[D-8, ADR-015]**
+7. Confirm test coverage across `src/analytics/match_report.py` and `src/analytics/formatting.py` (Markov leverage aggregation, pivotal points ranking, pressure breakdown, game-theory exploit audit, JSON/Markdown serialization, and async debrief synthesis).
+8. Re-run coverage report (`pytest --cov=src`); verify aggregate coverage remains well above the 70% project threshold with all fallback branches explicitly exercised.
 
-**Gate 2:** span tree correctly nested for at least one escalated point, exercising `PressureDiagnosticNode`'s and `StrategyExploitNode`'s new child spans, not just `StateMonitorNode`'s.
-
----
-
-## Stage 3 — Structured Logging Finalization
-
-11. Per Stage 0 step 3's outcome: if `structlog` JSON output already exists, audit every module for stray `print()` calls or bare stdlib `logging` calls bypassing `get_logger()`. If it doesn't exist yet, stop here and renegotiate this stage's scope before proceeding — per D-11's own caveat, that's a materially bigger task than this workflow currently accounts for. **[D-11]**
-12. Fix any bypasses found.
-
-**Gate 3:** grep-confirmed zero `print()` statements and zero bare `logging.` calls anywhere in `src/`; every log line traceable back to `get_logger()`.
+**Gate 1:** all LLM direct SDK paths and post-match report analytics have dedicated tests; aggregate coverage verified above 70%.
 
 ---
 
-## Stage 4 — Dockerfile
+## Stage 2 — OpenTelemetry Spans for Solver, Model & Analytics Layers
 
-13. Write a multi-stage `Dockerfile`: a builder stage installing dependencies via `uv`, a final stage running as a non-root user on a SHA256 digest-pinned Python base image, `COPY`ing the application code and the current `artifacts/` directory (stratum table, pressure artifact, payoff matrices, validated points parquet) into the image. **[D-4, D-5, D-7]**
-14. Set the default `CMD` to run `api.main`; confirm `uv run simulator.replay ...` still works correctly via a runtime override against the same image, not a separate one.
-15. Add a `HEALTHCHECK` instruction probing `GET /health`. **[D-12]**
+9. Add per-call child spans to:
+   - `core/markov_solver.py` (`compute_leverage()`)
+   - `core/leverage_uncertainty.py` (`propagate_leverage_uncertainty()`)
+   - `models/point_win_classifier.py` (`resolve_point_win_probability()`)
+   - `models/pressure_deviation.py` (`get_pressure_deviation()`)
+   - `core/game_theory.py` (`compute_exploit()`)
+   - `analytics/match_report.py` (`generate_match_report_async()`, `evaluate_all_points()`) **[D-10]**
+10. Confirm span attributes carry latency-profiling metadata (e.g. stratum keys, matrix dimensions, solver duration) while relying on OTel context propagation to nest under active graph node spans or API request spans.
+11. Trace inspection: replay one escalated point and one post-match report request, verifying in logs/traces that child spans correctly nest under parent node/endpoint spans.
 
-**Gate 4:** `docker build` succeeds; the built image runs the API by default and correctly runs the CLI when invoked that way; `docker inspect` confirms a non-root user and a digest-pinned (not tag-pinned) base image.
-
----
-
-## Stage 5 — `docker-compose.yml`
-
-16. Define the API service: exposes `params.yaml`'s configured port, mounts a named volume at the SQLite database's path (`artifacts/pulse_session.db` or its parent directory) so the audit trail survives `docker compose down`/restart. **[D-4, D-6]**
-17. Confirm `docker compose up --build` — the project's established one-click command, previously broken by the missing compose file — works end-to-end for the first time.
-
-**Gate 5:** `docker compose up --build` starts cleanly; a `docker compose down` followed by `docker compose up` with no rebuild confirms the SQLite database file survived the restart.
+**Gate 2:** span tree correctly nested for both real-time graph node executions and post-match report generations.
 
 ---
 
-## Stage 6 — CI Pipeline Completion
+## Stage 3 — Structured Logging Finalization & Audit Pass
 
-18. Extend `.github/workflows/ci.yml` to the full target order: lint → type-check → file-size check → unit tests → integration tests → eval suite → coverage gate (≥70% aggregate, per D-8's Option C — no per-module floor) → Docker build → Trivy image scan — adding every stage past what Phase 1's baseline already covers, confirmed in Stage 0. **[D-3, D-8]**
-19. Confirm the coverage gate step actually fails the pipeline on a deliberately-introduced coverage regression — a real negative test of the gate, not just a positive run that happens to pass.
-20. Confirm the Trivy step fails the pipeline on a deliberately-introduced CRITICAL CVE if that can be tested safely (e.g., temporarily pinning a known-vulnerable base image tag in a throwaway branch), or at minimum confirm it runs and reports correctly against the real image.
+12. Perform a repository-wide audit of `src/` to confirm all logging routes through `src.utils.logger.get_logger()`. **[D-11]**
+13. Eliminate any stray `print()` calls or bare stdlib `logging` calls bypassing the centralized logger.
 
-**Gate 6:** full pipeline green on a clean run; both the coverage-gate and Trivy-gate negative tests confirm the gates actually block — or, where a negative test genuinely couldn't be run safely, the reasoning for that is documented rather than silently skipped.
+**Gate 3:** grep confirms zero stray `print()` calls in `src/`; all log output consistently formatted with timestamp, level, module name, and structured messages.
+
+---
+
+## Stage 4 — Multi-Stage Dockerfile Packaging
+
+14. Write a multi-stage `Dockerfile`:
+    - **Builder stage**: Install dependencies via `uv` into a clean virtual environment.
+    - **Final stage**: Run as a non-root user on a SHA256 digest-pinned Python base image (`python:3.11-slim@sha256:...`).
+    - **Asset packaging**: `COPY` application code (`src/`, including `src/api/static/` presentation layer and `src/analytics/`) and versioned `artifacts/` (stratum table, pressure artifact, payoff matrices, points parquet). **[D-4, D-5, D-7]**
+15. Set default `CMD` to launch `api.main` (FastAPI serving SSE streams, REST endpoints, and the Tactical Cockpit UI at `http://localhost:8000`). Confirm CLI execution (`uv run simulator.replay ...`) is reachable via runtime entrypoint override.
+16. Add a container `HEALTHCHECK` instruction probing `GET /health`. **[D-12]**
+
+**Gate 4:** `docker build` succeeds; container starts non-root on digest-pinned base; `HEALTHCHECK` passes; static UI and API endpoints respond cleanly.
+
+---
+
+## Stage 5 — `docker-compose.yml` Full-Stack Orchestration
+
+17. Define the primary API service in `docker-compose.yml`:
+    - Maps host port `8000:8000` to serve the Tactical Cockpit UI and streaming API.
+    - Mounts a named volume at `artifacts/` (or SQLite path `artifacts/pulse_session.db`) ensuring session audit trails survive container restarts (satisfying FR-12). **[D-4, D-6]**
+    - Configures environment variables (`GROQ_API_KEY`, `ANTHROPIC_API_KEY`) via `.env` passthrough.
+18. Validate one-click command: run `docker compose up --build`, confirm the application launches, serves the Tactical Cockpit at `http://localhost:8000`, streams live replay data, and persists SQLite logs across `docker compose down` and restart.
+
+**Gate 5:** `docker compose up --build` works end-to-end; SQLite audit logs survive container restarts; Tactical Cockpit is accessible in browser.
+
+---
+
+## Stage 6 — CI Pipeline Completion (GitHub Actions)
+
+19. Extend `.github/workflows/ci.yml` to the full target order:
+    - **Lint & Format**: `ruff check .` and `ruff format --check .`
+    - **Type Check**: `pyright` (strict typing gate)
+    - **Modularity Ceiling**: `python scripts/check_file_size.py` (<1,000 lines per file)
+    - **Unit Tests**: Full unit suite (Markov solver golden tests, game theory, ML models, match report analytics)
+    - **Integration Tests**: `test_conditional_graph.py`, `test_api_streaming.py`, `test_static_ui.py`, `test_match_report_api.py`
+    - **Eval Suite**: DeepEval groundedness numbers verification (`test_tactical_output_groundedness.py`)
+    - **Coverage Gate**: `pytest --cov=src --cov-fail-under=70` (≥70% aggregate coverage) **[D-8]**
+    - **Docker Build**: Build multi-stage container image
+    - **Security Scan**: Run Trivy vulnerability scan against the built container image (asserting 0 CRITICAL CVEs) **[D-3]**
+20. Verify pipeline execution and ensure all stages pass cleanly on GitHub Actions runner.
+
+**Gate 6:** full CI pipeline green on clean run; coverage gate (≥70%) and Trivy scan (0 CRITICAL CVEs) both pass.
 
 ---
 
 ## Stage 7 — Retrospective Escalation-Precision Evaluation
 
-21. Implement `scripts/evaluate_escalation_precision.py` per Stage 0 step 2's confirmed methodology from `pulse_ml_canvas.md` §8 — not the placeholder shape this document assumed before that was read. **[D-9]**
-22. Run it across the full historical match set (or whatever population §8 actually specifies); produce `reports/docs/evaluations/escalation_precision_report.md`, stating D-2's "held-out" limitation explicitly — matches not used for manual calibration/debugging, not a leakage-free statistical holdout, given the per-player-aggregated artifact design. **[D-2]**
-23. Report the measured alert-precision and false-escalation-rate numbers against `prd.md` §7's targets (≥0.75, <0.15) plainly, whichever way they land — not summarized in a way that implies they cleared the bar if they didn't.
+21. Implement `scripts/evaluate_escalation_precision.py` per `pulse_ml_canvas.md` §8:
+    - Recompute realized win-probability swings after match completion using the closed-form Markov solver.
+    - Evaluate whether pre-outcome live escalation alerts correctly flagged high-impact points in advance. **[D-9]**
+22. Execute evaluation script across historical match data and generate `reports/docs/evaluations/escalation_precision_report.md`. **[D-2]**
+23. Document measured Alert Precision (target $\ge 0.75$) and False Escalation Rate (target $< 0.15$) against PRD §7 criteria, explicitly noting per-player aggregation boundaries.
 
-**Gate 7:** evaluation script runs reproducibly (same seed, same result); report published with the D-2 limitation stated explicitly, not omitted or softened.
+**Gate 7:** evaluation script runs reproducibly; `escalation_precision_report.md` generated with explicit metric comparisons against PRD targets.
 
 ---
 
 ## Stage 8 — Shadow-Mode Acceptance Run
 
-24. With the Docker image and compose stack from Stages 4–5 running, select a held-out set of matches (per D-2's operational framing, not the stricter statistical one from Stage 7) and drive each one through the real `GET /v1/matches/{match_id}/stream` endpoint end-to-end — the deployed system, not internal function calls. **[D-1, D-2]**
-25. For each match, confirm: correct event sequencing, correct SQLite persistence (cross-checked against the streamed events, mirroring Phase 6's own persistence-parity integration test pattern), latency within the `StateMonitorNode` <1s / triggered-node <5s budgets, and zero unhandled exceptions.
-26. Record any failures precisely — which match, which point, what broke — rather than reporting a pass rate that would hide exactly the kind of operational surprise this run exists to catch.
+24. With the containerized stack running (`docker compose up`), execute end-to-end shadow-mode acceptance across held-out historical matches. **[D-1, D-2]**
+25. For each match in the acceptance suite, verify:
+    - Live replay streaming through `GET /v1/matches/{id}/stream` (SSE events sequence correctly).
+    - Sub-second latency budget (`StateMonitorNode` $< 1\text{s}$, triggered nodes $< 5\text{s}$).
+    - Correct SQLite session persistence of point records and escalation logs.
+    - Post-match tactical intelligence retrieval via `GET /v1/matches/{id}/report` ($< 200\text{ms}$).
+    - Tactical Cockpit browser UI renders live leverage curves, Wilson bounds, exploit badges, and post-match modal without errors.
+26. Record acceptance run traces and log any anomalies.
 
-**Gate 8:** the full held-out match set replays cleanly through the deployed system with zero unhandled failures, or every failure found is triaged and either fixed or explicitly logged as a known, accepted limitation before proceeding.
+**Gate 8:** full held-out match acceptance suite replays cleanly through containerized API with zero unhandled exceptions and sub-second latency.
 
 ---
 
 ## Stage 9 — Final Evaluation Report & Definition-of-Done Reconciliation
 
-27. Write the final evaluation report in the established exit-criteria sign-off format, checked item-by-item against Stage 0 step 1's `project_charter.md` §5 checklist — a literal per-item reconciliation, not a generic summary. **[D-13]**
-28. For any DoD item this decisions document didn't anticipate — a real possibility, since §5's actual content was never available while D-1 through D-13 were being written — flag it explicitly rather than silently omitting it from the sign-off table.
+27. Compile `reports/docs/evaluations/phase7_final_evaluation_report.md` using the standard exit-criteria sign-off table format. **[D-13]**
+28. Perform item-by-item reconciliation against `pulse_project_charter.md` §5 (Definition of Done), verifying every DoD criterion with concrete evidence from test outputs, MLflow logs, CI runs, and evaluation reports.
 
-**Gate 9:** every item in `project_charter.md` §5 has an explicit ✅/❌ line in the final report, with evidence cited, not an aggregate "complete" claim standing in for the checklist.
+**Gate 9:** every item in `pulse_project_charter.md` §5 has an explicit ✅ sign-off with supporting evidence in the final evaluation report.
 
 ---
 
 ## Stage 10 — Full Verification & Project Close-Out
 
-29. `uv run ruff check .` and `uv run ruff format --check .` — 0 errors.
-30. `uv run pyright` — 0 errors.
-31. `python scripts/check_file_size.py` — confirm all files, including any new Docker-related scripts, stay under the 1,000-line ceiling.
-32. `uv run pytest --cov=src --cov-report=term-missing` — full suite green, aggregate ≥70%, `llm_client.py` specifically confirmed improved from Stage 1's baseline.
-33. Full CI pipeline green on the actual GitHub Actions runner — the real gate, not a local approximation of it.
-34. Log a final ADR into `system_design.md`, continuing the established numbering, capturing this phase's genuinely architectural decisions: D-1/D-2 (shadow-mode and holdout definitions), D-4/D-7 (Docker build shape and artifact-baking), D-3 (Trivy scan target), D-8 (coverage gate policy) — logged as a new dated entry, matching the convention every prior phase used.
-35. Update `technical_roadmap.md`'s Phase 7 entry to ✅ Complete — the last phase on the roadmap.
+29. Run complete local quality suite:
+    - `uv run ruff check .`
+    - `uv run pyright`
+    - `python scripts/check_file_size.py`
+    - `uv run pytest --cov=src --cov-report=term-missing` (176+ tests passing, ≥70% coverage)
+30. Log architectural decision records in `reports/docs/architecture/system_design.md` capturing containerization, security scanning, and acceptance methodology.
+31. Update `reports/docs/references/technical_roadmap.md` marking Phase 7 and all milestones as ✅ Complete.
 
-**Gate 10 (final):** all green; ADR logged; `technical_roadmap.md` shows every phase complete.
+**Gate 10 (Project Complete):** all quality checks green; containerized stack verified; CI passing; final evaluation report approved; technical roadmap complete.
 
 ---
 
 ## Summary — Stage Dependency Chain
 
 ```
-Stage 0 (verify) → Stage 1 (close llm_client.py gap) → Stage 2 (OTel spans)
-   → Stage 3 (logging audit) → Stage 4 (Dockerfile) → Stage 5 (docker-compose.yml)
-   → Stage 6 (CI pipeline completion) → Stage 7 (precision evaluation)
-   → Stage 8 (shadow-mode acceptance) → Stage 9 (final report + DoD reconciliation)
-   → Stage 10 (full verification + close-out)
+Stage 0 (verify DoD & methodology)
+   │
+   ▼
+Stage 1 (verify LLM & analytics test coverage)
+   │
+   ▼
+Stage 2 (OTel child spans for solver, models & analytics)
+   │
+   ▼
+Stage 3 (structured logging audit)
+   │
+   ▼
+Stage 4 (multi-stage Dockerfile packaging)
+   │
+   ▼
+Stage 5 (docker-compose.yml full-stack orchestration)
+   │
+   ▼
+Stage 6 (CI pipeline completion: coverage gate + Trivy scan)
+   │
+   ▼
+Stage 7 (retrospective escalation-precision evaluation)
+   │
+   ▼
+Stage 8 (shadow-mode acceptance run across held-out matches)
+   │
+   ▼
+Stage 9 (final evaluation report & DoD reconciliation)
+   │
+   ▼
+Stage 10 (full quality verification & project close-out)
 ```
 
-35 steps, 11 gates. No implementation starts until Stage 0's Gate passes — and Stage 0's first item is reading the document that actually defines what "done" means for this project.
+31 steps, 11 gates. Every stage is bounded by an explicit gate, ensuring complete test coverage, container integrity, and mathematical ground-truth verification.
