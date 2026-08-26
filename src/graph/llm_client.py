@@ -14,10 +14,12 @@ from typing import Any
 
 import anthropic
 import groq
+from dotenv import load_dotenv
 
 from src.config.loader import Params, load_params
 from src.utils.logger import get_logger
 
+load_dotenv()
 logger = get_logger(__name__)
 
 SYSTEM_PROMPT = (

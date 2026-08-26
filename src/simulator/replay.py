@@ -8,6 +8,7 @@ Authority: Phase 6 Decisions D-1, D-2, D-4, D-6, D-8, D-13.
 """
 
 import asyncio
+import functools
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any, Literal
@@ -36,6 +37,15 @@ def resolve_parquet_path(parquet_path: Path | str | None = None) -> Path:
     return PROJECT_ROOT / cfg.ingestion.validated_data_dir / cfg.ingestion.validated_file_name
 
 
+@functools.lru_cache(maxsize=8)
+def _read_distinct_matches_cached(parquet_path_str: str, mtime_ns: int) -> list[str]:
+    p = Path(parquet_path_str)
+    if not p.exists():
+        return []
+    df = pd.read_parquet(p, columns=["match_id"])
+    return sorted(df["match_id"].drop_duplicates().tolist())
+
+
 def get_available_matches(parquet_path: Path | str | None = None) -> list[str]:
     """Return a list of all distinct match IDs available in the dataset.
 
@@ -50,9 +60,8 @@ def get_available_matches(parquet_path: Path | str | None = None) -> list[str]:
         logger.warning("Dataset not found at [%s]", resolved_path)
         return []
 
-    df = pd.read_parquet(resolved_path, columns=["match_id"])
-    matches = sorted(df["match_id"].drop_duplicates().tolist())
-    return matches
+    mtime_ns = resolved_path.stat().st_mtime_ns
+    return _read_distinct_matches_cached(str(resolved_path), mtime_ns)
 
 
 def load_match_records(

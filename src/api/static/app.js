@@ -389,36 +389,42 @@ const DOM = {
 /**
  * 16a. Fetch and populate available match list
  */
-export async function initMatchList() {
-  try {
-    const res = await fetch("/v1/matches");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    state.matches = Array.isArray(data) ? data : data.matches || [];
+export async function initMatchList(retries = 6, delayMs = 800) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch("/v1/matches");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      state.matches = Array.isArray(data) ? data : data.matches || [];
 
+      if (!DOM.matchSelect) return;
 
-    if (!DOM.matchSelect) return;
-    DOM.matchSelect.innerHTML = "";
+      if (state.matches.length === 0) {
+        DOM.matchSelect.innerHTML = "<option value='' disabled>No matches available</option>";
+        return;
+      }
 
-    if (state.matches.length === 0) {
-      DOM.matchSelect.innerHTML = "<option value='' disabled>No matches available</option>";
-      return;
+      // Fast batch HTML generation for 3,000+ matches
+      const optionsHtml = state.matches
+        .map((mId, idx) => `<option value="${mId}" ${idx === 0 ? "selected" : ""}>${mId.replace(/_/g, " ")}</option>`)
+        .join("");
+      DOM.matchSelect.innerHTML = optionsHtml;
+
+      // Load first match metadata by default
+      state.selectedMatchId = state.matches[0];
+      await loadMatchMetadata(state.selectedMatchId);
+      return; // Successfully loaded
+    } catch (err) {
+      console.warn(`[PULSE] Attempt ${attempt}/${retries} to load matches failed (server initializing?):`, err);
+      if (attempt === retries) {
+        console.error("Failed to load match list after multiple attempts:", err);
+        if (DOM.matchTitle) DOM.matchTitle.textContent = "Error loading match catalogue. Please refresh.";
+        if (DOM.matchSelect) DOM.matchSelect.innerHTML = "<option value='' disabled>Failed to load matches. Refresh page.</option>";
+      } else {
+        if (DOM.matchTitle) DOM.matchTitle.textContent = `Connecting to engine... (${attempt}/${retries})`;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
     }
-
-    state.matches.forEach((mId, idx) => {
-      const opt = document.createElement("option");
-      opt.value = mId;
-      opt.textContent = mId.replace(/_/g, " ");
-      if (idx === 0) opt.selected = true;
-      DOM.matchSelect.appendChild(opt);
-    });
-
-    // Load first match metadata by default
-    state.selectedMatchId = state.matches[0];
-    await loadMatchMetadata(state.selectedMatchId);
-  } catch (err) {
-    console.error("Failed to load match list:", err);
-    if (DOM.matchTitle) DOM.matchTitle.textContent = "Error loading match catalogue";
   }
 }
 

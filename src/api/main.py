@@ -10,6 +10,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -23,6 +24,7 @@ from src.graph.pulse_graph import build_pulse_graph
 from src.utils.logger import get_logger
 from src.utils.persistence import init_db
 
+load_dotenv()
 logger = get_logger(__name__)
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
