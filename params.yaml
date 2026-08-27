@@ -29,11 +29,11 @@ latency:
 llm:
   # provider: "anthropic"           # Single small/cheap LLM provider for narrative synthesis (D-7)
   # model_name: "claude-3-5-haiku-20241022" # Instruction-following Haiku-class model
-  provider: "groq"                # Free-tier high-speed LLM provider for narrative synthesis (Option 1)
-  model_name: "llama-3.1-8b-instant" # Ultra-fast LPU inference model
-  max_tokens: 300                 # Output token limit for narrative synthesis
-  temperature: 0.2                # Low temperature for deterministic/faithful text synthesis
-  request_timeout_s: 4.0          # Timeout budget in seconds (< 5s triggered node budget)
+  provider: "groq"                  # Free-tier high-speed LLM provider for narrative synthesis (Option 1)
+  model_name: "groq/compound-mini"  # Active high-speed Groq LPU inference model
+  max_tokens: 300                   # Output token limit for narrative synthesis
+  temperature: 0.2                  # Low temperature for deterministic/faithful text synthesis
+  request_timeout_s: 4.0            # Timeout budget in seconds (< 5s triggered node budget)
 
 models:
   calibration_method: "sigmoid"   # Required: "sigmoid" for LogisticRegression v1; "isotonic" for LightGBM v2 (ADR-006)
