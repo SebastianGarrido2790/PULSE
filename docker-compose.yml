@@ -1,0 +1,40 @@
+# ==============================================================================
+# PULSE — Full-Stack Orchestration (docker-compose.yml)
+#
+# Launches the containerized PULSE Tactical Intelligence Engine, serving the
+# FastAPI streaming API, live point replay generator, and the Tactical Cockpit UI.
+#
+# Usage:
+#   docker compose up --build
+#   docker compose down
+#
+# Authority: Phase 7 Decisions D-4, D-6.
+# ==============================================================================
+
+services:
+  pulse-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pulse-engine
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # Volume-mount SQLite database to guarantee audit trail survival across container restarts (D-6, FR-12)
+      - ./artifacts/pulse_session.db:/app/artifacts/pulse_session.db
+      # Mount logs directory for persistent structured file logs
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').getcode() == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
