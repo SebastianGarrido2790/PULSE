@@ -51,7 +51,9 @@ Unlike traditional tennis statistics that look backward at aggregate percentages
 
 ## Deconstructing the Tactical Cockpit
 
-Below is the complete visual and mathematical walkthrough of the six primary interface components visible on the Tactical Cockpit dashboard.
+Below is the complete visual and mathematical walkthrough of the primary interface components visible on the Tactical Cockpit dashboard.
+
+![PULSE Real-Time Tactical Cockpit Overview](../../figures/cockpit_overview.png)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -84,23 +86,26 @@ Below is the complete visual and mathematical walkthrough of the six primary int
 
 The top-left panel anchors the real-time scoring context of the live match.
 
-![Scoreboard Panel](file:///c:/Users/sebas/Desktop/PULSE/src/api/static/index.html)
+![Panel 1: Scoreboard & Real-Time Match State](../../figures/panel1_scoreboard.png)
 
 #### Visual Elements & Metrics
-- **Player Names & Surface:** Identifies the active competitors (e.g., *Alex De Minaur vs Alexander Zverev*) and court surface (*HARD, CLAY, GRASS*).
-- **Tennis Scoring Boxes:** Displays current Sets, Games, and Point score (e.g., `1 Set`, `5 Games`, `40 Points` vs `1 Set`, `2 Games`, `30 Points`).
+- **Player Names & Surface:** Identifies the active competitors (e.g., *Jannik Sinner vs Carlos Alcaraz*) and court surface (*HARD, CLAY, GRASS*).
+- **Tennis Scoring Boxes:** Displays current Sets, Games, and Point score (e.g., `1 Set`, `4 Games`, `0 Points` vs `0 Sets`, `2 Games`, `15 Points`).
 - **Server Indicator (🎾):** A golden ball icon highlights which player currently has the serve advantage.
 - **Server P1 Win Prob ($p_{\text{hat}}$):** The point-win probability estimated by the calibrated Phase 3 logistic classifier based on server identity, returner identity, surface, and whether it is a 1st or 2nd serve.
 - **Markov Win ($M(S)$):** The exact, closed-form match win probability from the current score state $S$, computed deterministically by the Markov chain solver.
 - **Leverage Badge:** Indicates the tactical gravity of the current point:
   - `STANDARD LEVERAGE` (Grey/Muted): Routine point ($\Delta L < 5.0\%$).
   - `HIGH LEVERAGE` (Golden/Pulsing): High-stakes turning point ($\Delta L \ge 5.0\%$).
+  - `CRITICAL LEVERAGE` (Crimson/Pulsing): High-stakes break point or match point ($\Delta L \ge 10.0\%$).
 
 ---
 
 ### Panel 2: Leverage & Momentum Oscillogram
 
 The top-right panel visualizes the mathematical turning points of the match over time using a bespoke Canvas 2D engine.
+
+![Panel 2: Leverage & Momentum Oscillogram](../../figures/panel2_oscillogram.png)
 
 ```
 Leverage (ΔL)
@@ -109,7 +114,7 @@ Leverage (ΔL)
   43% │                                                  ●   │
   21% │                ●       ●                     ●   │   │
    5% ├───●────●───●───┼───────┼───────●───●─────●───┼───┼───┼─── Escalation Line (τ=5.0%)
-   0% └───┴────┴───┴───┴───────┴───────┴───┴─────┴───┴───┴───┴─── Points (0 -> 207)
+   0% └───┴────┴───┴───┴───────┴───────┴───┴─────┴───┴───┴───┴─── Points (0 -> 385)
 ```
 
 #### What is Point Leverage ($\Delta L$)?
@@ -125,12 +130,15 @@ $$\Delta L(S) = M(\text{win point} \mid S) - M(\text{lose point} \mid S)$$
 - **Shaded Wilson 95% Confidence Band:** An uncertainty envelope $[L_{\text{low}}, L_{\text{high}}]$ propagated directly through the Markov solver from the Wilson score interval of $p$. A wide band indicates small historical sample size; a narrow band indicates high certainty.
 - **Dashed Orange Threshold ($\tau = 5.0\%$):** The deterministic boundary for tactical escalation. Points above this line trigger deep analytical evaluation.
 - **Red Inflection Markers (●):** Points where leverage exceeded the escalation threshold, flagging pivotal moments for retrospective review.
+- **Interactive Inspection Tooltip:** Hovering over any point reveals the point index, game score, $\Delta L$ percentage, Wilson confidence band, and escalation status.
 
 ---
 
 ### Panel 3: LangGraph Conditional Topology Inspector
 
 The middle-left panel displays the live execution state of PULSE's agentic graph.
+
+![Panel 3: LangGraph Conditional Topology Inspector](../../figures/panel3_topology.png)
 
 ```
 ┌───────────────────────────┐    ┌───────────────────────────┐
@@ -159,7 +167,7 @@ The middle-left panel displays the live execution state of PULSE's agentic graph
    - **Trigger Condition:** High leverage ($\Delta L_{\text{low}} \ge \tau$) **AND** opponent sample sufficiency ($N_{\text{opp}} \ge 10$).
    - **What it does:** Solves a zero-sum minimax linear program to calculate the optimal serve mix and detect exploitable returner anticipation bias.
    - **Why it shows GATED:** If fewer than 10 points are charted for this specific opponent on this surface, PULSE refuses to fabricate an exploit.
-4. **`TacticalOutputNode` (`LLM SYNTHESIS`):**
+4. **`TacticalOutputNode` (`LLM SYNTHESIS` / `PASSTHROUGH`):**
    - Synthesizes the active node outputs into a coach-readable brief.
    - Enforces **100% numerical groundedness** (verified via DeepEval in CI): the LLM cannot invent percentages or recommendations absent from the deterministic payload.
 
@@ -169,24 +177,26 @@ The middle-left panel displays the live execution state of PULSE's agentic graph
 
 The middle-right panel computes optimal serving tactics against the opponent's return positioning.
 
+![Panel 4: Game-Theoretic Minimax Payoff Panel](../../figures/panel4_game_theory.png)
+
 ```
                  COVER WIDE          COVER T / BODY
                ┌───────────────────┬───────────────────┐
-  SERVE WIDE   │       66%         │       83% ★       │  <-- Best Response Cell
+  SERVE WIDE   │       44%         │       61% ★       │  <-- Best Response Cell
                ├───────────────────┼───────────────────┤
-  SERVE T      │       57%         │       57%         │
+  SERVE T      │       46%         │       46%         │
                └───────────────────┴───────────────────┘
 
   Nash Equilibrium Serve Mix : [████████████░░░░░░░░░░░░] 50% Wide / 50% T
   Observed Returner Bias     : [████████████░░░░░░░░░░░░] 50% Wide / 50% T
-  Exploit Opportunity (+EV)  : +0.0% (Opponent playing optimal Nash defense)
+  Exploit Opportunity (+EV)  : +1.7% EV on serve wide
 ```
 
 #### Understanding the 2×2 Payoff Matrix
 - **Rows (Server Actions):** Serving *Wide* vs Serving down the *T* (center).
 - **Columns (Returner Anticipation):** Covering *Wide* vs Covering the *T / Body*.
 - **Cell Values ($\Pi_{ij}$):** Empirical win percentage when the server chooses action $i$ and returner anticipates action $j$.
-  - *Example:* If Server serves **Wide** and Returner is **Covering T**, the server wins the point **83%** of the time (mismatched anticipation).
+  - *Example:* If Server serves **Wide** and Returner is **Covering T**, the server wins the point **61%** of the time (mismatched anticipation).
 - **Nash Equilibrium Mix ($x^*$):** The game-theoretically unexploitable serve distribution (e.g., 50% Wide / 50% T).
 - **Observed Returner Bias ($\hat{y}$):** The empirical probability distribution of where the returner actually leans on pressure points.
 - **Exploitation Margin ($\delta$):** If the returner leans heavily toward one side (e.g., 80% Wide), the server can exploit this by shifting serve selection, yielding an Expected Value gain ($+\text{EV}$).
@@ -197,11 +207,13 @@ The middle-right panel computes optimal serving tactics against the opponent's r
 
 The lower panel synthesizes all active mathematical layers into a clear coaching signal.
 
-- **Headline:** Categorizes point rhythm (e.g., *"Match Rhythm Normal — Standard Point"* vs *"High-Leverage Break Point Opportunity"*).
+![Panel 5: Tactical Advisory Feed](../../figures/panel5_tactical_feed.png)
+
+- **Headline:** Categorizes point rhythm (e.g., *"Match Rhythm Normal — Standard Point"* vs *"Critical Tactical Leverage Escalation"*).
 - **Narrative:** Concise operational summary referencing exact mathematical figures ($\Delta L$, $\Delta p$, $\delta$).
 - **Tactical Guidance:** Actionable instructions for the coach or broadcast commentator:
   - *Routine:* "Maintain baseline high-percentage patterns. Leverage below threshold."
-  - *Escalated + Exploit:* "Target T serve on Ad court: returner leans Wide 75% under pressure (+8.2% EV gain)."
+  - *Escalated + Exploit:* "Target Wide serve on Deuce court: returner leans T under pressure (+1.7% EV gain)."
 - **Advisory Disclaimer:** A mandatory reminder that PULSE provides advisory intelligence; human expertise retains sole decision authority.
 
 ---
@@ -215,19 +227,79 @@ The bottom bar controls the simulation engine:
   - `Instant`: Zero-delay processing for instant whole-match tactical diagnosis.
 - **Controls:** `Start Replay`, `Pause`, `Reset`.
 - **View Post-Match Report button (`📑`):** Opens the comprehensive, retrospective match debrief modal.
-- **Trace Badge:** Shows the active OpenTelemetry trace ID (e.g., `pt-206-20200103`) for debugging and audit logging.
+- **Trace Badge:** Shows the active OpenTelemetry trace ID (e.g., `pt-384-20250608`) for debugging and audit logging.
 
 ---
 
 ### Panel 7: Post-Match Tactical Intelligence Modal
 
-Accessible via the `View Post-Match Report` button, this overlay gathers retrospective match metrics:
-- **Executive Tactical Summary:** 3-paragraph executive summary synthesized by configured LLM client (Groq Cloud free-tier `llama-3.1-8b-instant` or Anthropic, with deterministic raw fallback) with zero hallucinated figures.
-- **Key Match Indicators:** Aggregate statistics containing total points, set scores, average leverage, and peak leverage point index.
-- **Top Pivotal Moments Table:** Descending list of the top 5 highest-leverage inflection moments. Clicking any point's **Seek** button jumps the cockpit timeline directly to that point context.
-- **Pressure Resilience Diagnostic:** Graphical win-rate comparison across Routine, Elevated, and Critical leverage tiers.
-- **Game-Theoretic Audit:** Evaluates realized serve mixes against minimax Nash equilibrium.
-- **Export Toolbar:** Actions to copy the standardized Markdown report, download the structured JSON data payload, or trigger the print dialog for PDF export.
+Accessible via the `View Post-Match Report` button in the Control Bar, this comprehensive retrospective intelligence overlay aggregates whole-match analytical metrics across five specialized diagnostic sections:
+
+#### 1. Executive Tactical Debrief
+Synthesizes a 3-paragraph executive summary powered by the active Groq Cloud LPU engine (`groq/compound-mini` or Anthropic, with deterministic raw fallback), strictly grounded with 0% numerical hallucinations:
+
+![Post-Match Executive Tactical Debrief](../../figures/report_modal_debrief.png)
+
+- **Match Overview & Winner Banner:** Identifies match outcome, final sets/games score, and total points charted (e.g., *Jannik Sinner def. Carlos Alcaraz, 385 points played*).
+- **Paragraph 1 (Leverage & Inflection Dynamics):** Summarizes mean match leverage ($\mu_{\Delta L} = 3.0\%$), peak single-point leverage ($\Delta L_{\max} = 77.7\%$ on Point #257), and count of escalated points ($N_{\text{escalated}} = 25$).
+- **Paragraph 2 (Pressure Resilience Diagnostic):** Evaluates critical-tier win rates and pressure shifts ($\Delta p$) across both competitors.
+- **Paragraph 3 (Game-Theoretic Audit):** Audits overall serve distributions and exploitable returner anticipation margins ($+\text{EV}$).
+
+---
+
+#### 2. Match Overview & Key Indicators
+Displays aggregate statistical cards summarizing the primary numerical dimensions of the completed contest:
+
+![Match Overview & Key Indicators](../../figures/report_modal_indicators.png)
+
+- **Total Points:** Complete volume of charted points ($385$).
+- **Points Won Distribution:** Exact point counts and percentage shares for Server P1 ($193 / 50.1\%$) and Returner P2 ($192 / 49.9\%$).
+- **Mean Leverage ($\Delta L$):** Match-wide baseline tactical leverage ($3.0\%$).
+- **Peak Leverage ($\Delta L$):** Maximum tactical swing recorded during the match ($77.7\%$).
+- **Break Points Converted:** Break point efficiency statistics across both competitors.
+
+---
+
+#### 3. Top Pivotal Moments Audit Table
+Ranks the top 5 highest-leverage inflection moments of the match in descending order of tactical importance:
+
+![Top Pivotal Moments Audit Table](../../figures/report_modal_pivotal_moments.png)
+
+- **Score Context & Server/Winner Identification:** Pinpoints exact set, game score, and point score (e.g., *Set 5: 6-5 (AD-40)*).
+- **Leverage ($\Delta L$) & Wilson 95% CI:** Displays exact calculated point leverage alongside its mathematical uncertainty interval (e.g., $77.7\%$, $95\%\text{ CI: }[73.9\%, 81.0\%]$).
+- **Strategic Impact Narrative:** Explains the deterministic significance of the point outcome.
+- **Interactive `Seek` Action:** Clicking the **Seek** button closes the report modal and immediately rewinds the main oscillogram and cockpit timeline to that exact point index.
+
+---
+
+#### 4. Pressure Resilience Diagnostic (Routine vs Critical)
+Compares player point-win rates across three deterministic leverage tiers ($[0, 10\%)$ Routine, $[10\%, 25\%)$ Elevated, and $[25\%, 100\%]$ Critical):
+
+![Pressure Resilience Diagnostic (Routine vs Critical)](../../figures/report_modal_pressure.png)
+
+- **Player Resilience Badges:** Categorizes players as *Elevated / Clutch* ($\Delta p > +3.0\%$), *Steady* ($-3\% \le \Delta p \le +3\%$), or *Vulnerable* ($\Delta p < -3.0\%$).
+- **Leverage Tier Progress Bars:** Visualizes win rates and point volumes per tier (e.g., *Sinner: 51.1% Routine vs 16.7% Critical; Alcaraz: 48.9% Routine vs 83.3% Critical*).
+- **Pressure Shift ($\Delta p$):** Quantifies empirical-Bayes shrunk performance delta under high pressure ($\Delta p_{\text{Sinner}} = -34.4\%$, $\Delta p_{\text{Alcaraz}} = +34.4\%$).
+
+---
+
+#### 5. Game-Theoretic Serve & Return Audit
+Audits realized serve distributions against minimax Nash equilibrium for both competitors:
+
+![Game-Theoretic Serve & Return Audit](../../figures/report_modal_game_theory.png)
+
+- **Statistical Sufficiency Status:** Confirms sample sufficiency ($N \ge 10$ charted points per server).
+- **Realized vs Nash Serve Mix:** Compares actual serve direction shares (*Wide / Body / T*) against the optimal minimax distribution.
+- **Observed Returner Bias:** Evaluates whether returners favored covering Wide or T under pressure.
+- **Exploit Gain ($+\text{EV}$):** Quantifies the potential win-rate improvement from optimal counter-strategy execution ($+0.8\%$ EV for Sinner, $+0.2\%$ EV for Alcaraz).
+
+---
+
+#### 6. Export Toolbar
+Provides one-click post-match intelligence extraction:
+- **Copy Markdown (`📋`):** Copies the full formatted Markdown report to system clipboard.
+- **Download JSON (`💾`):** Exports the raw, schema-validated `MatchReportResponse` JSON artifact.
+- **Print / PDF Export (`🖨`):** Triggers print styling for formatted PDF reporting.
 
 ---
 
