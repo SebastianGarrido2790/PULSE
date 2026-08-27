@@ -1,0 +1,60 @@
+# ------------------------------------------------------------------------------
+# .dockerignore — PULSE Engine Docker Build Exclusion Rules
+# ------------------------------------------------------------------------------
+
+# Python Bytecode & Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Local Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Testing & Evaluation Caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.deepeval/
+tests/
+
+# Linter & Type-checker Caches
+.ruff_cache/
+.mypy_cache/
+
+# Version Control & CI/CD
+.git/
+.github/
+.gitignore
+.pre-commit-config.yaml
+
+# DVC & Raw Data (Only versioned artifacts/ are packaged)
+.dvc/
+.dvcignore
+data/raw/
+
+# Local MLflow & Experiment Tracking
+mlruns/
+mlflow.db
+
+# Logs & Temporary Files
+logs/
+*.log
+
+# IDE & Editor Configurations
+.vscode/
+.idea/
+.gemini/
+.agents/
+*.code-workspace
+
+# Build & Packaging Metadata
+dist/
+build/
+*.egg-info/
+pulse.egg-info/
