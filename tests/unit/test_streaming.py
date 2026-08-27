@@ -424,9 +424,7 @@ def test_stream_match_sse_bo5_parameter_propagation(
             assert ev["point_context"]["match_format"] == "bo5"
 
 
-def test_get_match_report_json_success(
-    streaming_parquet_file: Path, monkeypatch
-) -> None:
+def test_get_match_report_json_success(streaming_parquet_file: Path, monkeypatch) -> None:
     """Verify GET /v1/matches/{match_id}/report returns valid JSON report payload."""
     monkeypatch.setattr(
         "src.simulator.replay.resolve_parquet_path",
@@ -446,9 +444,7 @@ def test_get_match_report_json_success(
         assert data["summary"]["match_id"] == "stream_test_match_001"
 
 
-def test_get_match_report_markdown_success(
-    streaming_parquet_file: Path, monkeypatch
-) -> None:
+def test_get_match_report_markdown_success(streaming_parquet_file: Path, monkeypatch) -> None:
     """Verify GET /v1/matches/{match_id}/report returns formatted Markdown report."""
     monkeypatch.setattr(
         "src.simulator.replay.resolve_parquet_path",

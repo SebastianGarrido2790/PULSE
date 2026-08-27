@@ -329,3 +329,82 @@ async def test_generate_match_report_async_groq_mock(
             report = await generate_match_report_async(sample_point_records, params=cfg)
             expected = "Groq Debrief: Dominant baseline performance by De Minaur."
             assert report.executive_debrief == expected
+
+
+@pytest.mark.asyncio
+async def test_generate_match_report_async_anthropic_mock(
+    sample_point_records: list[PointRecord],
+) -> None:
+    """Verify async match report generation invokes Anthropic when configured and key is present."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    import anthropic
+
+    from src.analytics.match_report import generate_match_report_async
+    from src.config.loader import LLMParams, load_params
+
+    cfg = load_params().model_copy(deep=True)
+    cfg.llm = LLMParams(
+        provider="anthropic",
+        model_name="claude-3-5-haiku-20241022",
+        temperature=0.2,
+        max_tokens=256,
+        request_timeout_s=5.0,
+    )
+
+    mock_block = anthropic.types.TextBlock(
+        text="Anthropic Debrief: Tactical mastery on pivotal points.",
+        type="text",
+    )
+    mock_response = MagicMock()
+    mock_response.content = [mock_block]
+
+    mock_client = MagicMock()
+    mock_client.messages.create = AsyncMock(return_value=mock_response)
+
+    with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "sk-ant-test-key"}):
+        with patch("anthropic.AsyncAnthropic", return_value=mock_client):
+            report = await generate_match_report_async(sample_point_records, params=cfg)
+            expected = "Anthropic Debrief: Tactical mastery on pivotal points."
+            assert report.executive_debrief == expected
+
+
+@pytest.mark.asyncio
+async def test_generate_match_report_async_api_exception_fallback(
+    sample_point_records: list[PointRecord],
+) -> None:
+    """Verify async match report generation falls back to deterministic debrief on API error."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    import groq
+
+    from src.analytics.match_report import generate_match_report_async
+    from src.config.loader import load_params
+
+    cfg = load_params()
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(
+        side_effect=groq.APIConnectionError(request=MagicMock())
+    )
+
+    with patch.dict("os.environ", {"GROQ_API_KEY": "gsk_test_key"}):
+        with patch("groq.AsyncGroq", return_value=mock_client):
+            report = await generate_match_report_async(sample_point_records, params=cfg)
+            assert "Alex De Minaur" in report.executive_debrief
+            assert "Alexander Zverev" in report.executive_debrief
+
+
+@pytest.mark.asyncio
+async def test_generate_match_report_async_custom_object_client(
+    sample_point_records: list[PointRecord],
+) -> None:
+    """Verify async match report generation handles objects with synthesize_debrief method."""
+    from src.analytics.match_report import generate_match_report_async
+
+    class CustomDebriefEngine:
+        async def synthesize_debrief(self, payload: dict) -> str:
+            return "Object synthesized debrief"
+
+    engine = CustomDebriefEngine()
+    report = await generate_match_report_async(sample_point_records, llm_client=engine)
+    assert report.executive_debrief == "Object synthesized debrief"

@@ -127,9 +127,7 @@ def evaluate_all_points(
         # In Markov solver: server is player A
         p_server = stratum_res.p_hat
         p_server_match_win = compute_match_win_probability_from_state(match_state, p_server)
-        p1_match_win = (
-            p_server_match_win if rec.server_is_p1 else (1.0 - p_server_match_win)
-        )
+        p1_match_win = p_server_match_win if rec.server_is_p1 else (1.0 - p_server_match_win)
 
         # Identify winner player ID
         is_server_winner = rec.point_winner == PointOutcome.SERVER
@@ -466,9 +464,7 @@ def compute_game_theory_audit(
         )
 
         # Lookup payoff matrix for this server against this returner
-        matrix = lookup_payoff_matrix(
-            matrices, returner_id=ret_id, surface=surface, serve_number=1
-        )
+        matrix = lookup_payoff_matrix(matrices, returner_id=ret_id, surface=surface, serve_number=1)
 
         nash_mix: dict[str, float] = {}
         ret_bias: dict[str, float] = {}
@@ -618,9 +614,7 @@ async def generate_executive_debrief_async(
     Returns:
         str: 3-paragraph executive tactical summary.
     """
-    fallback_text = generate_deterministic_debrief(
-        summary, pivotal_points, pressure, game_theory
-    )
+    fallback_text = generate_deterministic_debrief(summary, pivotal_points, pressure, game_theory)
     cfg = params if params is not None else load_params()
 
     payload = {
@@ -638,6 +632,7 @@ async def generate_executive_debrief_async(
                     return str(res)
             elif callable(llm_client):
                 import inspect
+
                 res = llm_client(payload)
                 if inspect.isawaitable(res):
                     res = await res

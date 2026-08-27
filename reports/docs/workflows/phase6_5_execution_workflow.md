@@ -120,7 +120,10 @@ Stage 6 (Integration Tests) ──► Stage 7 (E2E Verification & Quality Gates)
       async def serve_root_ui() -> FileResponse:
           return FileResponse(STATIC_DIR / "index.html")
 
-      @app.get("/ui", response_class=HTMLResponse, tags=["UI"], summary="Tactical Cockpit Dashboard (Alias)")
+
+      @app.get(
+          "/ui", response_class=HTMLResponse, tags=["UI"], summary="Tactical Cockpit Dashboard (Alias)"
+      )
       async def serve_ui_alias() -> FileResponse:
           return FileResponse(STATIC_DIR / "index.html")
       ```

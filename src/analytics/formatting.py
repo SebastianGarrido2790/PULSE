@@ -106,9 +106,7 @@ def format_match_report_markdown(payload: MatchReportResponse) -> str:
         nash_str = (
             f"{gt.nash_serve_mix.get('wide', 0.5):.0%} / {gt.nash_serve_mix.get('t', 0.5):.0%}"
         )
-        bias_str = (
-            f"{gt.returner_bias.get('wide', 0.5):.0%} / {gt.returner_bias.get('t', 0.5):.0%}"
-        )
+        bias_str = f"{gt.returner_bias.get('wide', 0.5):.0%} / {gt.returner_bias.get('t', 0.5):.0%}"
         status = "Gated (N < 10)" if gt.sufficiency_gated else "Supported"
         lines.append(
             f"| **{gt.server_id}** vs {gt.returner_id} | {gt.sample_size} | {real_mix} | "

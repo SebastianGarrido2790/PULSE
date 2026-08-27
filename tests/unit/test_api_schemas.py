@@ -321,4 +321,3 @@ def test_match_report_response_serialization() -> None:
     assert len(reloaded.pivotal_points) == 1
     assert reloaded.pivotal_points[0].is_set_point is True
     assert reloaded.markdown_report == "# Full Report"
-

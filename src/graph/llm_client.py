@@ -104,9 +104,7 @@ async def _call_anthropic(cfg: Params, payload: dict[str, Any]) -> str | None:
             first_block = response.content[0]
             if isinstance(first_block, anthropic.types.TextBlock):
                 text = first_block.text.strip()
-                logger.debug(
-                    "Anthropic LLM narrative generated successfully (%d chars)", len(text)
-                )
+                logger.debug("Anthropic LLM narrative generated successfully (%d chars)", len(text))
                 return text
         return None
 

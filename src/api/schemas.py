@@ -261,9 +261,7 @@ class MatchReportResponse(BaseModel):
     game_theory_audit: list[GameTheoryExploitAudit] = Field(
         ..., description="Serve and return game-theoretic evaluation"
     )
-    executive_debrief: str = Field(
-        ..., description="LLM or templated grounded strategic debrief"
-    )
+    executive_debrief: str = Field(..., description="LLM or templated grounded strategic debrief")
     markdown_report: str = Field(
         default="", description="Pre-rendered GitHub-flavored Markdown report"
     )
