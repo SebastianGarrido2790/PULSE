@@ -9,9 +9,12 @@ Authority: ADR-002, markov_solver_spec.md v1.0.1
 from functools import cache
 from typing import Literal
 
+from opentelemetry import trace
 from pydantic import BaseModel, Field, model_validator
 
 from src.utils.exceptions import SolverException
+
+tracer = trace.get_tracer("pulse.core.markov_solver")
 
 
 class MatchState(BaseModel):
@@ -518,28 +521,40 @@ def compute_leverage(state: MatchState, p_serve: float) -> SolverResult:
     Raises:
         SolverException: If p_serve is invalid or match is already decided.
     """
-    p_current = compute_match_win_probability_from_state(state, p_serve)
+    with tracer.start_as_current_span("markov_solver.compute_leverage") as span:
+        p_current = compute_match_win_probability_from_state(state, p_serve)
 
-    state_won = advance_point_state(state, server_won=True)
-    target_sets = 2 if state.match_format == "bo3" else 3
-    if state_won.set_score_server >= target_sets:
-        p_won = 1.0
-    else:
-        p_won = compute_match_win_probability_from_state(state_won, p_serve)
+        state_won = advance_point_state(state, server_won=True)
+        target_sets = 2 if state.match_format == "bo3" else 3
+        if state_won.set_score_server >= target_sets:
+            p_won = 1.0
+        else:
+            p_won = compute_match_win_probability_from_state(state_won, p_serve)
 
-    state_lost = advance_point_state(state, server_won=False)
-    if state_lost.set_score_returner >= target_sets:
-        p_lost = 0.0
-    else:
-        p_lost = compute_match_win_probability_from_state(state_lost, p_serve)
+        state_lost = advance_point_state(state, server_won=False)
+        if state_lost.set_score_returner >= target_sets:
+            p_lost = 0.0
+        else:
+            p_lost = compute_match_win_probability_from_state(state_lost, p_serve)
 
-    leverage = max(0.0, min(1.0, p_won - p_lost))
+        leverage = max(0.0, min(1.0, p_won - p_lost))
 
-    return SolverResult(
-        match_win_prob=p_current,
-        match_win_prob_if_won=p_won,
-        match_win_prob_if_lost=p_lost,
-        leverage=leverage,
-        p_serve=p_serve,
-        state=state,
-    )
+        span.set_attribute("pulse.p_serve", float(p_serve))
+        span.set_attribute("pulse.match_format", state.match_format)
+        span.set_attribute(
+            "pulse.score_state",
+            f"Sets:{state.set_score_server}-{state.set_score_returner} "
+            f"Games:{state.game_score_server}-{state.game_score_returner} "
+            f"Points:{state.point_score_server}-{state.point_score_returner}",
+        )
+        span.set_attribute("pulse.leverage", float(leverage))
+        span.set_attribute("pulse.match_win_prob", float(p_current))
+
+        return SolverResult(
+            match_win_prob=p_current,
+            match_win_prob_if_won=p_won,
+            match_win_prob_if_lost=p_lost,
+            leverage=leverage,
+            p_serve=p_serve,
+            state=state,
+        )

@@ -10,12 +10,15 @@ from enum import IntEnum
 from pathlib import Path
 
 import pandas as pd
+from opentelemetry import trace
 from pydantic import BaseModel, Field, model_validator
 from sklearn.model_selection import train_test_split
 
 from src.config.loader import Params, load_params
 from src.schemas.point_record import Surface
 from src.utils.exceptions import ModelInferenceError
+
+tracer = trace.get_tracer("pulse.models.point_win_classifier")
 
 
 class FallbackTier(IntEnum):
@@ -225,65 +228,81 @@ def resolve_point_win_probability(
     Returns:
         StratumLookupResult detailing resolved p_hat, sample_size, wins, and fallback_tier.
     """
-    cfg = params if params is not None else load_params()
+    with tracer.start_as_current_span("point_win_classifier.resolve_probability") as span:
+        cfg = params if params is not None else load_params()
 
-    surf_str = surface.value if isinstance(surface, Surface) else str(surface).upper()
+        surf_str = surface.value if isinstance(surface, Surface) else str(surface).upper()
 
-    # Tier 0 Check: Exact Stratum (server_id, surface, serve_number)
-    key_t0 = format_exact_key(server_id, surf_str, serve_number)
-    if key_t0 in stratum_table.tier0_exact:
-        entry = stratum_table.tier0_exact[key_t0]
-        if entry.sample_size >= cfg.uncertainty.min_stratum_observations:
-            return StratumLookupResult(
-                p_hat=entry.p_hat,
-                sample_size=entry.sample_size,
-                wins=entry.wins,
-                fallback_tier=FallbackTier.EXACT_STRATUM,
+        result: StratumLookupResult | None = None
+
+        # Tier 0 Check: Exact Stratum (server_id, surface, serve_number)
+        key_t0 = format_exact_key(server_id, surf_str, serve_number)
+        if key_t0 in stratum_table.tier0_exact:
+            entry = stratum_table.tier0_exact[key_t0]
+            if entry.sample_size >= cfg.uncertainty.min_stratum_observations:
+                result = StratumLookupResult(
+                    p_hat=entry.p_hat,
+                    sample_size=entry.sample_size,
+                    wins=entry.wins,
+                    fallback_tier=FallbackTier.EXACT_STRATUM,
+                    server_id=server_id,
+                    surface=surf_str,
+                    serve_number=serve_number,
+                )
+
+        # Tier 1 Check: Player Overall (server_id, serve_number)
+        if result is None:
+            key_t1 = format_player_key(server_id, serve_number)
+            if key_t1 in stratum_table.tier1_player:
+                entry_t1 = stratum_table.tier1_player[key_t1]
+                if entry_t1.sample_size >= cfg.uncertainty.min_player_observations:
+                    result = StratumLookupResult(
+                        p_hat=entry_t1.p_hat,
+                        sample_size=entry_t1.sample_size,
+                        wins=entry_t1.wins,
+                        fallback_tier=FallbackTier.PLAYER_OVERALL,
+                        server_id=server_id,
+                        surface=surf_str,
+                        serve_number=serve_number,
+                    )
+
+        # Tier 2 Check: Population Surface (surface, serve_number)
+        if result is None:
+            key_t2 = format_surface_key(surf_str, serve_number)
+            if key_t2 in stratum_table.tier2_surface:
+                entry_t2 = stratum_table.tier2_surface[key_t2]
+                if entry_t2.sample_size >= cfg.uncertainty.min_surface_observations:
+                    result = StratumLookupResult(
+                        p_hat=entry_t2.p_hat,
+                        sample_size=entry_t2.sample_size,
+                        wins=entry_t2.wins,
+                        fallback_tier=FallbackTier.SURFACE_POPULATION,
+                        server_id=server_id,
+                        surface=surf_str,
+                        serve_number=serve_number,
+                    )
+
+        # Tier 3 Fallback: Global Default
+        if result is None:
+            result = StratumLookupResult(
+                p_hat=cfg.solver.default_p_serve,
+                sample_size=0,
+                wins=0,
+                fallback_tier=FallbackTier.GLOBAL_DEFAULT,
                 server_id=server_id,
                 surface=surf_str,
                 serve_number=serve_number,
             )
 
-    # Tier 1 Check: Player Overall (server_id, serve_number)
-    key_t1 = format_player_key(server_id, serve_number)
-    if key_t1 in stratum_table.tier1_player:
-        entry = stratum_table.tier1_player[key_t1]
-        if entry.sample_size >= cfg.uncertainty.min_player_observations:
-            return StratumLookupResult(
-                p_hat=entry.p_hat,
-                sample_size=entry.sample_size,
-                wins=entry.wins,
-                fallback_tier=FallbackTier.PLAYER_OVERALL,
-                server_id=server_id,
-                surface=surf_str,
-                serve_number=serve_number,
-            )
+        span.set_attribute("pulse.server_id", server_id)
+        span.set_attribute("pulse.surface", surf_str)
+        span.set_attribute("pulse.serve_number", int(serve_number))
+        span.set_attribute("pulse.fallback_tier", int(result.fallback_tier))
+        span.set_attribute("pulse.p_hat", float(result.p_hat))
+        span.set_attribute("pulse.sample_size", int(result.sample_size))
+        span.set_attribute("pulse.wins", int(result.wins))
 
-    # Tier 2 Check: Population Surface (surface, serve_number)
-    key_t2 = format_surface_key(surf_str, serve_number)
-    if key_t2 in stratum_table.tier2_surface:
-        entry = stratum_table.tier2_surface[key_t2]
-        if entry.sample_size >= cfg.uncertainty.min_surface_observations:
-            return StratumLookupResult(
-                p_hat=entry.p_hat,
-                sample_size=entry.sample_size,
-                wins=entry.wins,
-                fallback_tier=FallbackTier.SURFACE_POPULATION,
-                server_id=server_id,
-                surface=surf_str,
-                serve_number=serve_number,
-            )
-
-    # Tier 3 Fallback: Global Default
-    return StratumLookupResult(
-        p_hat=cfg.solver.default_p_serve,
-        sample_size=0,
-        wins=0,
-        fallback_tier=FallbackTier.GLOBAL_DEFAULT,
-        server_id=server_id,
-        surface=surf_str,
-        serve_number=serve_number,
-    )
+        return result
 
 
 def save_stratum_table(stratum_table: StratumTable, artifact_dir: Path) -> Path:

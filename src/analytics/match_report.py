@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from opentelemetry import trace
+
 from src.analytics.formatting import format_match_report_markdown
 from src.api.schemas import (
     GameTheoryExploitAudit,
@@ -39,6 +41,7 @@ from src.schemas.point_record import (
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+tracer = trace.get_tracer("pulse.analytics.match_report")
 
 
 # Backward-compatible type aliases
@@ -89,67 +92,71 @@ def evaluate_all_points(
     Returns:
         list[PointEvaluation]: Sequence of evaluated point containers.
     """
-    cfg = params if params is not None else load_params()
-    table = (
-        stratum_table
-        if stratum_table is not None
-        else _safe_load_stratum_table(Path("artifacts/models/point_win_classifier"))
-    )
-
-    effective_format = infer_match_format(records, match_format)
-    evaluations: list[PointEvaluation] = []
-
-    for idx, rec in enumerate(records):
-        ctx = rec.to_point_context(point_index=idx, match_format=effective_format)
-        match_state = ctx.to_match_state()
-
-        # Resolve point-win probability
-        stratum_res = resolve_point_win_probability(
-            stratum_table=table,
-            server_id=ctx.server_id,
-            surface=ctx.surface,
-            serve_number=ctx.serve_number,
-            params=cfg,
+    with tracer.start_as_current_span("match_report.evaluate_all_points") as span:
+        cfg = params if params is not None else load_params()
+        table = (
+            stratum_table
+            if stratum_table is not None
+            else _safe_load_stratum_table(Path("artifacts/models/point_win_classifier"))
         )
 
-        # Propagate Wilson leverage uncertainty
-        lev_res = propagate_leverage_uncertainty(
-            state=match_state,
-            wins=stratum_res.wins,
-            sample_size=stratum_res.sample_size,
-            confidence_level=cfg.uncertainty.confidence_level,
-            min_observations=cfg.uncertainty.min_stratum_observations,
-            default_p=cfg.solver.default_p_serve,
-            fallback_margin=cfg.uncertainty.default_fallback_margin,
-        )
+        effective_format = infer_match_format(records, match_format)
+        span.set_attribute("pulse.point_count", len(records))
+        span.set_attribute("pulse.match_format", effective_format)
 
-        # Compute P1 match win prob before point
-        # In Markov solver: server is player A
-        p_server = stratum_res.p_hat
-        p_server_match_win = compute_match_win_probability_from_state(match_state, p_server)
-        p1_match_win = p_server_match_win if rec.server_is_p1 else (1.0 - p_server_match_win)
+        evaluations: list[PointEvaluation] = []
 
-        # Identify winner player ID
-        is_server_winner = rec.point_winner == PointOutcome.SERVER
-        winner_id = rec.server if is_server_winner else rec.returner
-        winner_role = "server" if is_server_winner else "returner"
+        for idx, rec in enumerate(records):
+            ctx = rec.to_point_context(point_index=idx, match_format=effective_format)
+            match_state = ctx.to_match_state()
 
-        evaluations.append(
-            PointEvaluation(
-                record=rec,
-                point_index=idx,
-                match_state=match_state,
-                delta_leverage=lev_res.leverage_point,
-                leverage_low=lev_res.leverage_low,
-                leverage_high=lev_res.leverage_high,
-                p_hat_server=stratum_res.p_hat,
-                match_prob_before=p1_match_win,
-                point_winner_id=winner_id,
-                point_winner_role=winner_role,
+            # Resolve point-win probability
+            stratum_res = resolve_point_win_probability(
+                stratum_table=table,
+                server_id=ctx.server_id,
+                surface=ctx.surface,
+                serve_number=ctx.serve_number,
+                params=cfg,
             )
-        )
 
-    return evaluations
+            # Propagate Wilson leverage uncertainty
+            lev_res = propagate_leverage_uncertainty(
+                state=match_state,
+                wins=stratum_res.wins,
+                sample_size=stratum_res.sample_size,
+                confidence_level=cfg.uncertainty.confidence_level,
+                min_observations=cfg.uncertainty.min_stratum_observations,
+                default_p=cfg.solver.default_p_serve,
+                fallback_margin=cfg.uncertainty.default_fallback_margin,
+            )
+
+            # Compute P1 match win prob before point
+            # In Markov solver: server is player A
+            p_server = stratum_res.p_hat
+            p_server_match_win = compute_match_win_probability_from_state(match_state, p_server)
+            p1_match_win = p_server_match_win if rec.server_is_p1 else (1.0 - p_server_match_win)
+
+            # Identify winner player ID
+            is_server_winner = rec.point_winner == PointOutcome.SERVER
+            winner_id = rec.server if is_server_winner else rec.returner
+            winner_role = "server" if is_server_winner else "returner"
+
+            evaluations.append(
+                PointEvaluation(
+                    record=rec,
+                    point_index=idx,
+                    match_state=match_state,
+                    delta_leverage=lev_res.leverage_point,
+                    leverage_low=lev_res.leverage_low,
+                    leverage_high=lev_res.leverage_high,
+                    p_hat_server=stratum_res.p_hat,
+                    match_prob_before=p1_match_win,
+                    point_winner_id=winner_id,
+                    point_winner_role=winner_role,
+                )
+            )
+
+        return evaluations
 
 
 def compute_match_summary(
@@ -812,35 +819,44 @@ async def generate_match_report_async(
     Returns:
         MatchReportPayload: Aggregated post-match report payload.
     """
-    evaluations = evaluate_all_points(
-        records=records,
-        stratum_table=stratum_table,
-        params=params,
-        match_format=match_format,
-    )
+    with tracer.start_as_current_span("match_report.generate_async") as span:
+        evaluations = evaluate_all_points(
+            records=records,
+            stratum_table=stratum_table,
+            params=params,
+            match_format=match_format,
+        )
 
-    summary = compute_match_summary(records, evaluations, params=params)
-    pivotal = extract_top_pivotal_points(evaluations, top_n=5)
-    pressure = compute_pressure_resilience(evaluations, summary.player_1, summary.player_2)
-    game_theory = compute_game_theory_audit(
-        records,
-        payoff_matrices=payoff_matrices,
-        surface=summary.surface,
-        params=params,
-    )
-    debrief = await generate_executive_debrief_async(
-        summary, pivotal, pressure, game_theory, params=params, llm_client=llm_client
-    )
+        summary = compute_match_summary(records, evaluations, params=params)
+        pivotal = extract_top_pivotal_points(evaluations, top_n=5)
+        pressure = compute_pressure_resilience(evaluations, summary.player_1, summary.player_2)
+        game_theory = compute_game_theory_audit(
+            records,
+            payoff_matrices=payoff_matrices,
+            surface=summary.surface,
+            params=params,
+        )
+        debrief = await generate_executive_debrief_async(
+            summary, pivotal, pressure, game_theory, params=params, llm_client=llm_client
+        )
 
-    report = MatchReportPayload(
-        summary=summary,
-        pivotal_points=pivotal,
-        pressure_resilience=pressure,
-        game_theory_audit=game_theory,
-        executive_debrief=debrief,
-    )
-    report.markdown_report = format_match_report_markdown(report)
-    return report
+        report = MatchReportPayload(
+            summary=summary,
+            pivotal_points=pivotal,
+            pressure_resilience=pressure,
+            game_theory_audit=game_theory,
+            executive_debrief=debrief,
+        )
+        report.markdown_report = format_match_report_markdown(report)
+
+        span.set_attribute("pulse.match_id", str(summary.match_id))
+        span.set_attribute("pulse.player_1", str(summary.player_1))
+        span.set_attribute("pulse.player_2", str(summary.player_2))
+        span.set_attribute("pulse.winner", str(summary.winner))
+        span.set_attribute("pulse.total_points", int(summary.total_points))
+        span.set_attribute("pulse.pivotal_points_count", len(pivotal))
+
+        return report
 
 
 # ---------------------------------------------------------------------------

@@ -15,10 +15,13 @@ Authority: ADR-005 Amendment 1 (Phase 3 D-0), Phase 2 Decision D-4
 
 import math
 
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 from scipy.stats import norm
 
 from src.core.markov_solver import MatchState, SolverResult, compute_leverage
+
+tracer = trace.get_tracer("pulse.core.leverage_uncertainty")
 
 
 class WilsonInterval(BaseModel):
@@ -174,37 +177,50 @@ def propagate_leverage_uncertainty(
     Returns:
         LeverageBandResult with leverage confidence band bounds and width.
     """
-    interval = compute_wilson_interval(
-        wins=wins,
-        sample_size=sample_size,
-        confidence_level=confidence_level,
-        min_observations=min_observations,
-        default_p=default_p,
-        fallback_margin=fallback_margin,
-    )
+    with tracer.start_as_current_span("leverage_uncertainty.propagate") as span:
+        interval = compute_wilson_interval(
+            wins=wins,
+            sample_size=sample_size,
+            confidence_level=confidence_level,
+            min_observations=min_observations,
+            default_p=default_p,
+            fallback_margin=fallback_margin,
+        )
 
-    # 1. Primary evaluation at point estimate p_hat
-    solver_point = compute_leverage(state, interval.p_hat)
+        # 1. Primary evaluation at point estimate p_hat
+        solver_point = compute_leverage(state, interval.p_hat)
 
-    # 2. Extreme evaluation at boundary points p_low and p_high
-    solver_low = compute_leverage(state, interval.p_low)
-    solver_high = compute_leverage(state, interval.p_high)
+        # 2. Extreme evaluation at boundary points p_low and p_high
+        solver_low = compute_leverage(state, interval.p_low)
+        solver_high = compute_leverage(state, interval.p_high)
 
-    leverages = [solver_point.leverage, solver_low.leverage, solver_high.leverage]
-    lev_min = min(leverages)
-    lev_max = max(leverages)
-    band_width = max(0.0, min(1.0, lev_max - lev_min))
+        leverages = [solver_point.leverage, solver_low.leverage, solver_high.leverage]
+        lev_min = min(leverages)
+        lev_max = max(leverages)
+        band_width = max(0.0, min(1.0, lev_max - lev_min))
 
-    return LeverageBandResult(
-        state=state,
-        p_hat=interval.p_hat,
-        p_low=interval.p_low,
-        p_high=interval.p_high,
-        leverage_point=solver_point.leverage,
-        leverage_low=lev_min,
-        leverage_high=lev_max,
-        band_width=band_width,
-        sample_size=sample_size,
-        is_sufficient_sample=interval.is_sufficient_sample,
-        solver_result_point=solver_point,
-    )
+        span.set_attribute("pulse.sample_size", int(sample_size))
+        span.set_attribute("pulse.wins", int(wins))
+        span.set_attribute("pulse.confidence_level", float(confidence_level))
+        span.set_attribute("pulse.p_hat", float(interval.p_hat))
+        span.set_attribute("pulse.p_low", float(interval.p_low))
+        span.set_attribute("pulse.p_high", float(interval.p_high))
+        span.set_attribute("pulse.leverage_point", float(solver_point.leverage))
+        span.set_attribute("pulse.leverage_low", float(lev_min))
+        span.set_attribute("pulse.leverage_high", float(lev_max))
+        span.set_attribute("pulse.band_width", float(band_width))
+        span.set_attribute("pulse.is_sufficient_sample", bool(interval.is_sufficient_sample))
+
+        return LeverageBandResult(
+            state=state,
+            p_hat=interval.p_hat,
+            p_low=interval.p_low,
+            p_high=interval.p_high,
+            leverage_point=solver_point.leverage,
+            leverage_low=lev_min,
+            leverage_high=lev_max,
+            band_width=band_width,
+            sample_size=sample_size,
+            is_sufficient_sample=interval.is_sufficient_sample,
+            solver_result_point=solver_point,
+        )

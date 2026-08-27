@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Literal
 
 import numpy as np
+from opentelemetry import trace
 from pydantic import BaseModel, Field, model_validator
 from scipy.optimize import linprog
 
@@ -23,6 +24,7 @@ from src.utils.exceptions import GameTheorySolverException
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+tracer = trace.get_tracer("pulse.core.game_theory")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -362,18 +364,15 @@ def compute_exploit(
     payoff_matrix: PayoffMatrix,
     params: Params,
 ) -> ExploitResult:
-    """Compute minimax exploit result and best-response deviation for a serve-return matchup.
+    """Compute minimax equilibrium and best-response exploitation strategy.
 
-    Orchestration (game_theory_spec.md §4, §5):
-    1. Two-level sample size sufficiency check (D-4):
-       - If n_opp_total < exploit_min_sample_size OR any observation_counts[i][j] < min_cell_obs:
-         Returns ExploitResult with sufficient_data=False and all exploitation fields None.
-    2. If sufficient:
-       - Computes Nash equilibrium strategy mixes (x*, y*) and game value V.
-       - Computes observed returner mix y_hat from column observation sums.
-       - Computes server expected values under each serve direction against y_hat.
-       - Finds best response pure action x_BR = argmax_i (Pi @ y_hat)_i.
-       - Calculates exploitation gain delta = max(0.0, expected_value_if_exploiting - V).
+    Algorithm (game_theory_spec.md §4, §5):
+        - Enforces two-level sufficiency gate (D-4): returns sufficient_data=False
+          if total N_opp < exploit_min_sample_size or any cell N_ij < min_cell_obs.
+        - Solves for minimax value V and equilibrium strategy mixes (x*, y*).
+        - Computes empirical returner mix y_hat from observation counts.
+        - Finds best response pure action x_BR = argmax_i (Pi @ y_hat)_i.
+        - Calculates exploitation gain delta = max(0.0, expected_value_if_exploiting - V).
 
     Args:
         payoff_matrix: Input PayoffMatrix data contract.
@@ -386,77 +385,91 @@ def compute_exploit(
     Raises:
         GameTheorySolverException: If underlying Nash equilibrium computation fails.
     """
-    n_opp_total = payoff_matrix.n_opp_total
-    min_opp_sample = params.thresholds.exploit_min_sample_size
-    min_cell_obs = params.models.game_theory_min_observations_per_cell
+    with tracer.start_as_current_span("game_theory.compute_exploit") as span:
+        n_opp_total = payoff_matrix.n_opp_total
+        min_opp_sample = params.thresholds.exploit_min_sample_size
+        min_cell_obs = params.models.game_theory_min_observations_per_cell
 
-    # 1. Two-level Sufficiency Check (D-4)
-    # Check total opponent sample size
-    if n_opp_total < min_opp_sample:
+        m = len(payoff_matrix.matrix)
+        n = len(payoff_matrix.matrix[0]) if m > 0 else 0
+
+        span.set_attribute("pulse.n_opp_total", int(n_opp_total))
+        span.set_attribute("pulse.matrix_dimensions", f"{m}x{n}")
+
+        # 1. Two-level Sufficiency Check (D-4)
+        # Check total opponent sample size
+        if n_opp_total < min_opp_sample:
+            span.set_attribute("pulse.sufficient_data", False)
+            span.set_attribute("pulse.exploit_found", False)
+            return ExploitResult(
+                sufficient_data=False,
+                n_opp_total=n_opp_total,
+                payoff_matrix=payoff_matrix,
+                is_stylized_anticipation_model=payoff_matrix.is_stylized_anticipation_model,
+            )
+
+        # Check per-cell observation counts
+        for row in payoff_matrix.observation_counts:
+            for count in row:
+                if count < min_cell_obs:
+                    span.set_attribute("pulse.sufficient_data", False)
+                    span.set_attribute("pulse.exploit_found", False)
+                    return ExploitResult(
+                        sufficient_data=False,
+                        n_opp_total=n_opp_total,
+                        payoff_matrix=payoff_matrix,
+                        is_stylized_anticipation_model=payoff_matrix.is_stylized_anticipation_model,
+                    )
+
+        # 2. Solve Nash Equilibrium
+        server_mix, returner_mix, v_opt = solve_nash_equilibrium(payoff_matrix)
+
+        # 3. Compute Observed Returner Positioning Mix (y_hat)
+        obs_counts = payoff_matrix.observation_counts
+        col_sums = [sum(obs_counts[i][j] for i in range(m)) for j in range(n)]
+        total_obs = sum(col_sums)
+
+        if total_obs > 0:
+            y_hat = [round(float(col_sums[j]) / float(total_obs), 6) for j in range(n)]
+        else:
+            y_hat = [round(1.0 / n, 6)] * n
+
+        # 4. Compute Server Best-Response Pure Strategy & Expected Value against y_hat
+        matrix = payoff_matrix.matrix
+        action_evs: list[float] = []
+        for i in range(m):
+            ev_i = sum(matrix[i][j] * y_hat[j] for j in range(n))
+            action_evs.append(ev_i)
+
+        best_action_idx = int(np.argmax(action_evs))
+        best_action_label = payoff_matrix.row_labels[best_action_idx]
+        ev_exploiting = round(float(action_evs[best_action_idx]), 6)
+
+        # 5. Exploitation Gain Delta (D-3, must satisfy delta >= 0.0 by definition)
+        raw_delta = ev_exploiting - v_opt
+        delta = round(max(0.0, float(raw_delta)), 6)
+
+        exploit_found = bool(delta > 0.0)
+        span.set_attribute("pulse.sufficient_data", True)
+        span.set_attribute("pulse.best_response_action", str(best_action_label))
+        span.set_attribute("pulse.equilibrium_value", float(v_opt))
+        span.set_attribute("pulse.expected_value_if_exploiting", float(ev_exploiting))
+        span.set_attribute("pulse.delta", float(delta))
+        span.set_attribute("pulse.exploit_found", exploit_found)
+
         return ExploitResult(
-            sufficient_data=False,
+            sufficient_data=True,
+            equilibrium_value=v_opt,
+            server_equilibrium_mix=server_mix,
+            returner_equilibrium_mix=returner_mix,
+            observed_returner_mix=y_hat,
+            best_response_action=best_action_label,
+            expected_value_if_exploiting=ev_exploiting,
+            delta=delta,
             n_opp_total=n_opp_total,
             payoff_matrix=payoff_matrix,
             is_stylized_anticipation_model=payoff_matrix.is_stylized_anticipation_model,
         )
-
-    # Check per-cell observation counts
-    for row in payoff_matrix.observation_counts:
-        for count in row:
-            if count < min_cell_obs:
-                return ExploitResult(
-                    sufficient_data=False,
-                    n_opp_total=n_opp_total,
-                    payoff_matrix=payoff_matrix,
-                    is_stylized_anticipation_model=payoff_matrix.is_stylized_anticipation_model,
-                )
-
-    # 2. Solve Nash Equilibrium
-    server_mix, returner_mix, v_opt = solve_nash_equilibrium(payoff_matrix)
-
-    # 3. Compute Observed Returner Positioning Mix (y_hat)
-    # y_hat[j] = sum_i(observation_counts[i][j]) / total_observations
-    obs_counts = payoff_matrix.observation_counts
-    m = len(obs_counts)
-    n = len(obs_counts[0])
-
-    col_sums = [sum(obs_counts[i][j] for i in range(m)) for j in range(n)]
-    total_obs = sum(col_sums)
-
-    if total_obs > 0:
-        y_hat = [round(float(col_sums[j]) / float(total_obs), 6) for j in range(n)]
-    else:
-        y_hat = [round(1.0 / n, 6)] * n
-
-    # 4. Compute Server Best-Response Pure Strategy & Expected Value against y_hat
-    # EV_i = sum_j(Pi[i][j] * y_hat[j])
-    matrix = payoff_matrix.matrix
-    action_evs: list[float] = []
-    for i in range(m):
-        ev_i = sum(matrix[i][j] * y_hat[j] for j in range(n))
-        action_evs.append(ev_i)
-
-    best_action_idx = int(np.argmax(action_evs))
-    best_action_label = payoff_matrix.row_labels[best_action_idx]
-    ev_exploiting = round(float(action_evs[best_action_idx]), 6)
-
-    # 5. Exploitation Gain Delta (D-3, must satisfy delta >= 0.0 by definition)
-    raw_delta = ev_exploiting - v_opt
-    delta = round(max(0.0, float(raw_delta)), 6)
-
-    return ExploitResult(
-        sufficient_data=True,
-        equilibrium_value=v_opt,
-        server_equilibrium_mix=server_mix,
-        returner_equilibrium_mix=returner_mix,
-        observed_returner_mix=y_hat,
-        best_response_action=best_action_label,
-        expected_value_if_exploiting=ev_exploiting,
-        delta=delta,
-        n_opp_total=n_opp_total,
-        payoff_matrix=payoff_matrix,
-        is_stylized_anticipation_model=payoff_matrix.is_stylized_anticipation_model,
-    )
 
 
 def load_payoff_matrices(

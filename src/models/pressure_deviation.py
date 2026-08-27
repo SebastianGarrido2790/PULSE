@@ -11,12 +11,15 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 from scipy.stats import beta as scipy_beta
 
 from src.config.loader import Params, load_params
 from src.models.point_win_classifier import StratumTable, format_player_key
 from src.utils.exceptions import ModelInferenceError
+
+tracer = trace.get_tracer("pulse.models.pressure_deviation")
 
 
 class PressureDeviationResult(BaseModel):
@@ -369,5 +372,20 @@ def get_pressure_deviation(
     Returns:
         PressureDeviationResult if found, or None on sparse-player miss.
     """
-    key = f"{server_id}|{leverage_bucket}"
-    return artifact.results.get(key)
+    with tracer.start_as_current_span("pressure_deviation.get_deviation") as span:
+        key = f"{server_id}|{leverage_bucket}"
+        res = artifact.results.get(key)
+
+        span.set_attribute("pulse.server_id", server_id)
+        span.set_attribute("pulse.leverage_bucket", int(leverage_bucket))
+        span.set_attribute("pulse.hit", bool(res is not None))
+
+        if res is not None:
+            span.set_attribute("pulse.pressure_deviation", float(res.pressure_deviation))
+            span.set_attribute("pulse.deviation_low_90", float(res.deviation_low_90))
+            span.set_attribute("pulse.deviation_high_90", float(res.deviation_high_90))
+            span.set_attribute("pulse.k_pressure", int(res.k_pressure))
+            span.set_attribute("pulse.n_pressure", int(res.n_pressure))
+            span.set_attribute("pulse.is_sufficient_sample", bool(res.is_sufficient_sample))
+
+        return res

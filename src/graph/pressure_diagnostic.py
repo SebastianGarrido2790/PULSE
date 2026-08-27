@@ -9,6 +9,8 @@ Authority: FR-4, Phase 4 Decisions D-2b, D-6, D-7a, D-9, D-10, ADR-001.
 from collections.abc import Callable
 from typing import Any
 
+from opentelemetry import trace
+
 from src.config.loader import Params, load_params
 from src.graph.state import DecisionLogEntry, PulseGraphState
 from src.models.pressure_deviation import (
@@ -20,6 +22,7 @@ from src.utils.exceptions import ModelInferenceError
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+tracer = trace.get_tracer("pulse.graph.pressure_diagnostic")
 
 
 def make_pressure_diagnostic_node(
@@ -51,43 +54,57 @@ def make_pressure_diagnostic_node(
         Raises:
             ModelInferenceError: If leverage_result is missing from state.
         """
-        if state.leverage_result is None:
-            raise ModelInferenceError(
-                "PressureDiagnosticNode executed without leverage_result in graph state"
+        with tracer.start_as_current_span("pressure_diagnostic_node") as span:
+            if state.leverage_result is None:
+                raise ModelInferenceError(
+                    "PressureDiagnosticNode executed without leverage_result in graph state"
+                )
+
+            ctx = state.point_context
+            delta_leverage = state.leverage_result.delta_leverage
+
+            span.set_attribute("pulse.match_id", str(ctx.match_id))
+            span.set_attribute("pulse.point_index", int(ctx.point_index))
+            span.set_attribute("pulse.server_id", str(ctx.server_id))
+            span.set_attribute("pulse.delta_leverage", float(delta_leverage))
+
+            # 1. Map point leverage delta_L to leverage bucket (0=Routine, 1=Elevated, 2=Critical)
+            bucket_idx = assign_leverage_bucket(
+                leverage=delta_leverage,
+                boundaries=cfg.models.pressure_leverage_buckets,
+            )
+            span.set_attribute("pulse.leverage_bucket", int(bucket_idx))
+
+            # 2. Query serving-time pressure deviation accessor
+            pressure_res = get_pressure_deviation(
+                artifact=pressure_artifact,
+                server_id=ctx.server_id,
+                leverage_bucket=bucket_idx,
             )
 
-        ctx = state.point_context
-        delta_leverage = state.leverage_result.delta_leverage
+            if pressure_res is not None:
+                dev_low = pressure_res.deviation_low_90
+                dev_high = pressure_res.deviation_high_90
+                span.set_attribute(
+                    "pulse.pressure_deviation", float(pressure_res.pressure_deviation)
+                )
+                span.set_attribute(
+                    "pulse.is_sufficient_sample", bool(pressure_res.is_sufficient_sample)
+                )
+                logger.debug(
+                    f"PressureDiagnosticNode hit for [{ctx.server_id}] in bucket [{bucket_idx}]: "
+                    f"dev={pressure_res.pressure_deviation:+.4f} "
+                    f"bounds=[{dev_low:+.4f}, {dev_high:+.4f}] "
+                    f"sufficient={pressure_res.is_sufficient_sample}"
+                )
 
-        # 1. Map point leverage delta_L to leverage bucket (0=Routine, 1=Elevated, 2=Critical)
-        bucket_idx = assign_leverage_bucket(
-            leverage=delta_leverage,
-            boundaries=cfg.models.pressure_leverage_buckets,
-        )
+            # 3. Record audit log entry for strategy_exploit firing decision
+            thresh = cfg.thresholds.leverage_escalation
+            lev_low = state.leverage_result.delta_leverage_low
+            comparison = ">=" if lev_low >= thresh else "<"
+            reason = f"Leverage lower bound {lev_low:.4f} {comparison} threshold {thresh:.4f}"
+            log_entries = [DecisionLogEntry(node="strategy_exploit", fired=True, reason=reason)]
 
-        # 2. Query serving-time pressure deviation accessor
-        pressure_res = get_pressure_deviation(
-            artifact=pressure_artifact,
-            server_id=ctx.server_id,
-            leverage_bucket=bucket_idx,
-        )
-
-        if pressure_res is not None:
-            dev_low = pressure_res.deviation_low_90
-            dev_high = pressure_res.deviation_high_90
-            logger.debug(
-                f"PressureDiagnosticNode hit for [{ctx.server_id}] in bucket [{bucket_idx}]: "
-                f"dev={pressure_res.pressure_deviation:+.4f} "
-                f"bounds=[{dev_low:+.4f}, {dev_high:+.4f}] "
-                f"sufficient={pressure_res.is_sufficient_sample}"
-            )
-        # 3. Record audit log entry for strategy_exploit firing decision
-        thresh = cfg.thresholds.leverage_escalation
-        lev_low = state.leverage_result.delta_leverage_low
-        comparison = ">=" if lev_low >= thresh else "<"
-        reason = f"Leverage lower bound {lev_low:.4f} {comparison} threshold {thresh:.4f}"
-        log_entries = [DecisionLogEntry(node="strategy_exploit", fired=True, reason=reason)]
-
-        return {"pressure_result": pressure_res, "decision_log": log_entries}
+            return {"pressure_result": pressure_res, "decision_log": log_entries}
 
     return pressure_diagnostic_node
