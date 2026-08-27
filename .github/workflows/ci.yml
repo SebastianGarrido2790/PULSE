@@ -1,4 +1,4 @@
-name: CI Quality Gate
+name: PULSE CI/CD Pipeline
 
 on:
   push:
@@ -7,35 +7,61 @@ on:
     branches: ["main"]
 
 jobs:
-  quality-gate:
-    name: Quality & Correctness Gate
+  quality-and-security-gate:
+    name: Lint, Test, Coverage & Container Security Gate
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout repository source code
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Setup Python environment and uv package manager
       - name: Install uv and setup Python
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
           python-version: "3.11"
           enable-cache: true
 
+      # 3. Install project dependencies (including dev and test suites)
       - name: Install dependencies
         run: uv sync --extra dev
 
+      # 4. Lint & Format checks (Ruff)
       - name: Run Ruff Linter
         run: uv run ruff check .
 
       - name: Run Ruff Formatter Check
         run: uv run ruff format --check .
 
+      # 5. Type Checking (Pyright strict typing gate)
       - name: Run Pyright Type Checker
         run: uv run pyright
 
+      # 6. File Size Ceiling Enforcement (< 1,000 lines per src/ file)
       - name: Run File Size Ceiling Enforcement
         run: python scripts/check_file_size.py
 
-      - name: Run Pytest & Solver Gate
-        run: uv run pytest --cov=src --cov-report=term-missing
+      # 7. Highest-Priority Solver Correctness Gate (Golden Tests)
+      - name: Run Markov Solver Golden Correctness Tests
+        run: uv run pytest tests/unit/test_markov_solver.py -v
+
+      # 8. Full Test Suite Execution & Coverage Gate (>= 70% aggregate coverage) [D-8]
+      - name: Run Full Test Suite & Coverage Gate
+        run: uv run pytest --cov=src --cov-fail-under=70 --cov-report=term-missing
+
+      # 9. Docker Build (Multi-stage production image)
+      - name: Build Multi-Stage Production Docker Image
+        run: docker build -t pulse-engine:ci .
+
+      # 10. Container Security Vulnerability Scan (Trivy) [D-3]
+      - name: Run Trivy Container Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "pulse-engine:ci"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL"
