@@ -9,6 +9,7 @@ Authority: Phase 6 Decisions D-1, D-2, D-4, D-6, D-8, D-13.
 
 import asyncio
 import functools
+import sys
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any, Literal
@@ -247,7 +248,6 @@ def run_cli() -> None:
     """CLI entrypoint for replaying historical matches point-by-point (PULSE simulator)."""
     import argparse
     import io
-    import sys
 
     if isinstance(sys.stdout, io.TextIOWrapper):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -284,11 +284,11 @@ def run_cli() -> None:
 
     if args.list_matches:
         matches = get_available_matches()
-        print(f"Available matches ({len(matches)}):")
+        sys.stdout.write(f"Available matches ({len(matches)}):\n")
         for m in matches[:20]:
-            print(f"  - {m}")
+            sys.stdout.write(f"  - {m}\n")
         if len(matches) > 20:
-            print(f"  ... and {len(matches) - 20} more.")
+            sys.stdout.write(f"  ... and {len(matches) - 20} more.\n")
         return
 
     if not args.match_id:
@@ -303,7 +303,7 @@ def run_cli() -> None:
             speed_multiplier=args.speed_multiplier,
             match_format=args.match_format,
         ):
-            print(event.model_dump_json(indent=2))
+            sys.stdout.write(event.model_dump_json(indent=2) + "\n")
             point_count += 1
             if event.event_type == "error":
                 error_encountered = True
