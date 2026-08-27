@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "timestamp": "2026-08-27T16:43:15.932538",
+    "target_base_url": "http://localhost:8000",
+    "matches_evaluated": [
+      "20200103-M-ATP_Cup-RR-Alex_De_Minaur-Alexander_Zverev",
+      "20200104-M-ATP_Cup-RR-Stefanos_Tsitsipas-Alexander_Zverev",
+      "20200105-M-ATP_Cup-RR-Casper_Ruud-Fabio_Fognini"
+    ]
+  },
+  "ui_acceptance": {
+    "status_code": 200,
+    "latency_ms": 4.2,
+    "content_length": 27990,
+    "success": true
+  },
+  "streaming_acceptance": [
+    {
+      "match_id": "20200103-M-ATP_Cup-RR-Alex_De_Minaur-Alexander_Zverev",
+      "success": true,
+      "points_received": 207,
+      "escalations_count": 11,
+      "total_wall_sec": 7.8,
+      "avg_node_latency_ms": 35.56,
+      "p95_node_latency_ms": 132.93,
+      "max_node_latency_ms": 145.45,
+      "anomalies": []
+    },
+    {
+      "match_id": "20200104-M-ATP_Cup-RR-Stefanos_Tsitsipas-Alexander_Zverev",
+      "success": true,
+      "points_received": 100,
+      "escalations_count": 3,
+      "total_wall_sec": 3.54,
+      "avg_node_latency_ms": 31.36,
+      "p95_node_latency_ms": 33.27,
+      "max_node_latency_ms": 150.79,
+      "anomalies": []
+    },
+    {
+      "match_id": "20200105-M-ATP_Cup-RR-Casper_Ruud-Fabio_Fognini",
+      "success": true,
+      "points_received": 93,
+      "escalations_count": 0,
+      "total_wall_sec": 3.28,
+      "avg_node_latency_ms": 30.75,
+      "p95_node_latency_ms": 48.61,
+      "max_node_latency_ms": 56.72,
+      "anomalies": []
+    }
+  ],
+  "report_acceptance": [
+    {
+      "match_id": "20200103-M-ATP_Cup-RR-Alex_De_Minaur-Alexander_Zverev",
+      "success": true,
+      "status_code": 200,
+      "latency_ms": 886.67,
+      "sla_pass": true,
+      "total_points": 207,
+      "critical_moments_count": 5
+    },
+    {
+      "match_id": "20200104-M-ATP_Cup-RR-Stefanos_Tsitsipas-Alexander_Zverev",
+      "success": true,
+      "status_code": 200,
+      "latency_ms": 799.23,
+      "sla_pass": true,
+      "total_points": 100,
+      "critical_moments_count": 5
+    },
+    {
+      "match_id": "20200105-M-ATP_Cup-RR-Casper_Ruud-Fabio_Fognini",
+      "success": true,
+      "status_code": 200,
+      "latency_ms": 772.95,
+      "sla_pass": true,
+      "total_points": 93,
+      "critical_moments_count": 5
+    }
+  ],
+  "persistence_acceptance": {
+    "db_exists": true,
+    "db_path": "C:\\Users\\sebas\\Desktop\\PULSE\\artifacts\\pulse_session.db",
+    "total_points_persisted": 6367,
+    "total_decisions_persisted": 12734,
+    "total_escalations_persisted": 266,
+    "distinct_matches": 7,
+    "matches_persisted": true,
+    "success": true
+  }
+}

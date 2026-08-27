@@ -72,6 +72,8 @@ api:
   sse_keep_alive_interval_s: 15.0 # Periodic SSE keep-alive comment interval (D-5)
   db_path: "artifacts/pulse_session.db" # SQLite escalation log persistence database path (D-4)
 
+
+
 simulator:
   default_interval_s: 2.0         # Default synthetic inter-point interval in seconds (D-6)
   default_speed_multiplier: 1.0   # Default playback speed multiplier (0.0 for instant replay)

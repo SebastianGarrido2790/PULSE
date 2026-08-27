@@ -130,13 +130,17 @@ async def health_check() -> HealthCheckResponse:
 
 def run_server() -> None:
     """Launch the FastAPI server using uvicorn with configured host and port."""
+    import os
+
     import uvicorn
 
     params = load_params()
+    host = os.getenv("HOST", params.api.host)
+    port = int(os.getenv("PORT", str(params.api.port)))
     uvicorn.run(
         "src.api.main:app",
-        host=params.api.host,
-        port=params.api.port,
+        host=host,
+        port=port,
         log_level="info",
     )
 
