@@ -20,7 +20,7 @@ Monitors match leverage point-by-point via a closed-form Markov solver, conditio
 
 [🚀 Quickstart](#quickstart) • [📊 Architecture](#overview) • [🖥️ Tactical Cockpit](#cockpit) • [📈 Evaluation Metrics](#metrics) • [🎾 Mathematical Elegance](tennis_mathematical_elegance.md) • [📋 Project Charter](reports/docs/references/pulse_project_charter.md) • [📑 Final Evaluation Report](reports/docs/evaluations/phase7_final_evaluation_report.md)
 
-<br/>
+</div>
 
 ---
 
@@ -34,7 +34,7 @@ PULSE inverts the traditional AI paradigm:
 
 Rather than approximating match context with opaque black-box LLMs, PULSE computes **exact combinatorial win probabilities** and **derivatives ($\Delta \text{Leverage}$)** directly from the tennis score state. Machine learning and game theory fire conditionally only when the score dynamics and sample sizes statistically justify tactical escalation.
 
-```
+```text
           Point Score State (e.g. 30-40, Set 2, Game 4-4)
                                  │
                                  ▼
@@ -129,7 +129,7 @@ PULSE is governed by four constitutional principles:
 PULSE includes a zero-dependency, dark-mode glassmorphic single-page dashboard embedded natively within FastAPI (`src/api/static/`).
 
 <p align="center">
-  <img src="reports/figures/cockpit_overview.png" alt="PULSE Tactical Cockpit Dashboard" width="100%" style="border-radius: 8px; margin: 15px 0;" />
+  <img src="reports/figures/cockpit_overview.png" alt="PULSE Tactical Cockpit Dashboard" width="100%" />
 </p>
 
 - **Live Momentum & Leverage Curve:** Real-time 2D Canvas chart rendering calculated point leverage alongside Wilson 95% confidence intervals.
@@ -145,17 +145,17 @@ PULSE includes a zero-dependency, dark-mode glassmorphic single-page dashboard e
 ## 🛠️ Stack & Technologies
 
 ```text
-├── Runtime & Language:       Python 3.11+ (Strict typing with Pyright)
-├── Package Management:       uv (Astral) with frozen lockfile reproducibility
-├── Deterministic Engine:     NumPy, SciPy (scipy.optimize.linprog HiGHS LP Solver)
-├── Machine Learning:         scikit-learn, Empirical-Bayes Beta-Binomial Shrinkage
-├── Agent Orchestration:      LangGraph (Conditional Event-Driven StateGraph)
-├── LLM Synthesis & Debrief:  Groq Cloud (llama-3.1-8b-instant), Anthropic (Claude 3.5 Haiku)
-├── Streaming Transport:      FastAPI, Server-Sent Events (SSE), WebSockets, aiosqlite
-├── Observability & Logging:  OpenTelemetry distributed child spans, structlog JSON logs
-├── Pipeline & Data Version:  DVC (Data Version Control), Parquet
-├── Containerization:         Docker (Multi-stage non-root digest-pinned), Docker Compose
-└── Quality & CI:             GitHub Actions, Ruff, Pyright, DeepEval, Trivy Container Scanner
+Runtime & Language:       Python 3.11+ (Strict typing with Pyright)
+Package Management:       uv (Astral) with frozen lockfile reproducibility
+Deterministic Core:       NumPy, SciPy (scipy.optimize.linprog HiGHS LP Solver)
+Machine Learning:         scikit-learn, Empirical-Bayes Beta-Binomial Shrinkage
+Agent Orchestration:      LangGraph (Conditional Event-Driven StateGraph)
+LLM Narrative Debrief:    Groq Cloud (llama-3.1-8b-instant), Anthropic (Claude 3.5 Haiku)
+Streaming Transport:      FastAPI, Server-Sent Events (SSE), WebSockets, aiosqlite
+Observability & Logging:  OpenTelemetry distributed child spans, structlog JSON logs
+Pipeline & Versioning:    DVC (Data Version Control), Parquet
+Containerization:         Docker (Multi-stage non-root digest-pinned), Docker Compose
+Quality & CI/CD:          GitHub Actions, Ruff, Pyright, DeepEval, Trivy Container Scanner
 ```
 
 ---
@@ -226,39 +226,29 @@ uv run python -m src.simulator.replay --match-id 20200103-M-ATP_Cup-RR-Alex_De_M
 ```text
 PULSE/
 ├── src/
-│   ├── analytics/               # Post-match aggregation, pivotal points, & debrief formatters
-│   ├── api/                     # FastAPI app, SSE/WS streaming handlers, schemas & static UI
-│   │   ├── static/              # Zero-dependency glassmorphic Tactical Cockpit (HTML/CSS/JS)
-│   │   ├── main.py              # Application entrypoint, lifespan startup, & health check
-│   │   ├── schemas.py           # Pydantic v2 wire models & request/response contracts
-│   │   └── streaming.py         # SSE and WebSocket streaming route handlers
-│   ├── core/                    # Exact Markov solver, minimax game theory, & Wilson intervals
-│   ├── graph/                   # LangGraph orchestration state, routing, & diagnostic nodes
-│   ├── models/                  # Tier 1 ML (Hierarchical stratum point-win & pressure shrinkage)
-│   ├── schemas/                 # PointRecord schema and domain scoring abstractions
-│   ├── simulator/               # Historical match replay event generator
-│   └── utils/                   # Structured logging, exception hierarchy, SQLite persistence
-├── scripts/
-│   ├── check_file_size.py       # Hard CI line-count ceiling checker (max 1,000 lines/file)
-│   ├── build_payoff_matrices.py # Payoff matrix compilation DVC pipeline stage
-│   ├── evaluate_escalation_precision.py # Retrospective precision evaluation script
-│   └── run_shadow_mode_acceptance.py   # Shadow-mode operational acceptance suite
-├── tests/
-│   ├── unit/                    # Analytical solver tests, model tests, & contract tests
-│   ├── integration/             # Conditional LangGraph, API streaming, & UI integration tests
-│   └── evals/                   # DeepEval numerical groundedness verification
+│   ├── analytics/        # Post-match leverage summaries, pivotal point extraction & debriefs
+│   ├── api/              # FastAPI streaming service, REST routes, schemas & static UI
+│   │   ├── static/       # Zero-dependency glassmorphic Tactical Cockpit SPA (HTML/CSS/JS)
+│   │   ├── main.py       # FastAPI application lifecycle & startup handlers
+│   │   ├── schemas.py    # Pydantic v2 request/response wire contracts
+│   │   └── streaming.py  # SSE & WebSocket real-time point streaming endpoints
+│   ├── config/           # Centralized configuration loader (params.yaml)
+│   ├── core/             # Closed-form Markov solver, minimax game theory & Wilson intervals
+│   ├── graph/            # LangGraph conditional graph nodes & state definitions
+│   ├── models/           # Point-win classifier & empirical-Bayes pressure shrinkage
+│   ├── schemas/          # Domain scoring models & PointRecord data contracts
+│   ├── simulator/        # Real-time historical match replay event generator
+│   └── utils/            # Structured JSON logger, custom exceptions & SQLite persistence
+├── scripts/              # CI ceiling checks, DVC matrix builder & acceptance runners
+├── tests/                # Unit tests, integration suites & DeepEval groundedness checks
 ├── reports/
-│   ├── figures/                 # Generated screenshots & visual cockpit artifacts
-│   └── docs/
-│       ├── architecture/        # System Design Living ADR document (ADR-001 through ADR-018)
-│       ├── evaluations/         # Phase 1-7 evaluation reports & test suite documentation
-│       ├── references/          # PRD, Project Charter, ML Canvas, User Story, Roadmap
-│       └── workflows/           # Step-by-step execution workflows for each phase
-├── Dockerfile                   # Multi-stage production container definition
-├── docker-compose.yml           # Full-stack orchestration with persistent host volume
-├── dvc.yaml                     # DVC pipeline conductor (ingest -> models -> evaluate)
-├── params.yaml                  # Centralized operational thresholds and parameters
-└── pyproject.toml               # Python dependencies, Ruff, Pyright, and Pytest configuration
+│   ├── docs/             # PRD, Project Charter, ML Canvas, System Design ADRs & Workflows
+│   └── figures/          # Tactical Cockpit UI screenshots and architecture graphics
+├── Dockerfile            # Multi-stage non-root digest-pinned production container
+├── docker-compose.yml    # Full-stack container orchestration with persistent SQLite volume
+├── dvc.yaml              # Reproducible data and model training pipeline DAG
+├── params.yaml           # Centralized operational thresholds (zero magic numbers)
+└── pyproject.toml        # Project dependencies, Ruff, Pyright, and Pytest configuration
 ```
 
 ---

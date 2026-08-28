@@ -103,6 +103,8 @@ artifacts/*
 !artifacts/metrics/
 !artifacts/metrics/**
 *.png
+!reports/figures/**
+!reports/figures/*.png
 models/*.pkl
 models/*.h5
 models/*.pt
