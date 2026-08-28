@@ -14,8 +14,8 @@ stages:
       size: 9095
     - path: src/schemas/point_record.py
       hash: md5
-      md5: d7a5adde39394f32ed64c1c89ba497e4
-      size: 10614
+      md5: 773391e72700621e95dd1a7ebd41bb88
+      size: 11313
     params:
       params.yaml:
         ingestion.raw_data_dir: data/raw
@@ -35,8 +35,8 @@ stages:
       size: 5181695
     - path: params.yaml
       hash: md5
-      md5: 567100e04cd496afd9916d4bf6f9041a
-      size: 4611
+      md5: 13dd3d04c150dfc17f88b35e5a69e5f6
+      size: 4811
     - path: scripts/train_classifier.py
       hash: md5
       md5: 1c7f53509232d1b28496cebdb93495e8
@@ -47,8 +47,8 @@ stages:
       size: 5447
     - path: src/models/point_win_classifier.py
       hash: md5
-      md5: 692f16e12f222d34061f077da4a259ad
-      size: 12786
+      md5: 5b9678fb60e1989ac80ab9679d2d3471
+      size: 13974
     params:
       params.yaml:
         models.calibration_method: sigmoid
@@ -82,8 +82,8 @@ stages:
       size: 5181695
     - path: params.yaml
       hash: md5
-      md5: 567100e04cd496afd9916d4bf6f9041a
-      size: 4611
+      md5: 13dd3d04c150dfc17f88b35e5a69e5f6
+      size: 4811
     - path: scripts/train_pressure.py
       hash: md5
       md5: cf5f75845f11be9bb26190a671b06e1e
@@ -94,8 +94,8 @@ stages:
       size: 5447
     - path: src/models/pressure_deviation.py
       hash: md5
-      md5: acb70a1daf2a8a533a97d82a2e736095
-      size: 13569
+      md5: 76b49dc36d179a34ab7630922dfe0fe3
+      size: 14498
     params:
       params.yaml:
         models.mlflow_experiment_pressure: pulse_pressure_deviation_v1
@@ -117,13 +117,34 @@ stages:
       size: 636233
       nfiles: 1
   evaluate:
-    cmd: echo "Stage not yet implemented — Phase 6 Evaluation Suite & Solver 
-      Gate"
+    cmd: uv run pytest tests/unit/test_markov_solver.py && uv run python 
+      scripts/evaluate_escalation_precision.py
     deps:
+    - path: artifacts/validated_data/points.parquet
+      hash: md5
+      md5: 552c25c3c31db6ba5a087857b54d59b5
+      size: 5181695
     - path: params.yaml
       hash: md5
-      md5: 567100e04cd496afd9916d4bf6f9041a
-      size: 4611
+      md5: 13dd3d04c150dfc17f88b35e5a69e5f6
+      size: 4811
+    - path: scripts/evaluate_escalation_precision.py
+      hash: md5
+      md5: 854aabaa2d38fd1d09b581cb744d2602
+      size: 23950
+    - path: src/core/markov_solver.py
+      hash: md5
+      md5: 064c3b8915a8e5c58057bd90ef110461
+      size: 20726
+    - path: tests/unit/test_markov_solver.py
+      hash: md5
+      md5: e20bb0e64b84eecf5a4265317f635335
+      size: 6283
+    outs:
+    - path: artifacts/metrics/escalation_precision_metrics.json
+      hash: md5
+      md5: d5b6c64ef624bc5e4019c059cba87da3
+      size: 5561
   build_payoff_matrices:
     cmd: uv run python scripts/build_payoff_matrices.py
     deps:
@@ -133,8 +154,8 @@ stages:
       size: 5181695
     - path: params.yaml
       hash: md5
-      md5: 567100e04cd496afd9916d4bf6f9041a
-      size: 4611
+      md5: 13dd3d04c150dfc17f88b35e5a69e5f6
+      size: 4811
     - path: scripts/build_payoff_matrices.py
       hash: md5
       md5: 51ed94cb533e0d2556f281067bc98b0a
@@ -145,8 +166,8 @@ stages:
       size: 5447
     - path: src/core/game_theory.py
       hash: md5
-      md5: 59e2b38af49d5c8fba95284eeba13ccc
-      size: 18964
+      md5: 3b8217d1cee2f8da30dfaa5b74967d4d
+      size: 19939
     params:
       params.yaml:
         models.game_theory_min_observations_per_cell: 5

@@ -83,6 +83,14 @@ stages:
           cache: false
 
   evaluate:
-    cmd: echo "Stage not yet implemented — Phase 6 Evaluation Suite & Solver Gate"
+    cmd: uv run pytest tests/unit/test_markov_solver.py && uv run python scripts/evaluate_escalation_precision.py
     deps:
+      - scripts/evaluate_escalation_precision.py
+      - src/core/markov_solver.py
+      - tests/unit/test_markov_solver.py
+      - artifacts/validated_data/points.parquet
       - params.yaml
+    metrics:
+      - artifacts/metrics/escalation_precision_metrics.json:
+          cache: false
+
