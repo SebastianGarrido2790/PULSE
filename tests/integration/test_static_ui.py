@@ -144,8 +144,12 @@ async def test_no_external_cdn_references() -> None:
 
 
 @pytest.mark.asyncio
-async def test_match_preflight_and_docs_route_precedence() -> None:
+async def test_match_preflight_and_docs_route_precedence(monkeypatch) -> None:
     """Verify API documentation and match routes maintain precedence alongside UI."""
+    monkeypatch.setattr(
+        "src.api.streaming.get_available_matches",
+        lambda: ["integ_test_match_001"],
+    )
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Matches list preflight
@@ -154,6 +158,7 @@ async def test_match_preflight_and_docs_route_precedence() -> None:
         matches_data = matches_resp.json()
         assert isinstance(matches_data, list)
         assert len(matches_data) > 0
+        assert "integ_test_match_001" in matches_data
 
         # Health endpoint
         health_resp = await client.get("/health")

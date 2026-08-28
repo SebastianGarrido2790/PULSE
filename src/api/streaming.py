@@ -8,6 +8,7 @@ Authority: Phase 6 Decisions D-1, D-5, D-6, D-8, D-10.
 
 import asyncio
 from collections.abc import AsyncGenerator
+from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
@@ -21,7 +22,7 @@ from src.api.schemas import (
     MatchReportResponse,
     StreamPointEvent,
 )
-from src.config.loader import load_params
+from src.config.loader import Params, load_params
 from src.simulator.replay import generate_point_events, get_available_matches, load_match_records
 from src.utils.logger import get_logger
 
@@ -48,6 +49,8 @@ async def sse_event_stream(
     graph: CompiledStateGraph,
     keep_alive_interval: float,
     match_format: Literal["bo3", "bo5"] = "bo3",
+    db_path: Path | str | None = None,
+    params: Params | None = None,
 ) -> AsyncGenerator[str, None]:
     """Yield formatted SSE event frames with interleaved keep-alive comments.
 
@@ -61,6 +64,8 @@ async def sse_event_stream(
         graph: In-memory compiled LangGraph application.
         keep_alive_interval: Interval in seconds between keep-alive heartbeat comments.
         match_format: Match scoring structure ('bo3' or 'bo5', default 'bo3').
+        db_path: Optional custom SQLite database path for persistence.
+        params: Optional pre-loaded Params configuration container.
 
     Yields:
         str: SSE data frames or keep-alive comments.
@@ -76,6 +81,8 @@ async def sse_event_stream(
                 speed_multiplier=speed_multiplier,
                 match_format=match_format,
                 graph=graph,
+                db_path=db_path,
+                params=params,
             ):
                 await queue.put(event)
             await queue.put(None)
@@ -259,6 +266,8 @@ async def stream_match_sse(
             graph=graph,
             keep_alive_interval=keep_alive,
             match_format=replay_params.match_format,
+            db_path=params.api.db_path,
+            params=params,
         ),
         media_type="text/event-stream",
         headers={
@@ -293,12 +302,15 @@ async def stream_match_ws(
         )
         return
 
+    params = load_params()
     try:
         async for event in generate_point_events(
             match_id=match_id,
             speed_multiplier=replay_params.speed_multiplier,
             match_format=replay_params.match_format,
             graph=graph,
+            db_path=params.api.db_path,
+            params=params,
         ):
             await websocket.send_text(event.model_dump_json())
     except WebSocketDisconnect:

@@ -121,8 +121,11 @@ async def test_sse_streaming_and_persistence_parity(
 
     cfg = load_params()
     cfg.api.db_path = str(db_file)
+    monkeypatch.setattr("src.config.loader.load_params", lambda: cfg)
     monkeypatch.setattr("src.api.main.load_params", lambda: cfg)
+    monkeypatch.setattr("src.api.streaming.load_params", lambda: cfg)
     monkeypatch.setattr("src.simulator.replay.load_params", lambda: cfg)
+    monkeypatch.setattr("src.utils.persistence.load_params", lambda: cfg)
     monkeypatch.setattr(
         "src.simulator.replay.resolve_parquet_path",
         lambda *args, **kwargs: integration_parquet_file,
@@ -180,8 +183,17 @@ def test_websocket_and_sse_content_parity(
     integration_parquet_file: Path,
     mock_llm_narrative: AsyncMock,
     monkeypatch,
+    tmp_path: Path,
 ) -> None:
     """Verify WebSocket stream and SSE stream produce identical content payloads (D-1)."""
+    db_file = tmp_path / "integ_ws_session.db"
+    cfg = load_params()
+    cfg.api.db_path = str(db_file)
+    monkeypatch.setattr("src.config.loader.load_params", lambda: cfg)
+    monkeypatch.setattr("src.api.main.load_params", lambda: cfg)
+    monkeypatch.setattr("src.api.streaming.load_params", lambda: cfg)
+    monkeypatch.setattr("src.simulator.replay.load_params", lambda: cfg)
+    monkeypatch.setattr("src.utils.persistence.load_params", lambda: cfg)
     monkeypatch.setattr(
         "src.simulator.replay.resolve_parquet_path",
         lambda *args, **kwargs: integration_parquet_file,
@@ -220,8 +232,17 @@ def test_websocket_and_sse_content_parity(
 def test_mid_stream_failure_integration(
     integration_parquet_file: Path,
     monkeypatch,
+    tmp_path: Path,
 ) -> None:
     """Verify fail-loud behavior on forced mid-stream exception (D-13)."""
+    db_file = tmp_path / "integ_err_session.db"
+    cfg = load_params()
+    cfg.api.db_path = str(db_file)
+    monkeypatch.setattr("src.config.loader.load_params", lambda: cfg)
+    monkeypatch.setattr("src.api.main.load_params", lambda: cfg)
+    monkeypatch.setattr("src.api.streaming.load_params", lambda: cfg)
+    monkeypatch.setattr("src.simulator.replay.load_params", lambda: cfg)
+    monkeypatch.setattr("src.utils.persistence.load_params", lambda: cfg)
     monkeypatch.setattr(
         "src.simulator.replay.resolve_parquet_path",
         lambda *args, **kwargs: integration_parquet_file,
