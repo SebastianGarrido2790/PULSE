@@ -1,6 +1,6 @@
 # System Design & Architectural Decision Record, PULSE
 
-**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 0.6.5 | **Date:** 2026-08-22
+**Product:** PULSE (Point-Level Understanding & Strategic Leverage Engine) | **Version:** 1.0.0 | **Date:** 2026-08-27
 
 This document is a living record of the system's actual implemented state and the decisions that shaped it. During Phase 0, it reflects _planned_ state, the decisions made before any code exists. From Phase 1 onward, each phase's completion should update this document to reflect what was actually built, and any deviation from a prior ADR must be logged as an amendment, not silently changed.
 
@@ -8,7 +8,19 @@ This document is a living record of the system's actual implemented state and th
 
 ## Current Implementation Status
 
+**Phase 7 — Production Hardening & Operational Acceptance Complete (2026-08-27).**  
+Phase 7 delivers production-grade containerization (`Dockerfile`, `docker-compose.yml`), automated CI security scanning via Aqua Security Trivy, component-level OpenTelemetry distributed tracing across solver/model/analytics modules, structured JSON logging enforcement across all subsystems, retrospective escalation precision evaluation (96.02% precision, 3.98% false alert rate), and end-to-end shadow-mode acceptance testing. All 10 Definition of Done criteria in `pulse_project_charter.md` §5 have been validated and approved (202/202 tests passing, 92% code coverage, 0 type errors, 0 Critical CVEs).
+
+**Phase 7 Exit Criteria Validation Summary:**
+- **Containerization & Orchestration (D-4, D-5, D-6):** **PASSED** — Multi-stage non-root digest-pinned Dockerfile (`python:3.11-slim@sha256:1042b61448fef4ba92d16a8c7eb4996d027568ce64792a7877fd88511e0af7c6`) packages the FastAPI engine and embedded Tactical Cockpit UI; `docker-compose.yml` mounts host volume for SQLite audit persistence (FR-12).
+- **Automated CI/CD Quality Gate (D-3, D-8):** **PASSED** — `.github/workflows/ci.yml` enforces Ruff linting, Pyright strict typing, file size ceiling (<1000 lines), pytest coverage gate ($\ge 70\%$, measured 92%), and Trivy container vulnerability scanning.
+- **Component-Level Distributed Tracing (D-10):** **PASSED** — OpenTelemetry child spans instrumented across `markov_solver.compute_leverage`, `point_win_classifier.resolve_p`, `game_theory.compute_exploit`, and `match_report.generate_async`.
+- **Retrospective Escalation Precision (D-9):** **PASSED** — Evaluated across 100 historical matches (13,790 points): **Alert Precision = 96.02%** ($\ge 75\%$), **False Escalation Rate = 3.98%** ($< 15\%$), **Mean Realized Impact Ratio = 11.0x** (8.74% on escalated points vs 0.79% on routine).
+- **Shadow-Mode Acceptance Run (D-1, D-2):** **PASSED** — Replayed 3 held-out matches (400 points) through containerized stack: `StateMonitorNode` average latency 32.5ms (P95 132.9ms, SLA $< 1000\text{ms}$), post-match report retrieval 2.9ms, 0 unhandled exceptions.
+- **Definition of Done Reconciliation (D-13):** **PASSED** — Formal reconciliation in `reports/docs/evaluations/phase7_final_evaluation_report.md` with 10/10 DoD criteria verified.
+
 **Phase 6.6 — Post-Match Tactical Intelligence & Reporting Complete (2026-08-25).**  
+
 The Post-Match Reporting and Analytics Engine (`src/analytics/match_report.py`), strongly typed Pydantic v2 schemas (`src/api/schemas.py`), report endpoint handlers (`src/api/streaming.py`), glassmorphic interactive modal UI (`src/api/static/`), and automated test suite (`tests/unit/test_match_report.py`, `tests/integration/test_match_report_api.py`, `tests/integration/test_static_ui.py`) are fully implemented, verified, and passing all quality gates (172/172 tests passing, 0 pyright/ruff errors, <1,000-line file ceiling).
 
 **Phase 6.6 Exit Criteria Validation Summary:**
@@ -433,38 +445,111 @@ PULSE requires a small, fast, instruction-following LLM for two presentation tas
 **Consequences:**
 Enables 100% free, low-latency live narrative generation and post-match debriefing with zero extra toolchain overhead. Validated across 176 passing tests with 0 type errors.
 
+### ADR-016: Multi-Stage Production Containerization & Persistent SQLite Volume Mounts (Phase 7 — 2026-08-27)
+
+**Status:** Validated (Decisions D-4, D-5, D-6, D-7 — 2026-08-27)
+
+**Context:**
+PULSE requires a production-ready containerized runtime to enable one-click local and cloud deployment (`docker compose up --build`), CI testing, and evaluative replays while strictly preserving security baselines, zero-drift artifact reproducibility, and SQLite audit session persistence across container restarts (FR-12).
+
+**Decisions:**
+1. **Multi-Stage Build with Digest-Pinned Base:**
+   - Builder stage utilizes `ghcr.io/astral-sh/uv` to install production dependencies into `/app/.venv` using `uv sync --frozen --no-dev`.
+   - Runtime stage copies the virtual environment onto `python:3.11-slim@sha256:1042b61448fef4ba92d16a8c7eb4996d027568ce64792a7877fd88511e0af7c6`.
+2. **Non-Root Execution:**
+   - Enforces execution under dedicated system user `pulseuser:pulsegroup` (UID/GID 10001) with restricted permissions over `/app/logs` and `/app/artifacts`.
+3. **Single Image with Runtime Entrypoint Overrides:**
+   - Default `CMD` boots the FastAPI streaming service (`uvicorn src.api.main:app`). CLI debug commands (e.g. `uv run python scripts/run_shadow_mode_acceptance.py`) run seamlessly via runtime override without maintaining separate Dockerfiles.
+4. **Volume Mount for Audit Persistence (FR-12):**
+   - `docker-compose.yml` mounts host `./artifacts/pulse_session.db` to `/app/artifacts/pulse_session.db` and `./logs` to `/app/logs`, ensuring historical match decision logs survive container restarts.
+5. **Native Docker Healthcheck (D-12):**
+   - Implements native container health check probing `http://localhost:8000/health` with 30s intervals.
+
+**Consequences:**
+Eliminates container configuration drift, satisfies strict zero-root container security policies, and provides reliable out-of-the-box orchestration via `docker compose up`.
+
+---
+
+### ADR-017: Comprehensive CI/CD Pipeline & Automated Container Vulnerability Scanning (Phase 7 — 2026-08-27)
+
+**Status:** Validated (Decisions D-3, D-8 — 2026-08-27)
+
+**Context:**
+To prevent regressions in mathematical accuracy, code quality, and dependency security, PULSE requires an automated GitHub Actions CI pipeline that enforces merge-blocking quality gates across every PR and commit to `main`.
+
+**Decisions:**
+1. **Multi-Layer Quality Pipeline (`.github/workflows/ci.yml`):**
+   - **Static Quality:** Ruff import sorting, code formatting (`ruff format --check`), and lint checks (`ruff check`).
+   - **Type Safety:** Pyright strict static type checker with 0 allowable errors.
+   - **Modularity Ceiling:** Enforces the 1,000-line ceiling per file via `python scripts/check_file_size.py`.
+   - **Automated Test Suite:** Runs full unit, integration, and evaluation suites with CI-blocking $\ge 70\%$ code coverage gate (`--cov-fail-under=70`, measured 92%).
+2. **Aqua Security Trivy Container Scanning:**
+   - Builds the production Docker image and runs Trivy container scanning with `--severity HIGH,CRITICAL --exit-code 1`, blocking builds containing unpatched CVEs.
+3. **Golden Solver Correctness Gate:**
+   - Golden-value closed-form Markov solver unit tests (`tests/unit/test_markov_solver.py`) run as a mandatory blocking gate ($< 10^{-9}$ deviation).
+
+**Consequences:**
+Guarantees complete mathematical integrity, prevents line-count explosion, and ensures container image vulnerability freedom before deployment.
+
+---
+
+### ADR-018: Component-Level OpenTelemetry Distributed Tracing & Operational Acceptance Methodology (Phase 7 — 2026-08-27)
+
+**Status:** Validated (Decisions D-1, D-2, D-9, D-10, D-11, D-13 — 2026-08-27)
+
+**Context:**
+Operational monitoring of event-driven tactical pipelines requires fine-grained execution latency profiling across in-process solvers, Bayesian models, and game-theoretic optimizations without incurring network microservice overhead. Furthermore, validation requires statistical proof of escalation precision and shadow-mode acceptance on held-out matches.
+
+**Decisions:**
+1. **Hierarchical OpenTelemetry Child Spans (D-10):**
+   - Nested child spans instrumented for `markov_solver.compute_leverage`, `point_win_classifier.resolve_p`, `game_theory.compute_exploit`, and `match_report.generate_async` under the parent LangGraph node spans.
+2. **Structured JSON Logging Audit (D-11):**
+   - Codebase-wide audit pass confirming all logging routes through `src/utils/logger.py` with structured contextual key-values.
+3. **Retrospective Escalation-Precision Evaluation Pipeline (D-9):**
+   - Created `scripts/evaluate_escalation_precision.py` evaluating 100 historical matches (13,790 points). Validated Alert Precision = 96.02% ($\ge 75\%$) and False Escalation Rate = 3.98% ($< 15\%$).
+4. **Shadow-Mode Operational Acceptance Suite (D-1, D-2):**
+   - Implemented `scripts/run_shadow_mode_acceptance.py` replaying 3 held-out matches (400 points) through the live containerized API, validating sub-second `StateMonitorNode` latency (average 32.5ms, P95 132.9ms), SQLite persistence (FR-12), and UI accessibility.
+
+**Consequences:**
+Delivers full operational observability and empirical proof of tactical intelligence quality against all project charter requirements.
+
 ---
 
 ## Component Inventory
 
-| Component                        | Module Path                         | Introduced In                                                                |
-| -------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
-| Package Skeleton & Stubs         | `src/*/` (`__init__.py`)            | Phase 1                                                                      |
-| Exception Hierarchy              | `utils/exceptions.py`               | Phase 1, extended Phase 6 (`PersistenceException`)                          |
-| Centralized Logger               | `utils/logger.py`                   | Phase 1                                                                      |
-| Configuration Contract           | `params.yaml`, `pyrightconfig.json` | Phase 1, extended Phase 6 (`api`, `simulator` params)                       |
-| File Ceiling Enforcement         | `scripts/check_file_size.py`        | Phase 1                                                                      |
-| CI Quality Gate                  | `.github/workflows/ci.yml`          | Phase 1                                                                      |
-| `PointRecord` schema             | `schemas/point_record.py`           | Phase 2, extended Phase 6 (`to_point_context()`, `infer_match_format()`)     |
-| Closed-form Markov solver        | `core/markov_solver.py`             | Phase 2                                                                      |
-| Point-win classifier             | `models/point_win_classifier.py`    | Phase 3                                                                      |
-| Pressure Deviation model         | `models/pressure_deviation.py`      | Phase 3                                                                      |
-| Leverage uncertainty propagation | `core/leverage_uncertainty.py`      | Phase 3                                                                      |
-| `StateMonitorNode`               | `graph/state_monitor.py`            | Phase 4                                                                      |
-| `PressureDiagnosticNode`         | `graph/pressure_diagnostic.py`      | Phase 4                                                                      |
-| `StrategyExploitNode`            | `graph/strategy_exploit.py`         | Phase 4 (node & sufficiency gate stub), Phase 5 (minimax module integration) |
-| Game theory solver               | `core/game_theory.py`               | Phase 5                                                                      |
-| Payoff Matrix DVC Stage          | `scripts/build_payoff_matrices.py`  | Phase 5                                                                      |
-| `TacticalOutputNode`             | `graph/tactical_output.py`          | Phase 4                                                                      |
-| LLM Client Wrapper               | `src/graph/llm_client.py`           | Phase 4, extended Phase 6.6 (ADR-015 Groq integration)                       |
-| API Wire Schemas                 | `src/api/schemas.py`                | Phase 6, extended Phase 6.6 (`MatchReportResponse`)                         |
-| SQLite Persistence Layer         | `src/utils/persistence.py`          | Phase 6                                                                      |
-| FastAPI Application & Lifespan   | `src/api/main.py`                   | Phase 6                                                                      |
-| SSE & WebSocket Streaming Routes | `src/api/streaming.py`              | Phase 6, extended Phase 6.6 (`GET /{id}/report`)                            |
-| Replay Simulator & Event Engine  | `src/simulator/replay.py`           | Phase 6                                                                      |
-| Interactive Tactical Cockpit     | `src/api/static/`                   | Phase 6.5 (ADR-013), extended Phase 6.6 (Report Modal)                       |
-| Post-Match Reporting Engine      | `src/analytics/match_report.py`     | Phase 6.6 (ADR-014)                                                          |
-| Report Markdown Formatting       | `src/analytics/formatting.py`       | Phase 6.6 (ADR-015)                                                          |
+| Component                        | Module Path                                    | Introduced In                                                                |
+| -------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| Package Skeleton & Stubs         | `src/*/` (`__init__.py`)                       | Phase 1                                                                      |
+| Exception Hierarchy              | `utils/exceptions.py`                          | Phase 1, extended Phase 6 (`PersistenceException`)                          |
+| Centralized Logger               | `utils/logger.py`                              | Phase 1, audited Phase 7 (structured JSON)                                   |
+| Configuration Contract           | `params.yaml`, `pyrightconfig.json`            | Phase 1, extended Phase 6 (`api`, `simulator` params)                       |
+| File Ceiling Enforcement         | `scripts/check_file_size.py`                   | Phase 1                                                                      |
+| CI Quality Gate & Trivy Scanner  | `.github/workflows/ci.yml`                     | Phase 1, finalized Phase 7 (coverage gate + Trivy CVE scan)                  |
+| `PointRecord` schema             | `schemas/point_record.py`                      | Phase 2, extended Phase 6 (`to_point_context()`, `infer_match_format()`)     |
+| Closed-form Markov solver        | `core/markov_solver.py`                        | Phase 2, OTel instrumented Phase 7                                           |
+| Point-win classifier             | `models/point_win_classifier.py`               | Phase 3, OTel instrumented Phase 7                                           |
+| Pressure Deviation model         | `models/pressure_deviation.py`                 | Phase 3, OTel instrumented Phase 7                                           |
+| Leverage uncertainty propagation | `core/leverage_uncertainty.py`                 | Phase 3                                                                      |
+| `StateMonitorNode`               | `graph/state_monitor.py`                       | Phase 4                                                                      |
+| `PressureDiagnosticNode`         | `graph/pressure_diagnostic.py`                 | Phase 4                                                                      |
+| `StrategyExploitNode`            | `graph/strategy_exploit.py`                    | Phase 4 (node & sufficiency gate stub), Phase 5 (minimax module integration) |
+| Game theory solver               | `core/game_theory.py`                          | Phase 5, OTel instrumented Phase 7                                           |
+| Payoff Matrix DVC Stage          | `scripts/build_payoff_matrices.py`             | Phase 5                                                                      |
+| `TacticalOutputNode`             | `graph/tactical_output.py`                     | Phase 4                                                                      |
+| LLM Client Wrapper               | `src/graph/llm_client.py`                      | Phase 4, extended Phase 6.6 (ADR-015 Groq), Phase 7 test coverage            |
+| API Wire Schemas                 | `src/api/schemas.py`                           | Phase 6, extended Phase 6.6 (`MatchReportResponse`)                         |
+| SQLite Persistence Layer         | `src/utils/persistence.py`                     | Phase 6                                                                      |
+| FastAPI Application & Lifespan   | `src/api/main.py`                              | Phase 6                                                                      |
+| SSE & WebSocket Streaming Routes | `src/api/streaming.py`                         | Phase 6, extended Phase 6.6 (`GET /{id}/report`)                            |
+| Replay Simulator & Event Engine  | `src/simulator/replay.py`                      | Phase 6                                                                      |
+| Interactive Tactical Cockpit     | `src/api/static/`                              | Phase 6.5 (ADR-013), extended Phase 6.6 (Report Modal)                       |
+| Post-Match Reporting Engine      | `src/analytics/match_report.py`                | Phase 6.6 (ADR-014), OTel instrumented Phase 7                               |
+| Report Markdown Formatting       | `src/analytics/formatting.py`                  | Phase 6.6 (ADR-015)                                                          |
+| Production Dockerfile            | `Dockerfile`                                   | Phase 7 (ADR-016)                                                            |
+| Docker Compose Orchestrator      | `docker-compose.yml`                           | Phase 7 (ADR-016)                                                            |
+| Retrospective Precision Evaluator| `scripts/evaluate_escalation_precision.py`     | Phase 7 (ADR-018)                                                            |
+| Shadow-Mode Acceptance Suite     | `scripts/run_shadow_mode_acceptance.py`        | Phase 7 (ADR-018)                                                            |
+
 
 ---
 

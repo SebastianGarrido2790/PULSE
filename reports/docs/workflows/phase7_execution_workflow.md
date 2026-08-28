@@ -149,7 +149,7 @@
     - `python scripts/check_file_size.py`
     - `uv run pytest --cov=src --cov-report=term-missing` (176+ tests passing, ≥70% coverage)
 30. Log architectural decision records in `reports/docs/architecture/system_design.md` capturing containerization, security scanning, and acceptance methodology.
-31. Update `reports/docs/references/technical_roadmap.md` marking Phase 7 and all milestones as ✅ Complete.
+31. Update `reports/docs/evaluations/test_suite_report.md` and `reports/docs/references/technical_roadmap.md` marking Phase 7 and all milestones as ✅ Complete.
 
 **Gate 10 (Project Complete):** all quality checks green; containerized stack verified; CI passing; final evaluation report approved; technical roadmap complete.
 
